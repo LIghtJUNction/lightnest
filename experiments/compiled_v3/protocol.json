@@ -1,0 +1,22 @@
+{
+  "study": "LightNest compiled-v3",
+  "baseline_commit": "b9fda17e8e4a3211fac00c159dc1e5c4efe2181b",
+  "target": "rv32im-unknown-elf / ilp32",
+  "compiler_optimizations": ["O0", "O2", "Os"],
+  "development_variants": [0],
+  "evaluation_variants": [2, 3, 4, 5],
+  "program_families": 16,
+  "requested_mutations_per_binary": {"single": 12, "double": 4},
+  "correct_original_per_binary": 1,
+  "candidate_instruction_budget": 4096,
+  "vm_instruction_budget": 30000,
+  "visible_test_budgets": [4, 64],
+  "hidden_test_budget": 256,
+  "task": "Repair to satisfy supplied input/output tests. Fault locations, original bytes, source, and hidden tests are not predictor inputs.",
+  "claim_boundaries": ["Original representative C kernels, not real production bugs", "Injected machine instruction faults, not arbitrary software maintenance", "Finite testing is not a proof", "Do not compare new scores directly to old structural transformation accuracy"],
+  "policies": ["all4", "trace4", "all64", "trace64", "trace_probe64"],
+  "selection": "development only: minimize harmful accepted edits, then maximize repaired broken tasks, then minimize candidate VM work",
+  "artifacts": "Source/docs/tests only in Git. Binaries, observations, mutations and per-task logs external.",
+  "preserve": "Do not change C64, original weights or old test labels. No neural training in this study.",
+  "fixed_at_utc": "2026-10-19T20:31:27.167381+00:00"
+}

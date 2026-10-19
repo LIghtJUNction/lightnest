@@ -36,3 +36,8 @@
 .ruff_cache/
 .env
 .env.*
+# Compiler study output belongs in external experiment storage.
+*.so
+*.o
+*.elf
+*.bin

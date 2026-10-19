@@ -1,0 +1,14 @@
+{
+  "study": "compiled-external-v3-followup",
+  "timing": "Registered after seeing the first evaluation; separate study, no retroactive replacement of earlier selection or scores.",
+  "source": "zlib v1.3.1 adler32_z, original body with standalone type and entry adaptation",
+  "optimizations": ["O0", "O2", "Os"],
+  "tasks_per_build": {"clean": 1, "single": 128, "double": 64},
+  "comparison": ["trace64", "trace_probe64", "trace_random128", "trace_mixed128"],
+  "hypothesis": "Keep all 64 generic tests and add 64 distinct code-literal probes, rather than replacing generic coverage. Compare to 128 generic tests at equal oracle-test count.",
+  "hidden_inputs": 512,
+  "search_space": "unchanged compiled-v3 one-instruction operators, 4096 candidates, 30000 VM steps",
+  "claim_limit": "One real upstream function, injected mutations, 0..128 byte buffers; not production fault repair, not NMAX coverage, not a formal proof.",
+  "promotion": "No default change. Any incorrect accepted patch fails universal-safety claims.",
+  "fixed_utc": "2026-10-19T20:50:23.505474+00:00"
+}

@@ -2,7 +2,7 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-ALLOWED = {".py", ".md", ".json", ".txt", ".yml", ".yaml", ".toml"}
+ALLOWED = {".py", ".c", ".md", ".json", ".txt", ".yml", ".yaml", ".toml"}
 IGNORE = {".git", "__pycache__", ".venv", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 FORBIDDEN = {"data", "baseline_data", "models", "results", "runs", "caches", "checkpoints"}
 errors = []
