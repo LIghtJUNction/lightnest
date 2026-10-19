@@ -2,9 +2,12 @@ name: Source checks
 on:
   push:
   pull_request:
+permissions:
+  contents: read
 jobs:
   tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -15,7 +18,7 @@ jobs:
       - name: Inspect source-only tree
         run: python tools/check_source_tree.py
       - name: Check Python code
-        run: python -m compileall -q hybrid baseline tools tests
+        run: python -m compileall -q hybrid baseline experiments tools tests
       - name: Run tests without external weights
         run: python -m unittest discover -s tests -t . -v
       - name: Run template/cache/delta tests
