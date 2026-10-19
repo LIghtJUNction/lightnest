@@ -20,6 +20,7 @@ experiments/compiled_external_v3/  zlib 函数提取、上游许可与独立补�
 experiments/research_v2/           既有结构/学习对照与反例
 hybrid/                           状态桥和模式切换研究
 baseline/LightNest_RGB_v2/        当前 RGB/C64 依赖源码
+formal/                           Lean规格、证明与公理审计，不含构建产物
 tools/template_io/                缓存与差量工具
 tools/replay_compiled_v3.py        最新源码重放既有正式决策
 tests/                            不依赖外部权重的源码检查
@@ -40,6 +41,18 @@ PYTHONPATH=tools/template_io python -m unittest discover -s tools/template_io -p
 ```
 
 完整新实验命令见 [Compiled v3 复现](docs/reproduce/compiled-v3.md)。所有输出目录必须在仓库外。模型推断和旧模型回归仍需 [外部权重与数据](docs/ARTIFACTS.md)，不能使用随机初始化冒充已训练模型。
+
+## Lean 形式化辅助验证
+
+安装官方 Elan 并使 `lake` 可用后，在根目录执行：
+
+```bash
+python tools/check_lean.py
+```
+
+固定 Lean 4.35.0，使用附带标准库，无需模型权重、GPU或Mathlib。完整检查在临时目录重建证明、审计公理、重新调用内核、对比Python实现，并确认故意错误的证明被拒绝；缺少工具会失败，不伪装为通过。每次push和PR都会运行独立的 `Lean proofs` CI。
+
+证明覆盖补丁不变量、共享循环分段、预算和有限验收记录保持，不证明神经模型准确率或整个Python/PyTorch实现正确。用法、证据比较入口及未覆盖范围见 [Lean验证说明](docs/FORMAL_VERIFICATION.md)。
 
 ## 阅读顺序
 

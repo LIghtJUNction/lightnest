@@ -41,3 +41,9 @@
 *.o
 *.elf
 *.bin
+# Lean build products stay outside Git.
+**/.lake/
+*.olean
+*.ilean
+*.ir
+*.olean.server
