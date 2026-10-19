@@ -18,14 +18,12 @@ jobs:
         with:
           lake-package-directory: formal
           auto-config: 'false'
-          build: 'true'
+          build: 'false'
           test: 'false'
           lint: 'false'
           use-mathlib-cache: 'false'
           use-github-cache: 'false'
-      - name: Audit transitive theorem axioms
-        working-directory: formal
-        run: lake env lean -DwarningAsError=true Audit.lean
-      - name: Recheck compiled proofs with the kernel
-        working-directory: formal
-        run: lake env leanchecker LightNest
+      - name: Prove, audit, recheck, and compare Python behavior
+        run: python tools/check_lean.py
+      - name: Test proof tooling without model weights
+        run: python -m unittest discover -s tests -p test_formal_tools.py -v
