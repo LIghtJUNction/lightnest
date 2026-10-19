@@ -18,7 +18,9 @@ def check (rows : List Comparison) : Bool := !rows.isEmpty && rows.all acceptabl
 
 theorem accepted_row (rows : List Comparison) (row : Comparison)
     (h : check rows = true) (member : row ∈ rows) : acceptable row = true := by
-  have allRows : rows.all acceptable = true := (Bool.and_eq_true.mp h).2
+  have allRows : rows.all acceptable = true := by
+    unfold check at h
+    cases he : rows.isEmpty <;> simp_all
   exact (List.all_eq_true.mp allRows) row member
 
 theorem no_old_success_lost (rows : List Comparison) (row : Comparison)

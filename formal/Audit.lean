@@ -10,12 +10,11 @@ run_cmd do
     if name.toString.startsWith "LightNest." then
       match info with
       | .axiomInfo _ => throwError "unapproved project axiom: {name}"
-      | .thmInfo _ =>
-        count := count + 1
-        for ax in (← Lean.collectAxioms name) do
-          unless allowed.contains ax do
-            throwError "unapproved axiom {ax} in {name}"
+      | .thmInfo _ => count := count + 1
       | _ => pure ()
+      for ax in (← Lean.collectAxioms name) do
+        unless allowed.contains ax do
+          throwError "unapproved axiom {ax} in {name}"
   if count < 20 then
     throwError "proof inventory unexpectedly small: {count}"
   logInfo m!"LightNest axiom audit passed: {count} theorems"

@@ -11,7 +11,7 @@ def iterate {α : Type} (step : α → α) : Nat → α → α
 theorem split_unroll {α : Type} (step : α → α) (first rest : Nat) (state : α) :
     iterate step (first + rest) state = iterate step rest (iterate step first state) := by
   induction first generalizing state with
-  | zero => rfl
+  | zero => simp [iterate]
   | succ first ih => simpa [Nat.succ_add, iterate] using ih (step state)
 
 theorem rgb_4_plus_60 {α : Type} (step : α → α) (state : α) :
