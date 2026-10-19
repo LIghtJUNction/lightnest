@@ -17,6 +17,7 @@
 experiments/research_v2/        当前多路径实验、独立复算、计时和反例
 hybrid/                         当前 StateLink + 模式策略研究源码
 baseline/LightNest_RGB_v2/      Hybrid 依赖的 RGB/C64 源码（不含权重、样本）
+formal/                         Lean规格、证明与公理审计，不含构建产物
 tools/template_io/              模板、精确缓存、静态关系缓存、差量工具
 tests/                          无模型权重的源码检查
 docs/                           探索经验、实验报告、运行说明、下一轮计划
@@ -36,6 +37,18 @@ PYTHONPATH=tools/template_io python -m unittest discover -s tools/template_io -p
 ```
 
 模型推断、训练和历史模型回归另需外部权重及数据，不可用随机初始化代替。Research v2 的训练还需要 NumPy 2.3.5，完整步骤见 [复现说明](experiments/research_v2/REPRODUCE.md)。原始档案见 [ARTIFACTS](docs/ARTIFACTS.md)。
+
+## Lean 形式化辅助验证
+
+安装官方 Elan 并使 `lake` 可用后，在根目录执行：
+
+```bash
+python tools/check_lean.py
+```
+
+固定 Lean 4.35.0，使用附带标准库，无需模型权重、GPU或Mathlib。完整检查在临时目录重建证明、审计公理、重新调用内核、对比Python实现，并确认故意错误的证明被拒绝；缺少工具会失败，不伪装为通过。每次push和PR都会运行独立的 `Lean proofs` CI。
+
+证明覆盖补丁不变量、共享循环分段、预算和有限验收记录保持，不证明神经模型准确率或整个Python/PyTorch实现正确。用法、证据比较入口及未覆盖范围见 [Lean验证说明](docs/FORMAL_VERIFICATION.md)。
 
 ## 从哪里阅读
 
