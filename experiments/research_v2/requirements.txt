@@ -1,3 +1,3 @@
 # Install a CPU-specific Torch wheel first when GPU support is not needed.
-torch==2.10.0
+torch==2.13.0
 numpy==2.3.5
