@@ -1,0 +1,19 @@
+{
+  "experiment": "LightNest_RGB_v2",
+  "created_utc": "2026-10-18T21:31:42.300026+00:00",
+  "parent_archive": {
+    "name": "LightNest_RGB_v1_source_models_results.zip",
+    "sha256": "98dc2ad8f2812ad498ea6e557dfa588d4e628412ea5c2a503686cb0d3fa861c2"
+  },
+  "original_source_drive_id": "1qNxCJTkm7NK9rg7WtUxBy-m4_sIWWKBW",
+  "original_report_drive_id": "16tFDyKNouQu1gHQIeRhMwPeesXw_NxP_",
+  "shared_folder_id": "1xeRI3s_8w2-gtUI2tfoXuY6D1KcDhcsQ",
+  "unchanged_parent_models": {
+    "104729": "85ece0115cd192c5f0c8a746b1e15cb492982023baa4ce3297c57d49f993471a",
+    "130363": "33c06b58d4a911afcf9d49ea5f5af0e4ad5ccecc84a58444277deeb1c8959324"
+  },
+  "license_status": "unverified",
+  "source_scope": "User supplied RGB v1 code and weights; expanded dataset metadata for collision checks; no private unrelated material",
+  "frozen_primary_sources_do_not_change": true,
+  "later_backend_phase_separate": true
+}

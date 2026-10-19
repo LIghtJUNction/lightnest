@@ -1,0 +1,80 @@
+{
+  "id": "LightNest-Hybrid-v1",
+  "created_utc": "2026-10-19T01:22:09.299957+00:00",
+  "seeds": [
+    104729,
+    130363
+  ],
+  "depths": [
+    4,
+    8,
+    16,
+    32,
+    64
+  ],
+  "sft": {
+    "steps": 192,
+    "batch": 8,
+    "lr": 0.0003,
+    "weight_decay": 0.01,
+    "clip": 1.0,
+    "latent_mse_weight": 0.02,
+    "sampling": "4 legacy plus 4 hard, equal EDIT/STOP in each; same stream per seed",
+    "frozen": "C64 backbone and inherited green",
+    "trainable": "residual link and copied action head",
+    "self_conditioned": true
+  },
+  "mode_sft": {
+    "steps": 256,
+    "batch": 32,
+    "lr": 0.001,
+    "target": "EMIT if current greedy action matches any remaining legal edit, or correct STOP; otherwise THINK"
+  },
+  "rl": {
+    "updates": 96,
+    "tasks_per_update": 4,
+    "rollouts_per_task": 4,
+    "lr": 0.0003,
+    "entropy": 0.005,
+    "kl_to_sft": 0.01,
+    "cost_weights": [
+      0.0,
+      0.1
+    ],
+    "reward": "1 for exact+STOP+finite execution, otherwise -1; additional -1 for editing no-op; minus cost_weight*rounds/(9*64)",
+    "policy_gradient": "on-policy REINFORCE, leave-one-out group baseline, only sampled mode decisions",
+    "frozen": "actor, link, green, recurrent core",
+    "replay": "recorded frozen latent-derived features reused without recomputing or relabeling as sampled tokens"
+  },
+  "evaluation": {
+    "test_rows": 256,
+    "full_public_regression": 2372,
+    "max_edits": 8,
+    "final_STOP_opportunity": true,
+    "modes": [
+      "parent64",
+      "sft64",
+      "sft",
+      "rl0",
+      "rlcost"
+    ],
+    "selection": "report all fixed endpoints, no test or seed selection",
+    "promotion": "no wrong no-op; no loss of parent successes on test and full regression; useful improvement required; default remains parent"
+  },
+  "scope": [
+    "bounded RV32 actions serialized as text; not a general language decoder",
+    "existing generator families, not real project bugs",
+    "reset working state after any code edit; preserve it across THINK steps",
+    "no external agent, API training or native binary execution",
+    "adaptation of HybridAgent ideas, not paper reproduction"
+  ],
+  "data": {
+    "test.jsonl": "5f78f1aaa2f94e63d7c8c5213aff962d263085998f302187a0d44e6ae55c4f51",
+    "mode_train.jsonl": "a8afd52554f53113097e8e868c0b714bb83bde937859fe43972e50d169d9711a",
+    "fit.jsonl": "82e3ee20de03ded28eea058336db00dfbe25b1a6bb726b2de3af92835f313d1a"
+  },
+  "baseline_checkpoints": {
+    "104729": "85ece0115cd192c5f0c8a746b1e15cb492982023baa4ce3297c57d49f993471a",
+    "130363": "33c06b58d4a911afcf9d49ea5f5af0e4ad5ccecc84a58444277deeb1c8959324"
+  }
+}

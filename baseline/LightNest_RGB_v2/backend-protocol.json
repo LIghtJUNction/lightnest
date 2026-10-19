@@ -1,0 +1,19 @@
+{
+  "phase": "post-primary optional execution backend",
+  "created_utc": "2026-10-18T21:17:29.810200+00:00",
+  "reason": "learned routing and verified drafting cost too much; public tensor pilot found lower Python loop overhead at batch1",
+  "source": {
+    "rgb/scripted_core.py": "5873e2da2258595dbff3f099c1c0cdb5b430f97bf038507218a9fb44a87cb60c",
+    "experiment/backend_study.py": "e497c262dea5fe6e8c77c5b0a1fbb175f07ac8f2c17cc6b6bc7c259eed8d9593"
+  },
+  "models": {
+    "104729": "85ece0115cd192c5f0c8a746b1e15cb492982023baa4ce3297c57d49f993471a",
+    "130363": "33c06b58d4a911afcf9d49ea5f5af0e4ad5ccecc84a58444277deeb1c8959324"
+  },
+  "no_parameters_or_policies_changed": true,
+  "finite_checks_kept_each_round": true,
+  "validation": "eager versus compiled discrete full trajectories on normal,stress,regression; these are consumed implementation test cases, not new blind evaluation",
+  "tensor_check": "8 public samples from each family for each seed, bitwise scores and replacement logits",
+  "timing": "same public workloads, batch1/16,5 rotated repeats; CPU setup and warmup separate; no simultaneous other workers",
+  "technology_scope": "TorchScript current installed2.10 CPU experimental backend; deprecated upstream, not a long-term portability recommendation"
+}

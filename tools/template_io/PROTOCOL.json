@@ -1,0 +1,13 @@
+{
+  "experiment": "LightNest-template-io-v1",
+  "scope": "lossless transport/storage and frozen-model exact-request reuse; no training or score selection",
+  "dataset": "LightNest_scale_v2_10k_dataset.zip, train only, all 109272 records",
+  "dataset_sha256": "787fddaaff143052deb63b4c634c5d23550e9060a0fd8fbe3304b5e5b1857f4c",
+  "core_payload": ["record_id", "request", "input bytes", "target bytes"],
+  "excluded_from_both_core_formats": ["execution labels", "provenance and index fields"],
+  "storage_comparisons": ["raw core", "raw core+zstd -3", "input templates and exact deltas", "templates+deltas+zstd -3"],
+  "checks": ["every core record byte-for-byte round trip", "input template index from inputs only", "no cross-split template dictionary", "wrong base, corruption and missing template reject"],
+  "inference": {"checkpoint": "expanded-130363/model.pt", "selection": "preselected, not by new performance", "requests": "16 SHA256-sorted unique train requests", "workloads": ["all unique", "50% exact repeats", "90% exact repeats"], "timing_repeats": 3, "warm_weights": true, "cache_cold_per_repeat": true},
+  "real_binary": {"project": "zlib", "versions": ["1.3.1", "1.3.2"], "build": "same gcc -O2 -fPIC, shared library", "compare": ["full zstd -3", "zstd -3 --patch-from"], "timing_repeats": 5},
+  "limits": ["byte savings are not neural compute savings", "controlled repeat workloads do not measure real traffic hit rate", "reference availability and full-file materialization costs must be reported", "no automatic stable-model replacement"]
+}

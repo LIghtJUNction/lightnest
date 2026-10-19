@@ -1,0 +1,147 @@
+"""Build the result receipt from recorded measurements, without new selection."""
+import json,sys,platform,hashlib,collections
+from pathlib import Path
+from . import ROOT,BASE
+from .prepare import read,write
+MODES=('parent64','sft64','sft','rl0','rlcost')
+LABEL={'parent64':'原 C64，固定64轮','sft64':'状态桥＋监督训练，固定64轮','sft':'监督学习切换','rl0':'再做强化学习，不惩罚计算','rlcost':'再做强化学习，另加计算成本'}
+def main():
+ results={}; failures={}
+ for seed in (104729,130363):
+  results[str(seed)]={};failures[str(seed)]={}
+  for split in ('test','regression'):
+   ds={m:json.loads((ROOT/f'results/final-{seed}-{split}-{m}.json').read_text()) for m in MODES}
+   results[str(seed)][split]={m:{'summary':d['summary'],'comparison_to_parent':d.get('comparison_to_parent64',{})} for m,d in ds.items()}
+   if split=='regression':
+    parent={r['id']:r for r in ds['parent64']['records']};fixed={r['id']:r for r in ds['sft64']['records']}
+    for mode in MODES[1:]:
+     lost=[r for r in ds[mode]['records'] if parent[r['id']]['strict'] and not r['strict']]
+     first=[r for r in lost if r['actions'] and r['actions'][0]['stop']]
+     failures[str(seed)][mode]={'lost_parent':len(lost),'first_step_STOP':len(first),
+       'first_STOP_depths':dict(collections.Counter(str(r['actions'][0]['rounds']) for r in first)),
+       'lost_linked_fixed64':sum(fixed[r['id']]['strict'] and not r['strict'] for r in ds[mode]['records']),
+       'examples':lost[:2]}
+ timing=json.loads((ROOT/'results/timing.json').read_text());audit=json.loads((ROOT/'results/audit.json').read_text());checks=json.loads((ROOT/'results/final-checks.json').read_text())
+ sfts={str(s):json.loads((ROOT/f'results/sft-{s}.json').read_text()) for s in (104729,130363)}
+ summary={'id':'LightNest-Hybrid-v1','decision':'do_not_promote','stable_default':'original C64 parent64','results':results,
+    'failures':failures,'timing':timing,'audit':audit,'checks':checks,'formal_updates':{'actor_sft':384,'mode_sft':512,'mode_rl':384,'total':1280},
+    'rl_trajectories':6144,'new_test_rows':256,'new_test_groups':64,'full_regression_rows':2372,
+    'limitations':['same templates, not real software maintenance','mode-decision RL, not whole language-model RL','structured text serialization, no free natural language generation','no equal-extra-SFT policy update control','not external independent audit']}
+ write(ROOT/'results/summary.json',summary)
+ def pair(fn):return '、'.join(str(fn(str(s))) for s in (104729,130363))
+ table='| 策略 | 新编辑完整成功／128 | 两种返回都成功／64 | 正确程序误改／128 | 相对父模型丢失的公开回归成功记录 |\n|---|---:|---:|---:|---:|\n'
+ for m in MODES:
+  def su(s):return results[s]['test'][m]['summary']['all']
+  table+=f"| {LABEL[m]} | {pair(lambda s:su(s)['strict_edits'])} | {pair(lambda s:su(s)['pairs_both'])} | {pair(lambda s:su(s)['false_edits'])} | {pair(lambda s:len(results[s]['regression'][m]['comparison_to_parent'].get('lost_success_ids',[])))} |\n"
+ tm='| 公开工作负载，32条／批量1 | 104729 | 130363 |\n|---|---:|---:|\n'
+ for work,label in [('simple','简单来源题'),('balanced','八类均衡题')]:
+  tm+=f"| {label}，RL不惩罚计算相对同权重固定64轮 | {timing['104729'][work]['speed_vs_linked_fixed64']['rl0']:.3f}倍 | {timing['130363'][work]['speed_vs_linked_fixed64']['rl0']:.3f}倍 |\n"
+ report=f'''# LightNest Hybrid v1：状态桥、监督切换与切换策略强化学习
+
+日期：2026-10-19，测量日志采用 UTC。来源：用户提供的 RGB v2 归档，工作在独立目录，不覆盖稳定模型、原数据或共享协作者文件。默认 CLI 仍是原 C64。
+
+## 1. 结论
+
+已完成一个受限的“内部连续状态—离散动作”混合原型，并完成真实监督训练、切换策略强化学习、冻结新测试、完整公开回归与单独复算。**没有通过稳定模型晋升。** 不把作者论文成绩当成本项目成绩，也不把结构化字符串当作自由文本生成能力。
+
+在同一批新题上，强化学习切换相对监督切换，在两个起点各多修对7个编辑程序：20→27／128、12→19／128。它仍误改4、6个正确程序，并分别丢失596、343条父模型在公开回归上原本成功的记录。候选更快，但不是保持质量的无损加速。
+
+## 2. 参考了什么，改成了什么
+
+参考原始论文 *Hybrid Reasoning Agents*（arXiv:2610.18861v1，2026-10-13）及作者仓库 togethercomputer/HybridAgent。原文使用残差映射衔接隐藏状态和输入嵌入，通过自条件监督训练学习配合；强化学习记录混合轨迹，冻结 HybridLink，只在采样的离散位置计算策略概率。其奖励没有直接奖励某种模式的使用。本轮“计算成本惩罚”是额外对照，不是原文设置。[S1][S2]
+
+本项目不是预训练的文本 Transformer，而是图关系＋共享循环 GRU。此处的迁移范围：
+
+- **StateLink，借鉴 HybridLink：** 每个检查点把当前64维状态和绿区摘要送入128→32→64残差映射，得到下一块内部计算实际使用的状态。末层零初始化，初始状态桥不改变原64轮输出；这一点在公开样例上实测。不是映射回通用语言词表的嵌入层。
+- **混合监督训练，借鉴 HybridSFT：** 先从未改动的父模型生成参考状态；学生连续运行自己的状态桥输出，而不是把参考状态偷偷喂给学生。各检查点同时训练位置／字节／STOP，并以小权重状态误差约束偏离。随后监督学习“继续思考／输出动作”。这是图状态适配，不是论文文本与潜在词元损失的完整复现。
+- **模式强化学习，借鉴 HybridRL：** 冻结状态桥、动作头、红区和绿区，只更新模式策略。采样的动作是 THINK／EMIT，实际程序修改仍由冻结动作头贪心产生。用整段程序结果计算回报；更新只对真正采样的模式决策求概率，不给确定性的内部向量编造词元概率。
+
+文本接口只有 `PATCH <十进制字节偏移> <两位十六进制字节>` 和 `STOP`。动作由网络预测，字符串由严格编码器转换；这不构成自然语言解释器、聊天模型、文本生成器或对内部思考的忠实翻译。
+
+## 3. 运行逻辑与边界
+
+```text
+当前请求和机器码 → 绿区摘要、原始指令状态
+    → 内部累计4、8、16、32、64轮的检查点
+        THINK：保留映射后的状态，继续下一块计算
+        EMIT ：输出一个 PATCH 或 STOP
+    → 若改了机器码：重新解析、重新编码当前程序
+```
+
+第64轮必须输出，最多八次编辑并留一次 STOP 机会。最初的4轮以及输出后重新观察是固定规则；只学习检查点上的退出选择，并不是任意词元位置的双向模式自由切换。真实推断对已退出样例不再运行后续循环。
+
+机器码改变后，依赖图可能整体改变，因此不复用旧隐藏状态；跨内部 THINK 保留状态，跨编辑保留动作记录和内容来源但重新编码。没有宣称 Transformer KV 缓存或跨多轮无损隐状态存储。输入只有请求与当前机器码；目标、正确修改位置、分组和执行结果不传给预测函数。
+
+本轮包含原红区113,138参数、冻结绿区12,928参数、可训练状态桥6,368参数和复制后训练的动作头18,698参数。演员部分151,132参数；加6,402参数模式策略，共 **157,534个注册参数**。红、绿权重未改变；这并不保证新状态桥和新动作头所形成的函数保留原有能力。
+
+## 4. 实际训练及对照
+
+两个固定起点104729、130363，来自RGB v2包内的RGB v1 g4。没有按新成绩换成其他父模型。主环境为Python {platform.python_version()}、PyTorch {torch_version()}，单CPU线程／每进程，未使用GPU、外部模型服务或子agent。
+
+演员训练使用此前明确归为 TRAIN 的3,584条状态，每次192次更新、批量8，4条旧题＋4条难题，各自EDIT与STOP均衡。每个起点实际展示1,536次，接触不同记录分别 {sfts['104729']['unique_records']}、{sfts['130363']['unique_records']} 条。所有5个检查点有监督；学习率0.0003，状态对齐损失权重0.02，梯度范数上限1。训练耗用约 {sfts['104729']['cpu_seconds']:.2f}、{sfts['130363']['cpu_seconds']:.2f} CPU秒，不能把全部训练池当成已完整学过。
+
+模式监督训练使用另一份896条 TRAIN 状态、与演员训练构造组不重叠。在4个非强制检查点上形成3,584个特征／标签，各训练256步、批量32。当前贪心动作合法才监督为EMIT，否则THINK；这些是下一步监督，不是整段完成保证。
+
+每个起点另复制两份相同监督切换策略，分别进行无成本惩罚和成本权重0.1的强化学习。各96次更新，每次4个训练任务、每任务4次完整采样，共 **6,144次训练轨迹**，含重复任务，不是独立程序数。基础回报为完整成功+1、失败−1，正确程序被改再减1；成本组再减累计内部轮数／576乘以0.1。使用同组其他轨迹的平均回报作基线，另有小权重熵与参考策略约束。是模式决策的在线策略梯度，不是论文GRPO训练的复现。
+
+正式更新共 **1,280次**：384次演员监督、512次模式监督、384次模式强化学习。12次保存恢复诊断更新另计，不进入正式训练权重。
+
+RL中冻结演员，因此训练期可缓存完全相同输入的确定性检查点状态特征；记录真实特征与旧策略概率进行回放。四次训练的重算概率误差都低于0.000001。缓存预先计算全部64轮，准备成本没有冒充省下的推断计算；正式测试与计时均不使用这个结果缓存。没有把学习器不读取的完整隐状态当成策略输入，也没有对其赋予离散采样概率。
+
+## 5. 冻结后新测试与公开回归
+
+新测试256条，64个构造组；每组两种返回来源及两种已正确版本。8类各32条：简单来源、混合运算、覆盖写、临时存储、分支、循环、分支＋存储、循环＋存储。普通与压力长度各半，来自已有生成器的新种子，不是真实项目故障或新算法族。
+
+新样本与可访问扩量发布索引及RGB v1/v2数据进行了精确字节与中和结构指纹隔离。程序及目标由两套有界解释器检查。数据及训练规则在本地训练前固定，全部终点在首次模型终测前固定。各策略只评价固定终点，没有阈值调节、种子选择或测试后补训。
+
+每格依次为两个起点。完整成功要求目标字节、有限执行、明确STOP和正确程序不提出编辑同时满足。
+
+{table}
+
+完整回归的分母是2,372条相关程序状态／变体，不是2,372项独立软件能力；这些回归以前已公开。新测试也已经使用，以后只能作为回归。
+
+两个RL组并不能稳定胜过固定64轮同演员：无惩罚组第一起点多修对4题，第二起点多1题；第二起点误改也从5增加到6。相比只用监督切换，RL两起点分别多修对7题，但本轮没有同额额外监督更新对照，不能据此确立普遍算法优越性。
+
+公开回归上，不带计算惩罚的RL相对原父模型丢失596、343条旧成功，相对相同演员固定64轮也丢失562、347条成功。其中第一起点有574条第一步直接STOP；第二起点只有35条如此，其余包含错误或不完整编辑后的停止，不能全部归因于第一步早停。全列表与示例见结果文件。
+
+计算成本组没有增加新题修复数，却在两个起点各多误改1条正确程序；其累计轮数也没有两个起点都降低。不能直接奖励“思考越少越好”。
+
+## 6. 效率实测及状态桥干预
+
+使用此前公开校准中的32条简单题和32条八类均衡题，轮换策略顺序测3次，报告墙钟中位数。关闭结果缓存，解析缓存预热；同一编译后端；不含模型加载、编译、预热和最终VM评分。计时前全部训练、评价与审计进程均完成。
+
+{tm}
+
+这些是不同策略、可能不同质量输出的耗时，**不是保持答案不变的无损加速**。尤其在旧任务上，错误提前停止也会变快。没有把计算轮数、Token减少、实际耗时和货币成本混为一项；未测外部API费用。
+
+另在32条公开均衡题做同权重状态桥开／关干预：完整成功第一起点17对4，第二起点16对4，但需编辑成功分别1对2、2对2。桥确实影响输出，主要改善不修改决定，不能说它已稳定提高依赖修复。此为终测后追加的公开诊断，不用于改模型或选择。
+
+## 7. 验证与采用决定
+
+12项机制测试通过，包含零初始化与原64轮输出一致、梯度进入桥和新头而不进入冻结参数、真实早退出、无标签输入接口、异常数值拒绝、文本往返和严格格式检查。
+
+另一份不导入原评分函数的脚本，重放 **26,280条正式最终序列**，执行第二解释器 **484,840次**，字节、STOP、误改、数值与汇总计数一致；同时完成 **32,715条结构化动作文本往返核查**。又复核6,144条RL训练轨迹、17,197个实际采样决策位置，追加98,304次第二解释器调用，奖励重建相同。
+
+六份模式策略各进行两次保存恢复后相同下一步诊断，两份副本结果逐项一致；这是12次克隆诊断更新，不改变任何正式端点。192个公开动作的训练缓存与真实推断路径一致。CLI在两起点、父模型与RL研究模式各实跑一次，输入未变，输出文件权限0600；重复输出目录被拒绝。所有机器码只在有界解释器中评价，没有执行宿主机候选。
+
+这些是同一会话中的独立代码复算，不是外部认证或形式化证明。冻结模型和评分程序没有被放宽；**不晋升、不替换、不默认开启混合路径**。原C64入口仍完全绕过新桥与新策略。
+
+下一阶段要重点约束“继续思考本来能做对，却被提前输出破坏”的情况，增加长依赖上的完整轨迹训练和同等追加监督控制，并以全新保留任务验证。真正的自由文本输出还需要语言解码器及对应训练资料，不能用固定文案代替。
+
+## 8. 交付与复现
+
+包内有新源码、未改动RGB v2基线、8份新训练文件、训练数据、协议、完整动作与RL轨迹、所有失败、复核与计时。`REPRODUCE.md`说明加载与重跑。所有新成果在独立目录；原v2归档和共享文件不覆盖。来源许可保持未确认，不擅自授权公开再分发。
+
+证据：`protocol.json`、`source-freeze.json`、`final-freeze.json`、`results/construction.json`、`results/sft-*.json`、`results/mode-sft-*.json`、`results/rl-*.json`、`results/final-*.json`、`results/summary.json`、`results/audit.json`、`results/final-checks.json`、`results/timing.json`。
+
+[S1] Jiaru Zou 等，Hybrid Reasoning Agents，arXiv:2610.18861v1。https://arxiv.org/html/2610.18861v1
+[S2] 作者项目说明，togethercomputer/HybridAgent。https://github.com/togethercomputer/HybridAgent/blob/main/README.md
+'''
+ (ROOT/'REPORT.md').write_text(report)
+ (ROOT/'results/failure-summary.json').write_text(json.dumps(failures,ensure_ascii=False,indent=2))
+ (ROOT/'environment.json').write_text(json.dumps({'python':sys.version,'platform':platform.platform(),'torch':torch_version(),'cuda_used':False,'torch_threads_per_worker':1},indent=2))
+ print('REPORT_READY',len(report.encode()),flush=True)
+def torch_version():
+ import torch
+ return str(torch.__version__)
+if __name__=='__main__':main()

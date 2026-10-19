@@ -1,0 +1,116 @@
+{
+  "experiment": "LightNest-RGB-v2-sequence-risk-and-verified-drafts",
+  "created_utc": "2026-10-18T20:50:36.163976+00:00",
+  "source_archive": {
+    "name": "LightNest_RGB_v1_source_models_results.zip",
+    "sha256": "98dc2ad8f2812ad498ea6e557dfa588d4e628412ea5c2a503686cb0d3fa861c2"
+  },
+  "models": {
+    "104729": "85ece0115cd192c5f0c8a746b1e15cb492982023baa4ce3297c57d49f993471a",
+    "130363": "33c06b58d4a911afcf9d49ea5f5af0e4ad5ccecc84a58444277deeb1c8959324"
+  },
+  "actor_choice": "g4 both seeds fixed before new evaluation; no g8 cherry-picking",
+  "frozen_parts": "all RGB v1 red, green, blue, existing router",
+  "hypotheses": [
+    "H1 full-draft risk predicts whole program outcome better than single-step confidence",
+    "H2 compare risk head using green summary versus same allocated head with green/command vectors zeroed",
+    "H3 blue drafts verified in parallel by deterministic red greedily preserve red actions at lower serial latency; may fail speed test"
+  ],
+  "risk_training": {
+    "source": "baseline_data/router_fit.jsonl TRAIN only",
+    "records": 896,
+    "steps": 512,
+    "batch": 32,
+    "optimizer": "AdamW",
+    "lr": 0.001,
+    "weight_decay": 0.01,
+    "clip_norm": 1,
+    "unsafe_weight": 4,
+    "seed_rule": "same seed and input stream for full and stats-only",
+    "target": "not(exact target bytes AND explicit STOP AND (edit task OR no EDIT proposals))",
+    "save": "fixed terminal checkpoint; no selection of training steps",
+    "features": "144: 64 initial green means + 64 last green means + 16 draft statistics; stats-only masks first128 with zeros, same allocated head but fewer active inputs"
+  },
+  "calibration": {
+    "sources": [
+      "baseline_data/calibration.jsonl",
+      "baseline_data/regression.jsonl"
+    ],
+    "thresholds": [
+      0,
+      0.0001,
+      0.001,
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.1,
+      0.2,
+      0.35
+    ],
+    "constraints": "zero previously-red-successful cases lost; zero new no-op false edits; minimum 16 accepted drafts",
+    "selection": "largest accepted count then lower threshold; if none, force red. No final test used for tuning."
+  },
+  "fresh_tests": {
+    "normal": {
+      "seed": 270019001,
+      "pairs_per_family": 16,
+      "chain": [
+        3,
+        8
+      ]
+    },
+    "stress": {
+      "seed": 280019001,
+      "pairs_per_family": 8,
+      "chain": [
+        9,
+        12
+      ]
+    },
+    "families": [
+      "simple",
+      "mixed",
+      "overwrite",
+      "spill",
+      "branch",
+      "loop",
+      "branch_spill",
+      "loop_spill"
+    ],
+    "rows_per_pair": 4,
+    "test_inputs": 16,
+    "novelty": "exact bytes and neutral fingerprint checked against expanded v2 release and accessible RGB v1 splits; same generator family, not project split"
+  },
+  "verification": {
+    "draft_steps": 4,
+    "comparison": "position and replacement value, including STOP; only matched prefix committed; red correction at first mismatch; remaining work red-only",
+    "no_model_answer_used": "no oracle labels, execution outcomes, task family or target reachability used in inference",
+    "conditional_guarantee": "greedy red equivalence if per-state red output independent of batching; numerical comparison tested, not universal correctness proof"
+  },
+  "metrics": [
+    "strict repair",
+    "paired both-correct",
+    "no-op false edits",
+    "lost red successes",
+    "complete ordered action equivalence",
+    "actual blue/red model rows and calls",
+    "latency includes draft/risk/verification/fallback"
+  ],
+  "timing": {
+    "repeats": 5,
+    "batch_sizes": [
+      1,
+      16
+    ],
+    "workloads": [
+      "public simple 32",
+      "public balanced 32"
+    ],
+    "warm_parser": true,
+    "exact_result_cache": false
+  },
+  "default": "red_only unchanged; no deployment or stable-parent promotion",
+  "metrics_note": "Primary false edits counts committed returned EDIT proposals as v1 did; raw speculative EDIT proposals, including rejected drafts, are separately reported on no-op inputs. Scratch bytes never modify input files.",
+  "runtime_batch_note": "verified red batch maximum32; single speculative block max4 actions then red-only continuation under shared 9-action budget"
+}
