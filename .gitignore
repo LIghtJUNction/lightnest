@@ -36,3 +36,9 @@
 .ruff_cache/
 .env
 .env.*
+# Lean build products stay outside Git.
+**/.lake/
+*.olean
+*.ilean
+*.ir
+*.olean.server

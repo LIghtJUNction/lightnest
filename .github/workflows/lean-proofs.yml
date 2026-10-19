@@ -1,0 +1,31 @@
+name: Lean proofs
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: lean-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  proofs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: leanprover/lean-action@24581d74d674803a25a81b10b059c5c0cdd344c6 # v1
+        with:
+          lake-package-directory: formal
+          auto-config: 'false'
+          build: 'true'
+          test: 'false'
+          lint: 'false'
+          use-mathlib-cache: 'false'
+          use-github-cache: 'false'
+      - name: Audit transitive theorem axioms
+        working-directory: formal
+        run: lake env lean -DwarningAsError=true Audit.lean
+      - name: Recheck compiled proofs with the kernel
+        working-directory: formal
+        run: lake env leanchecker LightNest
