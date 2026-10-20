@@ -1,0 +1,53 @@
+{
+  "id": "LightNest-mechanism-v1-20261020",
+  "frozen_utc": "2026-10-20T00:07:17.084968+00:00",
+  "baseline_commit": "7a387672105ef68b3117371e19e56819fbe7d6db",
+  "selected_mode": "bridge",
+  "selection_reason": "On exposed 336-task development set: 220/243 repaired, 5 false accepts, vs random-pair 203/243,5. Eight retained candidates; no width sweep.",
+  "budget": 4096,
+  "width": 8,
+  "modes": [
+    "single",
+    "random_pair",
+    "random_memory",
+    "bridge_only",
+    "bridge"
+  ],
+  "new_parameters": [
+    6,
+    7,
+    8
+  ],
+  "new_tasks_per_build": {
+    "clean": 1,
+    "single": 12,
+    "double": 4
+  },
+  "visible_examples_per_task": 64,
+  "hidden_examples_per_build": 256,
+  "additional_audit_examples": 128,
+  "final_selection": "No retuning or replacement after new evaluation; all modes reported.",
+  "timing_repeats": 5,
+  "promotion": "Research tool only; no automatic repair or neural model promotion.",
+  "neural_updates": 0,
+  "new_architecture": false,
+  "limitations": [
+    "Same 16 authored C families, not a new family holdout",
+    "Artificial compiler-level faults, not production bug fixes",
+    "Equal candidate caps, not equal actual CPU or two-edit capability for single baseline",
+    "Finite behavior checks, not semantic proof"
+  ],
+  "source_sha256": {
+    "experiments/compiled_v3/__init__.py": "8640076e50575d18261c0c6a84176d48013647b602ba23cd88c41d0bf3d30fb6",
+    "experiments/compiled_v3/corpus.py": "262e1c6dd886da7982597fc07ffa72a2cba22e49d90dbd78f89925f72042cf9c",
+    "experiments/compiled_v3/inputs.py": "50d14b4da1b17bbc09a8d22d3be62aebc77c97295a62a07ba989971976b86ff5",
+    "experiments/compiled_v3/run.py": "48427b80094c0da144fab866a1e3b0511316267eaa7dbbee109a1f91fd6c4ee0",
+    "experiments/compiled_v3/rv32.c": "78a4e3aa59ffc9a225b926bc6be8006f8b67adc162129db136d44d9c162b36b0",
+    "experiments/compiled_v3/search.py": "81c3e40bd5524862aa068918d966c4238efc5d34c1ea4e29540549097cc7e8e7",
+    "experiments/compiled_v3/vm.py": "3b4acb233098cdd7fa775eacbbf3e892c1b8e908ee256899bc737fb2ca2dc29c",
+    "experiments/repair_memory_v1/__init__.py": "c7138d4dfc1e4d51abc7691e2e342e6ad727f6194df27cb77c952c1060ce5628",
+    "experiments/repair_memory_v1/repair.py": "2ea374d6870fd08c8b4af5ad65ca20a43a897e6e4b7c9c024c1e6c156970bbfe",
+    "experiments/repair_memory_v1/run.py": "2e373ee3e38a72bddfb150c47712c1446339a20c85e4770f18e631421f5b75d5"
+  },
+  "development_results_sha256": "541ca2d19d16b0f4aa100cea5e6e587e4297e8a70f34e4b207aeb57da7f24261"
+}
