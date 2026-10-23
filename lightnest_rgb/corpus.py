@@ -193,7 +193,7 @@ def prepare(out, *, per_program=128):
         if not path.exists(): path.write_bytes(raw); path.chmod(0o400)
         generation[split].append({"id": f"generation/{index}", "spec": spec, "sha256": digest(raw), "size": len(raw)})
     for split, items in generation.items(): jsonl(out / "generation" / f"{split}.jsonl", items)
-    protocol = {"id": "rgb-real-elf-v1", "program_count": len(manifest), "per_program": per_program,
+    protocol = {"id": "rgb-real-elf-v2", "program_count": len(manifest), "per_program": per_program,
                 "split_programs": {split: [p["name"] for p in manifest if p["split"] == split] for split in task_splits},
                 "task_counts": {split: len(items) for split, items in task_splits.items()},
                 "fault_histogram": dict(Counter(str(t["fault_count"]) for ts in task_splits.values() for t in ts)),
