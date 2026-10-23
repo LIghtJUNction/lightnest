@@ -39,4 +39,10 @@ class SemanticLoop:
   tests=await self.registry.call(ToolCall('run_tests',{'root':str(root)},'tests'))
   return {'root':str(root),'observed_files':len(files),'tool_calls':len(results),'python_facts':[r.output for r in results if r.name=='python_structure' and r.error is None],'elf_facts':[r.output for r in results if r.name=='artifact_info' and r.error is None],'module_graph':graph.output,'tests':tests.output,'neural_routing':neural,'routing_conflicts':[r for r in neural if r['detected']!=r['neural_kind']],'errors':[r.error for r in results if r.error]}
 
+ async def ask(self, root, path, question):
+  """Answer a generic source question from fresh tool observations."""
+  target=Path(root)/path; fact=await self.registry.call(ToolCall('python_structure',{'path':str(target)},'answer'))
+  if fact.error: return {'question':question,'answer':None,'error':fact.error}
+  return {'question':question,'answer':fact.output,'evidence':'python_structure','path':path}
+
 def inspect_sync(root): return asyncio.run(SemanticLoop().inspect(root))

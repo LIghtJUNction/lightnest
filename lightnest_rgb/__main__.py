@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 from pathlib import Path
 import sys
@@ -24,7 +25,8 @@ def main():
     p = commands.add_parser("benchmark"); p.add_argument("image", type=Path); p.add_argument("--checkpoint", required=True)
     p = commands.add_parser("act"); p.add_argument("--request", type=Path, required=True); p.add_argument("--workdir", required=True)
     p.add_argument("--generator"); p.add_argument("--policy"); p.add_argument("--image", type=Path); p.add_argument("--output", type=Path, required=True)
-    p = commands.add_parser("self-check"); p.add_argument("--root", type=Path, required=True); p.add_argument("--structure-checkpoint")
+    p = commands.add_parser("self-check"); p.add_argument("--root", type=Path, required=True); p.add_argument("--structure-checkpoint"); p.add_argument("--any2any-checkpoint")
+    p = commands.add_parser("ask"); p.add_argument("--root", type=Path, required=True); p.add_argument("--path", required=True); p.add_argument("--question", required=True)
     p = commands.add_parser("prepare"); p.add_argument("--out", required=True); p.add_argument("--per-program", type=int, default=128)
     for action in ("train-policy", "train-generator"):
         p = commands.add_parser(action); p.add_argument("--out", required=True); p.add_argument("--seed", type=int, default=104729)
@@ -81,7 +83,10 @@ def main():
         else: raise ValueError("unknown act mode")
     elif args.action == "self-check":
         from .unified import RGBArtifactAgent
-        result = RGBArtifactAgent(workdir="/tmp/lightnest-self-check").inspect_project(args.root, args.structure_checkpoint)
+        result = RGBArtifactAgent(workdir="/tmp/lightnest-self-check").inspect_project(args.root, args.structure_checkpoint, args.any2any_checkpoint)
+    elif args.action == "ask":
+        from .semantic_loop import SemanticLoop
+        result = asyncio.run(SemanticLoop().ask(args.root, args.path, args.question))
     elif args.action == "prepare":
         from .corpus import prepare
         prepare(args.out, per_program=args.per_program); return
