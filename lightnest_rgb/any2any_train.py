@@ -37,6 +37,15 @@ def code_summary(raw: bytes) -> list[float]:
         return [min(len(raw)/65536,1.), min(raw.count(b'\n')/2048,1.), min(sum(isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef)) for n in nodes)/64,1.), min(sum(isinstance(n,ast.ClassDef) for n in nodes)/32,1.), min(sum(isinstance(n,ast.Import) or isinstance(n,ast.ImportFrom) for n in nodes)/64,1.)]
     except (SyntaxError,UnicodeDecodeError): return [0.,0.,0.,0.,0.]
 
+def repeated_pair(raw: bytes):
+    for length in (16,8,4):
+        seen={}
+        for start in range(0,max(0,len(raw)-length),4):
+            key=raw[start:start+length]
+            if key in seen and seen[key]+length <= start: return seen[key],start
+            seen[key]=start
+    return None
+
 
 def train_any2any(out, *, steps=256, seed=104734, width=64):
     out=Path(out).resolve(); out.mkdir(parents=True, exist_ok=False)
@@ -70,6 +79,10 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
             kind_target=torch.tensor([kind_index(kind)],device=output.device)
             summary_target=torch.tensor([code_summary(raw)],device=output.device)
             loss=F.cross_entropy(output.reshape(-1,257),target.reshape(-1)) + .25 * F.cross_entropy(heads['kind_logits'],kind_target) + .5 * F.mse_loss(heads['summary'],summary_target)
+            pair=repeated_pair(window)
+            if pair:
+                source_scores=heads['copy_paste']['source_start']; target_scores=heads['copy_paste']['target_start']
+                loss=loss + .125 * (F.cross_entropy(source_scores,torch.tensor([pair[0]],device=output.device)) + F.cross_entropy(target_scores,torch.tensor([pair[1]],device=output.device)))
             if name.endswith('.py') and len(raw) <= 65536:
                 full_encoded=model.encode_chunks(raw,request,max_chunks=4)
                 _,full_guidance=model.think(full_encoded,depth=8)
