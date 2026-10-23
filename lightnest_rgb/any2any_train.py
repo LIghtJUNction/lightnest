@@ -70,6 +70,11 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
             kind_target=torch.tensor([kind_index(kind)],device=output.device)
             summary_target=torch.tensor([code_summary(raw)],device=output.device)
             loss=F.cross_entropy(output.reshape(-1,257),target.reshape(-1)) + .25 * F.cross_entropy(heads['kind_logits'],kind_target) + .5 * F.mse_loss(heads['summary'],summary_target)
+            if name.endswith('.py') and len(raw) <= 65536:
+                full_encoded=model.encode_chunks(raw,request,max_chunks=4)
+                _,full_guidance=model.think(full_encoded,depth=8)
+                full_summary=model.heads(full_encoded,full_guidance[:,None])['summary']
+                loss = loss + F.mse_loss(full_summary, summary_target)
             optimizer.zero_grad(); loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(),1.); optimizer.step(); losses.append(float(loss.detach()))
             if (step+1)%32==0:
                 event={'step':step+1,'loss':sum(losses)/len(losses),'samples':len(samples),'wall_seconds':time.perf_counter()-started}
