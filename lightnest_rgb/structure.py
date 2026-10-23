@@ -6,6 +6,7 @@ from pathlib import Path
 import torch
 from torch import nn
 from torch.nn import functional as F
+from torch.utils.checkpoint import checkpoint
 
 def facts(raw):
  try: tree=ast.parse(raw.decode()); nodes=list(ast.walk(tree))
@@ -48,7 +49,9 @@ class TokenStructureNet(nn.Module):
  def forward(self,raw):
   ids=lex_tokens(raw); states=[]
   for start in range(0,len(ids),256):
-   x=torch.tensor(ids[start:start+256],dtype=torch.long)[None];_,h=self.gru(self.token(x));states.append(h[-1])
+   x=torch.tensor(ids[start:start+256],dtype=torch.long)[None]
+   def run(tokens): return self.gru(self.token(tokens))[1]
+   h=checkpoint(run,x,use_reentrant=False);states.append(h[-1])
   return self.head(torch.stack(states).mean(0))
 
 def train(out,steps=1024,seed=104748,resume=None):
