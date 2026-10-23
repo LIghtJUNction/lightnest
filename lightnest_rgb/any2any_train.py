@@ -50,7 +50,7 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
     # Add real-content containers so one run spans structured, compressed and
     # archive formats without copying a fixed template into the model.
     if samples:
-        base = samples[:32]
+        base = samples[:256]
         for index, (_, raw, _) in enumerate(base):
             samples.append((f"sample-{index}.json", json.dumps({"index": index, "sha256": __import__('hashlib').sha256(raw).hexdigest(), "bytes": list(raw[:64])}).encode(), "json"))
             samples.append((f"sample-{index}.gz", gzip.compress(raw[:8192]), "compressed"))
