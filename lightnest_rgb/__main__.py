@@ -38,6 +38,7 @@ def main():
         else: p.add_argument("--steps", type=int, default=512)
     p = commands.add_parser("train-feedback"); p.add_argument("--out", required=True); p.add_argument("--parent", required=True)
     p.add_argument("--seed", type=int, default=104732); p.add_argument("--steps", type=int, default=128)
+    p = commands.add_parser("train-any2any"); p.add_argument("--out", required=True); p.add_argument("--seed", type=int, default=104734); p.add_argument("--steps", type=int, default=256)
     for action in ("generate", "repair"):
         p = commands.add_parser(action); p.add_argument("--checkpoint", required=True); p.add_argument("--request", type=Path, required=True)
         p.add_argument("--output", type=Path, required=True); p.add_argument("--workdir", required=True)
@@ -95,6 +96,9 @@ def main():
     elif args.action == "train-feedback":
         from .rl import train_feedback
         train_feedback(args.out, args.parent, args.seed, steps=args.steps); return
+    elif args.action == "train-any2any":
+        from .any2any_train import train_any2any
+        train_any2any(args.out, seed=args.seed, steps=args.steps); return
     elif args.action == "freeze":
         from .evaluation import freeze
         result = {"folder": str(freeze(args.out, args.name, args.policy, args.generator, per_program=args.per_program, generation_count=args.generation_count))}

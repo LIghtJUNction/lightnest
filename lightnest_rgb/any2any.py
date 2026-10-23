@@ -1,0 +1,66 @@
+"""Any2Any artifact model primitives shared by generation and editing.
+
+The artifact is a typed byte stream. Format-specific validators stay at the
+boundary; the neural core receives bytes, kind, metadata and observable
+feedback rather than an ELF-specific assumption.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+import hashlib
+
+import torch
+from torch import nn
+
+
+KINDS = ("raw", "text", "json", "csv", "elf", "pe", "macho", "archive", "compressed", "image", "audio", "pdf", "sqlite", "bytecode")
+
+
+@dataclass(frozen=True)
+class ArtifactRequest:
+    kind: str
+    operation: str
+    specification: str = ""
+
+    def __post_init__(self):
+        if self.kind not in KINDS or not self.operation or len(self.operation.encode()) > 512:
+            raise ValueError("invalid Any2Any artifact request")
+
+
+class ArtifactCore(nn.Module):
+    """Format-agnostic shared encoder with green observation and red/blue heads."""
+    def __init__(self, width=128, heads=4, max_bytes=65536):
+        super().__init__()
+        if width % heads or width < 32 or max_bytes < 256: raise ValueError("invalid Any2Any geometry")
+        self.width, self.max_bytes = width, max_bytes
+        self.byte = nn.Embedding(257, width)
+        self.kind = nn.Embedding(len(KINDS), width)
+        self.position = nn.Embedding(max_bytes, width)
+        self.encoder = nn.TransformerEncoder(nn.TransformerEncoderLayer(width, heads, 4 * width, batch_first=True, norm_first=True), 4)
+        self.red = nn.GRUCell(width, width)
+        self.abstract = nn.Sequential(nn.Linear(width, 4 * width), nn.GELU(), nn.LayerNorm(4 * width))
+        self.to_blue = nn.Linear(4 * width, width)
+        self.blue_byte = nn.Linear(width, 257)
+        self.red_byte = nn.Linear(width, 257)
+        self.stop = nn.Linear(width, 1)
+
+    def encode(self, raw: bytes, request: ArtifactRequest):
+        if not 1 <= len(raw) <= self.max_bytes: raise ValueError("artifact exceeds Any2Any capacity")
+        kind = torch.tensor([KINDS.index(request.kind)], device=self.byte.weight.device)
+        values = torch.tensor(list(raw), device=self.byte.weight.device)[None]
+        pos = torch.arange(len(raw), device=values.device)[None]
+        return self.encoder(self.byte(values) + self.position(pos) + self.kind(kind)[:, None]), kind
+
+    def think(self, encoded, depth=8):
+        pooled = encoded.mean(1); hidden = pooled
+        for _ in range(depth): hidden = self.red(pooled, hidden)
+        abstract = self.abstract(hidden)
+        return abstract, self.to_blue(abstract)
+
+    def heads(self, encoded, blue_guidance):
+        blue = self.blue_byte(encoded + blue_guidance[:, None])
+        red = self.red_byte(encoded)
+        return {"blue_logits": blue, "red_logits": red, "stop_logits": self.stop(encoded).squeeze(-1)}
+
+    def fingerprint(self, request: ArtifactRequest):
+        return hashlib.sha256(f"{request.kind}\0{request.operation}\0{request.specification}".encode()).hexdigest()
