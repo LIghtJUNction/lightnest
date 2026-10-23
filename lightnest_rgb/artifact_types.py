@@ -19,6 +19,10 @@ class ArtifactInfo:
 
 def detect_kind(raw: bytes, filename: str = "") -> str:
     lower = filename.lower()
+    if lower.endswith(('.py', '.rs', '.c', '.h', '.cpp', '.md', '.toml', '.yaml', '.yml', '.txt', '.rst', '.sh')):
+        return "text"
+    if lower.endswith(('.bin', '.dat', '.pyc', '.class', '.wasm', '.woff', '.ttf')):
+        return "raw"
     if raw.startswith(b"\x7fELF"): return "elf"
     if raw.startswith(b"MZ"): return "pe"
     if raw.startswith(b"\xcf\xfa\xed\xfe") or raw.startswith(b"\xfe\xed\xfa\xcf"): return "macho"

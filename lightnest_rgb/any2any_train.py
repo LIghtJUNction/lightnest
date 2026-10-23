@@ -13,18 +13,19 @@ import time
 import torch
 from torch.nn import functional as F
 
-from .any2any import ArtifactCore, ArtifactRequest, KINDS
+from .any2any import ArtifactCore, ArtifactRequest, KINDS, kind_index
 from .artifact_types import detect_kind
 
 
 def collect_files():
     paths=[]
-    for root in (Path('/usr/bin'), Path('/usr/lib'), Path('/etc')):
+    for root in (Path('/usr/bin'), Path('/usr/lib'), Path('/etc'), Path('/usr/share')):
         if root.exists():
+            found=0
             for path in root.rglob('*'):
                 if path.is_file() and path.stat().st_size <= 65536:
-                    paths.append(path)
-                if len(paths)>=512: return paths
+                    paths.append(path); found += 1
+                if found >= 256: break
     return paths
 
 
@@ -55,9 +56,10 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
             name,raw,kind=rng.choice(samples); length=min(len(raw),256); start=0 if len(raw)<=length else rng.randrange(len(raw)-length)
             window=raw[start:start+length]; request=ArtifactRequest(kind,'understand and transform',name)
             encoded,_=model.encode(window,request); abstract,guidance=model.think(encoded,depth=4)
-            output=model.heads(encoded,guidance[:,None])['red_logits']
+            heads=model.heads(encoded,guidance[:,None]); output=heads['red_logits']
             target=torch.tensor(list(window),device=output.device)[None]
-            loss=F.cross_entropy(output.reshape(-1,257),target.reshape(-1))
+            kind_target=torch.tensor([kind_index(kind)],device=output.device)
+            loss=F.cross_entropy(output.reshape(-1,257),target.reshape(-1)) + .25 * F.cross_entropy(heads['kind_logits'],kind_target)
             optimizer.zero_grad(); loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(),1.); optimizer.step(); losses.append(float(loss.detach()))
             if (step+1)%32==0:
                 event={'step':step+1,'loss':sum(losses)/len(losses),'samples':len(samples),'wall_seconds':time.perf_counter()-started}
