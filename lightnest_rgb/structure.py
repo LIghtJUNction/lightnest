@@ -62,10 +62,14 @@ def train(out,steps=1024,seed=104748,resume=None):
     torch.save({'state_dict':model.state_dict(),'step':step+1},out/f'step-{step+1}.pt')
  torch.save({'state_dict':model.state_dict(),'seed':seed,'steps':start+steps},out/f'structure-{seed}.pt')
 
-def train_tokens(out,steps=1024,seed=104750):
- out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed)+external_sources();model=TokenStructureNet();opt=torch.optim.AdamW(model.parameters(),lr=1e-3);rng=random.Random(seed);losses=[]
+def train_tokens(out,steps=1024,seed=104750,resume=None):
+ out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed)+external_sources();model=TokenStructureNet();opt=torch.optim.AdamW(model.parameters(),lr=1e-3);start=0
+ if resume:
+  state=torch.load(resume,map_location='cpu',weights_only=True);model.load_state_dict(state['state_dict']);start=state.get('step',0)
+ rng=random.Random(seed);losses=[]
  with (out/'updates.jsonl').open('x') as log:
-  for step in range(steps):
+  for step in range(start,start+steps):
    raw=rng.choice(samples);target=torch.tensor([facts(raw)]);loss=F.mse_loss(model(raw),target);opt.zero_grad();loss.backward();opt.step();losses.append(float(loss.detach()))
-   if (step+1)%64==0:log.write(json.dumps({'step':step+1,'loss':sum(losses)/len(losses)})+'\n');log.flush();losses=[]
- torch.save({'state_dict':model.state_dict(),'seed':seed,'steps':steps},out/f'tokens-{seed}.pt')
+   if (step+1)%64==0:
+    log.write(json.dumps({'step':step+1,'loss':sum(losses)/len(losses)})+'\n');log.flush();losses=[];torch.save({'state_dict':model.state_dict(),'step':step+1},out/f'step-{step+1}.pt')
+ torch.save({'state_dict':model.state_dict(),'seed':seed,'steps':start+steps},out/f'tokens-{seed}.pt')
