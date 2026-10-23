@@ -32,7 +32,7 @@ class CodeExplainer(nn.Module):
     def __init__(self,width=32,max_bytes=65536):
         super().__init__(); self.width=width; self.max_bytes=max_bytes
         self.byte=nn.Embedding(257,width); self.pos=nn.Embedding(256,width)
-        self.encoder=nn.TransformerEncoder(nn.TransformerEncoderLayer(width,4,4*width,batch_first=True,norm_first=True),1)
+        self.encoder=nn.GRU(width,width,1,batch_first=True)
         self.decoder=nn.GRU(width,width,2,batch_first=True); self.out=nn.Linear(width,129)
     def encode(self,raw):
         chunks=[]
@@ -41,7 +41,7 @@ class CodeExplainer(nn.Module):
         for start in starts:
             x=torch.tensor(list(raw[start:start+256]),device=self.byte.weight.device)[None]
             p=torch.arange(x.shape[1],device=x.device)[None]
-            chunks.append(self.encoder(self.byte(x)+self.pos(p)).mean(1))
+            encoded,_=self.encoder(self.byte(x)+self.pos(p)); chunks.append(encoded.mean(1))
         return torch.stack(chunks,1).mean(1)
     def forward(self,raw,target):
         context=self.encode(raw)[:,None]; tokens=self.byte(target.clamp_max(256))
