@@ -60,6 +60,8 @@ class TokenStructureNet(nn.Module):
   return self.head(torch.stack(states).mean(0))
 
 class ASTStructureNet(TokenStructureNet):
+ def __init__(self,width=32):
+  super().__init__(width);self.gru=nn.GRU(width,width,1,batch_first=True);self.head=nn.Sequential(nn.Linear(width,width),nn.GELU(),nn.Linear(width,6))
  def forward(self,raw):
   ids=ast_tokens(raw); states=[]
   for start in range(0,len(ids),256):
@@ -68,6 +70,14 @@ class ASTStructureNet(TokenStructureNet):
 
 def train_ast(out,steps=512,seed=104755):
  out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed)+external_sources();model=ASTStructureNet();opt=torch.optim.AdamW(model.parameters(),lr=1e-3);rng=random.Random(seed);losses=[]
+ with (out/'updates.jsonl').open('x') as log:
+  for step in range(steps):
+   raw=rng.choice(samples);target=torch.tensor([facts(raw)]);loss=F.mse_loss(model(raw),target);opt.zero_grad();loss.backward();opt.step();losses.append(float(loss.detach()))
+   if (step+1)%64==0:log.write(json.dumps({'step':step+1,'loss':sum(losses)/len(losses)})+'\n');log.flush();losses=[]
+ torch.save({'state_dict':model.state_dict(),'seed':seed,'steps':steps},out/f'ast-{seed}.pt')
+
+def train_ast_synthetic(out,steps=1024,seed=104758):
+ out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed,512);model=ASTStructureNet();opt=torch.optim.AdamW(model.parameters(),lr=1e-3);rng=random.Random(seed);losses=[]
  with (out/'updates.jsonl').open('x') as log:
   for step in range(steps):
    raw=rng.choice(samples);target=torch.tensor([facts(raw)]);loss=F.mse_loss(model(raw),target);opt.zero_grad();loss.backward();opt.step();losses.append(float(loss.detach()))
