@@ -100,7 +100,7 @@ def inspect_elf(raw: bytes) -> dict:
                 "little_endian": elf.little_endian, "interpreter": interpreter,
                 "sections": sections, "segments": segments, "needed": needed,
                 "imports": sorted(imports), "exports": sorted(exports)}
-    except (ELFError, IndexError, KeyError, TypeError) as error:
+    except (ELFError, IndexError, KeyError, TypeError, OverflowError, EOFError, OSError) as error:
         raise ValueError(f"invalid ELF structure: {error}") from error
 
 

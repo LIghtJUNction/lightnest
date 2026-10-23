@@ -22,9 +22,12 @@ PROGRAMS = {
     "gzip": ("-n", "-c"), "bzip2": ("-c",), "xz": ("-c", "-T1"),
     "grep": ("-F", "foo"), "zstd": ("-q", "--single-thread", "--no-asyncio", "-c"),
     "sed": ("s/foo/bar/g",), "jq": ("-c", ".items | map(.value) | add"),
+    "basename": ("--", "/usr/bin/lightnest"), "dirname": ("--", "/usr/bin/lightnest"),
+    "rev": (), "fold": ("-w", "4"), "od": ("-An", "-tx1"),
+    "strings": ("-n", "4"), "realpath": ("-m", "/tmp/lightnest"),
 }
-VALIDATION = {"grep", "zstd"}
-TEST = {"sed", "jq"}
+VALIDATION = {"grep", "zstd", "dirname", "realpath"}
+TEST = {"sed", "jq", "basename", "od"}
 
 
 def external(path):

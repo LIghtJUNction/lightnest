@@ -17,6 +17,10 @@ class ArtifactTests(unittest.TestCase):
         self.assertTrue(info["entry_in_executable_segment"])
         self.assertTrue(any(s["name"] == ".text" for s in info["sections"]))
 
+    def test_corrupted_elf_header_is_a_value_error_not_parser_crash(self):
+        raw = bytearray(self.raw); raw[32:40] = b"\xff" * 8
+        with self.assertRaises(ValueError): inspect_elf(bytes(raw))
+
     def test_transaction_preserves_source_and_checks_identity(self):
         with tempfile.TemporaryDirectory() as temp:
             source, destination = Path(temp) / "source", Path(temp) / "edited"
