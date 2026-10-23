@@ -29,15 +29,15 @@ def summary_text(raw: bytes, name: str) -> str:
 def encode_text(text): return torch.tensor([BOS,*[CHAR.get(c,CHAR[' ']) for c in text[:240]],EOS],dtype=torch.long)
 
 class CodeExplainer(nn.Module):
-    def __init__(self,width=64,max_bytes=65536):
+    def __init__(self,width=32,max_bytes=65536):
         super().__init__(); self.width=width; self.max_bytes=max_bytes
         self.byte=nn.Embedding(257,width); self.pos=nn.Embedding(256,width)
-        self.encoder=nn.TransformerEncoder(nn.TransformerEncoderLayer(width,4,4*width,batch_first=True,norm_first=True),2)
+        self.encoder=nn.TransformerEncoder(nn.TransformerEncoderLayer(width,4,4*width,batch_first=True,norm_first=True),1)
         self.decoder=nn.GRU(width,width,2,batch_first=True); self.out=nn.Linear(width,129)
     def encode(self,raw):
         chunks=[]
         starts=list(range(0,len(raw),256)) or [0]
-        if len(starts)>4: starts=[starts[int(i*(len(starts)-1)/3)] for i in range(4)]
+        if len(starts)>2: starts=[starts[0],starts[-1]]
         for start in starts:
             x=torch.tensor(list(raw[start:start+256]),device=self.byte.weight.device)[None]
             p=torch.arange(x.shape[1],device=x.device)[None]
@@ -76,7 +76,7 @@ def train_explainer(out,steps=512,seed=104742):
             if raw: samples.append((path.name,raw,summary_text(raw,path.name)))
         except OSError: pass
     if len(samples)<8: raise RuntimeError('not enough external Python sources')
-    model=CodeExplainer();opt=torch.optim.AdamW(model.parameters(),lr=3e-4);rng=random.Random(seed);started=time.perf_counter();losses=[]
+    model=CodeExplainer(width=32);opt=torch.optim.AdamW(model.parameters(),lr=3e-4);rng=random.Random(seed);started=time.perf_counter();losses=[]
     with (out/'updates.jsonl').open('x') as log:
         for step in range(steps):
             name,raw,text=rng.choice(samples); target=encode_text(text)[None]
