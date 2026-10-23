@@ -64,3 +64,13 @@ the same tasks; include expert construction, gathering and invalidation in
 timing. Adaptive versus fixed-depth red must retain old successes and expose
 wrong STOP. Complete-image generation additionally requires ELF validation and
 successful OS execution of a request not used for fitting.
+
+## Invalid entry preflight
+
+Fault injection initially sent malformed entry addresses to the OS, causing
+expected sandbox-child SIGSEGV reports in the host journal. The 2026-10-24
+`cut` case with entry `0x40002cd0` is now rejected before child creation. The
+runner validates x86-64 executable type and a file-backed executable entry,
+records `invalid_artifact` separately, and does not count rejections as native
+executions. This does not prove arbitrary instructions safe or prevent all
+runtime faults. Existing negative-example execution records remain unchanged.

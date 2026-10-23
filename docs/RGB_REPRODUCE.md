@@ -57,3 +57,20 @@ uv run --locked python -m lightnest_rgb repair /path/to/damaged.elf \
 历史架构在 `archive/`，旧结果与训练哈希保留当时路径；归档后的原生入口为
 `python -m archive.universal_native`。路径迁移使旧训练协议的源码哈希失配，旧冻结
 评估不能冒充未经改动重跑；需要在对应历史提交检出后复现，或者建立新协议。
+
+## 公开验证后的定向训练
+
+初次训练若暴露错误停止或请求相关字节权重不足，可明确运行以下后续课程。它们是
+同一模型的继续训练，不是第二个独立随机种子，不可用作多种子稳定性的证据。
+
+```bash
+uv run --locked python -m lightnest_rgb refine-policy --out "$OUT" \
+  --parent "$OUT/weights/rgb-104729.pt" --seed 104730
+uv run --locked python -m lightnest_rgb refine-generator --out "$OUT" \
+  --parent "$OUT/training/generator-104729/step-512.pt" --seed 104730
+```
+
+编辑课程加强真实训练文件头的下一步修改排序，再训练完整文件。它对文件头有明确偏重，
+不能解释为代码区和只读数据区能力都得到提升。生成课程从训练标签内部找出随请求变化
+的字节位置，提高这些位置的损失；位置只用于训练，推理仍由模型输出每个字节。
+原始运行、父检查点哈希、后续更新和失败验证均保留。最终冻结时明确指定使用的权重。

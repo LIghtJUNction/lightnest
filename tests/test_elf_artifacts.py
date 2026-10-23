@@ -1,6 +1,7 @@
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from lightnest_rgb.artifact import BytePatch, apply_patches, digest, edit_file, inspect_elf, write_image
 from lightnest_rgb.execute import Case, ExecutableRunner, same_result
@@ -61,6 +62,20 @@ class FullExecutableTests(unittest.TestCase):
         self.assertEqual(bytes.fromhex(first["stdout"]), b"a\na\nz\n")
         self.assertTrue(repeated["cached"]); self.assertTrue(same_result(first, repeated))
         self.assertEqual(self.runner.native_calls, 1)
+
+    def test_unmapped_entry_is_rejected_without_starting_a_child(self):
+        raw = bytearray(Path("/usr/bin/cut").read_bytes())
+        info = inspect_elf(bytes(raw))
+        # Reproduce an entry-address bit flip seen in real training failures.
+        bad_entry = info["entry"] | (1 << 30)
+        raw[24:32] = bad_entry.to_bytes(8, "little")
+        with patch("lightnest_rgb.execute.subprocess.run", side_effect=AssertionError("must not execute invalid entry")):
+            result = self.runner.run(bytes(raw), Case(("-d,", "-f2"), b"a,b\n"))
+        self.assertEqual(result["status"], "invalid_artifact")
+        self.assertIn("entry", result["rejection"])
+        self.assertEqual(self.runner.native_calls, 0)
+        self.assertEqual(self.runner.preflight_rejections, 1)
+        self.assertEqual(list(Path(self.temp.name).glob("*.elf")), [])
 
     def test_real_gzip_and_modified_image_cache_identity(self):
         raw = Path("/usr/bin/gzip").read_bytes(); case = Case(("-n", "-c"), b"repeat\n" * 4)

@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 import time
 
-from .artifact import MAX_IMAGE, digest
+from .artifact import MAX_IMAGE, digest, inspect_elf
 
 
 @dataclass(frozen=True)
@@ -76,9 +76,10 @@ class ExecutableRunner:
         if not 0 < timeout <= 30:
             raise ValueError("invalid executable timeout")
         self.timeout, self.cache_enabled = timeout, cache
-        self.cache = {}; self.native_calls = 0; self.cache_hits = 0
+        self.cache = {}; self.native_calls = 0; self.cache_hits = 0; self.preflight_rejections = 0
         self.version = subprocess.check_output(["bwrap", "--version"]).decode().strip()
-        self.policy = digest(Path(__file__).read_bytes())
+        self.policy = digest(Path(__file__).read_bytes() + Path(__file__).with_name("artifact.py").read_bytes()
+                             + str((self.timeout, self.version)).encode())
 
     def run(self, raw: bytes, case: Case) -> dict:
         if not 1 <= len(raw) <= MAX_IMAGE:
@@ -88,6 +89,24 @@ class ExecutableRunner:
         if self.cache_enabled and key in self.cache:
             self.cache_hits += 1
             return dict(self.cache[key], cached=True)
+        started = time.perf_counter()
+        try:
+            info = inspect_elf(raw)
+            if info["machine"] != "EM_X86_64" or info["type"] not in ("ET_EXEC", "ET_DYN"):
+                raise ValueError("native runner requires Linux x86-64 executable ELF")
+            if not info["entry_in_executable_segment"]:
+                raise ValueError("entry point lies outside executable mappings")
+            if not any(s["type"] == "PT_LOAD" and s["flags"] & 1 and
+                       s["address"] <= info["entry"] < s["address"] + s["file_size"] for s in info["segments"]):
+                raise ValueError("entry point has no file-backed executable code")
+        except ValueError as error:
+            self.preflight_rejections += 1
+            result = {"status": "invalid_artifact", "returncode": None, "stdout": "", "stderr": "",
+                      "stdout_sha256": digest(b""), "stderr_sha256": digest(b""), "image_sha256": image_sha,
+                      "wall_seconds": time.perf_counter() - started, "cached": False,
+                      "preflight_rejected": True, "rejection": str(error)}
+            if self.cache_enabled: self.cache[key] = result
+            return result
         path = self.directory / (image_sha + ".elf")
         if not path.exists():
             try:

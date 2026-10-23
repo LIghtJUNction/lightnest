@@ -195,6 +195,7 @@ def prepare(out, *, per_program=128):
                 "task_counts": {split: len(items) for split, items in task_splits.items()},
                 "fault_histogram": dict(Counter(str(t["fault_count"]) for ts in task_splits.values() for t in ts)),
                 "construction": dict(counters), "native_calls": runner.native_calls, "exact_cache_hits": runner.cache_hits,
+                "preflight_rejections": runner.preflight_rejections,
                 "generation_counts": {split: len(items) for split, items in generation.items()},
                 "manifest_sha256": sha(out / "executables.json"),
                 "tasks": {split: sha(out / "tasks" / f"{split}.jsonl") for split in task_splits},

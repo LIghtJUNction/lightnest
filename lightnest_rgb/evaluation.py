@@ -28,6 +28,7 @@ def freeze(out, name, policy, generator, *, per_program=32, generation_count=32)
         groups[task["program"]].append(task)
     selected = []
     for program, tasks in sorted(groups.items()):
+        if per_program > len(tasks): raise ValueError("sample count exceeds prepared tasks per program")
         strata = defaultdict(list)
         for task in tasks:
             strata[(task["fault_count"], task["band"])].append(task)
@@ -40,14 +41,17 @@ def freeze(out, name, policy, generator, *, per_program=32, generation_count=32)
     generation = rows(out / "generation" / "test.jsonl")
     exits = [r for r in generation if "exit" in r["spec"]]; stdout = [r for r in generation if "stdout" in r["spec"]]
     sampler.shuffle(exits); sampler.shuffle(stdout)
-    chosen = [r["id"] for r in exits[:generation_count // 2] + stdout[:generation_count - generation_count // 2]]
+    exit_count = min(len(exits), generation_count // 2)
+    chosen = [r["id"] for r in exits[:exit_count] + stdout[:generation_count - exit_count]]
     if len(chosen) != generation_count: raise ValueError("requested too many generation examples of one kind")
     folder = out / "evaluation" / name; folder.mkdir(exist_ok=False)
     plan = {"policy": str(Path(policy).resolve()), "generator": str(Path(generator).resolve()),
             "policy_sha256": sha(policy), "generator_sha256": sha(generator), "corpus_sha256": sha(out / "corpus.json"),
             "sources": source_hashes(), "task_ids": selected, "generation_ids": chosen,
             "max_edits": 8, "max_candidates": 32, "wall_seconds": 15., "visible_cases": 4,
-            "hidden_cases": 8, "seed": 2026102431, "test_model_queries_before_freeze": 0}
+            "hidden_cases": 8, "seed": 2026102431, "repair_test_task_queries_before_freeze": 0,
+            "generation_test_request_queries_before_freeze": 0,
+            "prior_unlabeled_observation_benchmarks": {p.name: sha(p) for p in sorted((out / "evaluation").glob("observation*.json"))}}
     write(folder / "frozen.json", plan)
     return folder
 
@@ -90,11 +94,12 @@ def evaluate_policy(out, name, *, mode="routed", fixed_depth=None):
             counts["exact_restorations"] += int(final == target)
             for k in ("candidate_attempts", "recurrent_steps", "encoded_unique_chunks", "bank_builds", "wrong_stop_proposals"): counts[k] += result[k]
             event = {"id": identity, "program": task["program"], "fault_count": task["fault_count"], "band": task["band"],
-                     "requested_band": task["requested_band"], "hidden_correct": hidden_correct, "exact_original": final == target, **result}
+                     "requested_band": task.get("requested_band", "clean"), "hidden_correct": hidden_correct, "exact_original": final == target, **result}
             file.write(json.dumps(event) + "\n"); file.flush()
             print(label, identity, result["status"], hidden_correct, result["edits"], flush=True)
     summary = {"variant": label, "counts": dict(counts), "wall_seconds": time.perf_counter() - started,
                "native_calls": runner.native_calls, "execution_cache_hits": runner.cache_hits,
+               "preflight_rejections": runner.preflight_rejections,
                "frozen_sha256": sha(folder / "frozen.json"), "results_sha256": sha(folder / (label + ".jsonl")),
                "claim_scope": "program-held-out injected faults; visible tests are not a proof"}
     write(folder / (label + "-summary.json"), summary)

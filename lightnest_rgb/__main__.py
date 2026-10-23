@@ -28,6 +28,12 @@ def main():
         if action == "train-policy":
             p.add_argument("--warmup-steps", type=int, default=2048); p.add_argument("--full-steps", type=int, default=512)
         else: p.add_argument("--steps", type=int, default=1536)
+    for action in ("refine-policy", "refine-generator"):
+        p = commands.add_parser(action); p.add_argument("--out", required=True); p.add_argument("--parent", required=True)
+        p.add_argument("--seed", type=int, default=104730)
+        if action == "refine-policy":
+            p.add_argument("--header-steps", type=int, default=4096); p.add_argument("--full-steps", type=int, default=128)
+        else: p.add_argument("--steps", type=int, default=512)
     for action in ("generate", "repair"):
         p = commands.add_parser(action); p.add_argument("--checkpoint", required=True); p.add_argument("--request", type=Path, required=True)
         p.add_argument("--output", type=Path, required=True); p.add_argument("--workdir", required=True)
@@ -62,6 +68,12 @@ def main():
     elif args.action == "train-generator":
         from .training import train_generator
         train_generator(args.out, args.seed, steps=args.steps); return
+    elif args.action == "refine-policy":
+        from .refine import refine_policy
+        refine_policy(args.out, args.parent, args.seed, header_steps=args.header_steps, full_steps=args.full_steps); return
+    elif args.action == "refine-generator":
+        from .refine_generation import refine_generator
+        refine_generator(args.out, args.parent, args.seed, steps=args.steps); return
     elif args.action == "freeze":
         from .evaluation import freeze
         result = {"folder": str(freeze(args.out, args.name, args.policy, args.generator, per_program=args.per_program, generation_count=args.generation_count))}

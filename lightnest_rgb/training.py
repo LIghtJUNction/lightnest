@@ -78,6 +78,11 @@ def _plan(out, kind, seed, settings):
             "math_sources": math_sources(kind), "trainer_sha256": sha(Path(__file__)),
             "uv_lock_sha256": sha(ROOT / "uv.lock"), "torch": str(torch.__version__), "device": "cpu", "test_model_queries": 0}
     write(folder / "plan.json", plan)
+    # Preserve the exact implementation behind the recorded hashes, including
+    # curriculum/controller helpers, even if later source work continues.
+    snapshot = folder / "source"; snapshot.mkdir()
+    for path in sorted(Path(__file__).parent.glob("*.py")):
+        (snapshot / path.name).write_bytes(path.read_bytes())
     return folder, plan
 
 
