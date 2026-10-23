@@ -15,7 +15,7 @@ def facts(raw):
 def synthetic(seed=1,count=2048):
  r=random.Random(seed);out=[]
  for i in range(count):
-  funcs=r.randrange(0,12);classes=r.randrange(0,4);imports=r.randrange(0,5);calls=r.randrange(0,16)
+  funcs=r.randrange(0,64);classes=r.randrange(0,12);imports=r.randrange(0,16);calls=r.randrange(0,128)
   text=''.join(f'import m{i}_{j}\n' for j in range(imports))+''.join(f'class C{i}_{j}:\n    pass\n' for j in range(classes))+''.join(f'def f{i}_{j}(x):\n    return x+{j}\n' for j in range(funcs))+''.join(f'f{i}_{j}(1)\n' for j in range(min(calls,funcs)))
   out.append(text.encode())
  return out
@@ -39,7 +39,7 @@ class StructureNet(nn.Module):
   values += [0] * max(0,5-len(values)); x=torch.tensor(values,dtype=torch.long)[None];h=self.byte(x).transpose(1,2);h=self.conv(h).mean(-1);return self.head(h)
 
 def lex_tokens(raw):
- text=raw.decode('utf-8','ignore'); tokens=re.findall(r'[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[^\sA-Za-z_0-9]',text)[:2048]
+ text=raw.decode('utf-8','ignore'); tokens=re.findall(r'[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[^\sA-Za-z_0-9]',text)[:512]
  return [int.from_bytes(hashlib.sha256(t.encode()).digest()[:2],'little')%512 for t in tokens] or [0]
 
 class TokenStructureNet(nn.Module):
