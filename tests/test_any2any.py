@@ -19,4 +19,5 @@ class Any2AnyTests(unittest.TestCase):
         raw=b'abcabc'; out=apply_copy_paste(raw,CopyPasteAction(0,3,3),hashlib.sha256(raw).hexdigest())
         self.assertEqual(out,raw)
         with self.assertRaises(ValueError): apply_copy_paste(raw,CopyPasteAction(0,4,3),hashlib.sha256(raw).hexdigest())
+        self.assertEqual(apply_copy_paste(raw,CopyPasteAction(0,3,6,'copy_insert'),hashlib.sha256(raw).hexdigest()),b'abcabcabc')
 if __name__=='__main__': unittest.main()

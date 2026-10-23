@@ -20,17 +20,20 @@ class CopyPasteAction:
     source_start: int
     source_end: int
     target_start: int
-    operation: str = "copy_paste"
+    operation: str = "copy_replace"
 
     def __post_init__(self):
-        if self.operation != "copy_paste" or min(self.source_start,self.source_end,self.target_start) < 0 or self.source_end <= self.source_start:
+        if self.operation not in {"copy_replace","copy_insert"} or min(self.source_start,self.source_end,self.target_start) < 0 or self.source_end <= self.source_start:
             raise ValueError("invalid copy/paste action")
 
 
 def apply_copy_paste(raw: bytes, action: CopyPasteAction, expected_sha256: str) -> bytes:
     if hashlib.sha256(raw).hexdigest() != expected_sha256: raise ValueError("artifact identity changed")
-    if action.source_end > len(raw) or action.target_start + action.source_end-action.source_start > len(raw): raise ValueError("copy/paste range out of bounds")
-    result=bytearray(raw); result[action.target_start:action.target_start+action.source_end-action.source_start]=raw[action.source_start:action.source_end]; return bytes(result)
+    if action.source_end > len(raw) or action.target_start > len(raw): raise ValueError("copy/paste range out of bounds")
+    payload=raw[action.source_start:action.source_end]
+    if action.operation == "copy_insert": return raw[:action.target_start]+payload+raw[action.target_start:]
+    if action.target_start + len(payload) > len(raw): raise ValueError("replacement range out of bounds")
+    result=bytearray(raw); result[action.target_start:action.target_start+len(payload)]=payload; return bytes(result)
 
 
 def kind_index(kind: str) -> int:
@@ -116,3 +119,9 @@ class ArtifactCore(nn.Module):
         """Native pointer scores for source interval and destination offset."""
         tokens=encoded.shape[1]; query=self.copy_query(encoded + guidance[:,None]); scores=query @ query.transpose(-1,-2) / self.width**.5
         return {"source_start": scores.mean(1), "source_end": scores.mean(1), "target_start": scores.mean(1), "length": scores.mean(1)}
+
+    @torch.inference_mode()
+    def propose_copy_paste(self, raw: bytes, request: ArtifactRequest):
+        encoded,_=self.encode(raw,request); abstract,guidance=self.think(encoded,8); scores=self.copy_paste_scores(encoded,guidance)
+        matrix=scores["source_start"][0]; flat=matrix.flatten(); index=int(flat.argmax()); start=index//matrix.shape[-1]; target=index%matrix.shape[-1]; end=min(len(raw),start+max(1,min(16,len(raw)-start)))
+        return CopyPasteAction(start,end,target,"copy_replace"), {"abstract":abstract,"scores":scores}
