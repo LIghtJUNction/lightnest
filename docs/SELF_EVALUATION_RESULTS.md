@@ -55,3 +55,14 @@ LightNest 盲测结果：252 个文件，text 类型判断 100%，CSV 类型判�
 Python 结构摘要误差为 0.101。JSON 类型判断为 50%。这些数字只证明格式、局部字节和
 粗粒度结构预测，仍没有生成可读解释，也没有证明模型理解模块之间的语义关系，因此目标
 仍未完成。
+
+## 通用代码解释器盲测
+
+使用系统 Python 示例和库源码训练 64 步，没有读取 LightNest。对 `model.py`、`any2any.py`
+和 `evaluate_self.py` 的输出均接近：
+
+```text
+pyttooosssssssssssssssssssssssssssssssssssss...
+```
+
+这不是源码解释，只是字符先验。解释器实验失败，目标仍未完成。
