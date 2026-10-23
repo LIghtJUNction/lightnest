@@ -14,8 +14,9 @@ uv run --locked python -m lightnest_rgb evaluate --out "$OUT" --name final --kin
 uv run --locked python -m lightnest_rgb evaluate --out "$OUT" --name final --kind generation
 ```
 
-`prepare` 读取当前机器的 16 个真实程序，保存 SHA256、包版本、ELF 结构以及实际运行结果。
-12 个程序训练，grep/zstd 验证，sed/jq 测试。每程序 128 个任务，包括无修改任务和
+`prepare` 读取当前机器的真实程序，保存 SHA256、包版本、ELF 结构以及实际运行结果。
+基础集有 16 个程序；扩展集增加路径、文本和字节工具。基础集有 12 个程序训练，
+grep/zstd 验证，sed/jq 测试。每程序 128 个任务，包括无修改任务和
 1/2/4/8 处位翻转。只有实际影响可见执行的损坏才被纳入。困难区段尝试失败后允许
 回退到文件头，逐条记录 requested_band 与实际 band，不能把回退计作代码区任务。
 
