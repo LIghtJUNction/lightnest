@@ -26,7 +26,7 @@ def freeze(out, name, policy, generator, *, per_program=32, generation_count=32)
     sampler = random.Random(2026102431); groups = defaultdict(list)
     for task in rows(out / "tasks" / "test.jsonl"):
         groups[task["program"]].append(task)
-    selected = []
+    selected = []; comparison = []
     for program, tasks in sorted(groups.items()):
         if per_program > len(tasks): raise ValueError("sample count exceeds prepared tasks per program")
         strata = defaultdict(list)
@@ -38,6 +38,8 @@ def freeze(out, name, policy, generator, *, per_program=32, generation_count=32)
             for key in sorted(strata):
                 if strata[key] and len(picked) < per_program: picked.append(strata[key].pop())
         selected.extend(task["id"] for task in picked)
+        stride = max(1, len(picked) // 8)
+        comparison.extend(task["id"] for task in picked[::stride][:8])
     generation = rows(out / "generation" / "test.jsonl")
     exits = [r for r in generation if "exit" in r["spec"]]; stdout = [r for r in generation if "stdout" in r["spec"]]
     sampler.shuffle(exits); sampler.shuffle(stdout)
@@ -47,7 +49,7 @@ def freeze(out, name, policy, generator, *, per_program=32, generation_count=32)
     folder = out / "evaluation" / name; folder.mkdir(exist_ok=False)
     plan = {"policy": str(Path(policy).resolve()), "generator": str(Path(generator).resolve()),
             "policy_sha256": sha(policy), "generator_sha256": sha(generator), "corpus_sha256": sha(out / "corpus.json"),
-            "sources": source_hashes(), "task_ids": selected, "generation_ids": chosen,
+            "sources": source_hashes(), "task_ids": selected, "comparison_task_ids": comparison, "generation_ids": chosen,
             "max_edits": 8, "max_candidates": 32, "wall_seconds": 15., "visible_cases": 4,
             "hidden_cases": 8, "seed": 2026102431, "repair_test_task_queries_before_freeze": 0,
             "generation_test_request_queries_before_freeze": 0,
@@ -77,7 +79,8 @@ def evaluate_policy(out, name, *, mode="routed", fixed_depth=None):
     programs = {p["name"]: p for p in json.loads((out / "executables.json").read_text())}
     counts = Counter(); started = time.perf_counter()
     with (folder / (label + ".jsonl")).open("x") as file:
-        for identity in plan["task_ids"]:
+        selected = plan["task_ids"] if mode == "routed" and fixed_depth is None else plan["comparison_task_ids"]
+        for identity in selected:
             task = tasks[identity]; program = programs[task["program"]]
             image, target = damaged_image(out, task)
             examples = [Example(Case.parse(c["input"]), {k: c["expected"][k] for k in ("status", "returncode", "stdout", "stderr")}) for c in program["cases"][:4]]
@@ -101,7 +104,7 @@ def evaluate_policy(out, name, *, mode="routed", fixed_depth=None):
                "native_calls": runner.native_calls, "execution_cache_hits": runner.cache_hits,
                "preflight_rejections": runner.preflight_rejections,
                "frozen_sha256": sha(folder / "frozen.json"), "results_sha256": sha(folder / (label + ".jsonl")),
-               "claim_scope": "program-held-out injected faults; visible tests are not a proof"}
+               "task_ids": selected, "claim_scope": "program-held-out injected faults; visible tests are not a proof"}
     write(folder / (label + "-summary.json"), summary)
     return summary
 
