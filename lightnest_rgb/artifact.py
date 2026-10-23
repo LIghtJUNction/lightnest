@@ -84,7 +84,7 @@ def inspect_elf(raw: bytes) -> dict:
                 interpreter = segment.get_interp_name()
         imports, exports, needed = set(), set(), []
         symbols = elf.get_section_by_name(".dynsym")
-        if symbols:
+        if symbols and hasattr(symbols, "iter_symbols"):
             for symbol in symbols.iter_symbols():
                 if symbol.name:
                     (imports if symbol.entry.st_shndx == "SHN_UNDEF" else exports).add(symbol.name)
