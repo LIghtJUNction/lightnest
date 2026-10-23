@@ -18,7 +18,8 @@ def module_graph(root):
  return graph
 
 def run_tests(root):
- result=subprocess.run(['uv','run','--locked','python','-m','unittest','discover','-s','tests'],cwd=root,capture_output=True,text=True,timeout=120)
+ try: result=subprocess.run(['uv','run','--locked','python','-m','unittest','discover','-s','tests'],cwd=root,capture_output=True,text=True,timeout=10)
+ except subprocess.TimeoutExpired: return {'timeout':True}
  return {'returncode':result.returncode,'stdout_tail':result.stdout[-2000:],'stderr_tail':result.stderr[-2000:]}
 
 class SelfAgent:
