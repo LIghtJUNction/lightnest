@@ -19,6 +19,17 @@ def synthetic(seed=1,count=2048):
   out.append(text.encode())
  return out
 
+def external_sources(limit=512):
+ out=[]
+ for root in (Path('/usr/share'),Path('/usr/lib/python3.13/site-packages')):
+  if root.exists():
+   for path in root.rglob('*.py'):
+    try:
+     if path.stat().st_size<=65536: out.append(path.read_bytes())
+    except OSError: pass
+    if len(out)>=limit:return out
+ return out
+
 class StructureNet(nn.Module):
  def __init__(self,width=48):
   super().__init__();self.byte=nn.Embedding(257,width);self.conv=nn.Sequential(nn.Conv1d(width,width,5,padding=2),nn.GELU(),nn.Conv1d(width,width,5,padding=2),nn.GELU());self.head=nn.Sequential(nn.Linear(width,width),nn.GELU(),nn.Linear(width,6))
@@ -27,7 +38,7 @@ class StructureNet(nn.Module):
   values += [0] * max(0,5-len(values)); x=torch.tensor(values,dtype=torch.long)[None];h=self.byte(x).transpose(1,2);h=self.conv(h).mean(-1);return self.head(h)
 
 def train(out,steps=1024,seed=104748,resume=None):
- out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed)
+ out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed)+external_sources()
  model=StructureNet();opt=torch.optim.AdamW(model.parameters(),lr=1e-3);start=0
  if resume:
   state=torch.load(resume,map_location='cpu',weights_only=True);model.load_state_dict(state['state_dict']);start=state.get('step',0)
