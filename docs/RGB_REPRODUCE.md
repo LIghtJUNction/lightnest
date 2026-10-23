@@ -79,3 +79,14 @@ uv run --locked python -m lightnest_rgb refine-generator --out "$OUT" \
 32 个（共 64 个）。与主线结果比较时必须取相同 ID 的子集，不能直接比较两种分母。
 `freeze --generation-count 96` 可使用全部 96 个生成测试请求。此前对干净 jq 做过的
 无标签计时会写入冻结记录；它没有参与训练，但不宣称模型从未读取过该文件。
+
+强化学习式反馈训练从一个已训练策略继续。每步只执行可见样例，候选的 stderr、退出
+信号、超时、入口预检和可见通过数构成奖励；不读取隐藏结果或干净目标字节。
+
+```bash
+uv run --locked python -m lightnest_rgb train-feedback --out "$OUT" \
+  --parent "$OUT/weights/rgb-104731.pt" --seed 104732 --steps 128
+```
+
+这是有界 REINFORCE 微调，不是完整 RL 收敛证明。它保存每步奖励、基线、错误类型、
+候选动作和实际执行计数；使用新检查点前重新执行 `freeze`。

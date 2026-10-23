@@ -11,6 +11,7 @@ from .artifact import BytePatch, apply_patches, digest, inspect_elf
 from .execute import Case, same_result
 from .model import greedy_action
 from .observe import Frame
+from .feedback import transition_reward
 
 
 @dataclass(frozen=True)
@@ -126,11 +127,12 @@ class RGBEditor:
                             break
                         seen.add(identity); candidates += 1
                         results, proposal_passed, proposal_valid = evaluate(proposal)
+                        reward = transition_reward(len(passed), len(proposal_passed), valid, proposal_valid)
                         if not passed <= proposal_passed:
                             continue
                         quality = (len(proposal_passed), int(proposal_valid))
-                        record = (quality, float(logits[p]), proposal, results, proposal_passed, proposal_valid, patch, action)
-                        if best is None or record[:2] > best[:2]:
+                        record = (quality, reward, float(logits[p]), proposal, results, proposal_passed, proposal_valid, patch, action)
+                        if best is None or record[:3] > best[:3]:
                             best = record
                         if len(proposal_passed) == len(examples) and proposal_valid:
                             before = digest(current)
@@ -148,12 +150,12 @@ class RGBEditor:
                     break  # Deeper recurrent states are not computed after acceptance.
             if best is None:
                 break
-            quality, score, proposal, actual, proposal_passed, proposal_valid, patch, action = best
+            quality, reward, score, proposal, actual, proposal_passed, proposal_valid, patch, action = best
             before = digest(current)
             speculative = quality <= (len(passed), int(valid))
             current, passed, valid = proposal, proposal_passed, proposal_valid
             committed += 1
             trace.append({"action": "PATCH", "step": step, "before": before, "after": digest(current),
                           "patch": patch.json(), "origin": action["origin"], "depth": action["depth"],
-                          "speculative": speculative, "passed_visible": sorted(passed)})
+                          "speculative": speculative, "passed_visible": sorted(passed), "reward": reward})
         return finish("budget" if candidates >= self.max_candidates or committed >= self.max_edits else "abstain", False)

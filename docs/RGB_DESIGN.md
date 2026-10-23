@@ -74,3 +74,15 @@ runner validates x86-64 executable type and a file-backed executable entry,
 records `invalid_artifact` separately, and does not count rejections as native
 executions. This does not prove arbitrary instructions safe or prevent all
 runtime faults. Existing negative-example execution records remain unchanged.
+
+## Executable feedback learning
+
+The feedback path treats the sandbox as an environment. A proposed byte edit is
+executed against visible cases only; reward combines newly passing cases,
+regressions, executable-entry validity, and typed penalties for invalid ELF,
+timeouts, signals and isolation failures. stderr and return signals remain
+categorical observations instead of being collapsed to one crash bit. The
+`train-feedback` command applies a bounded REINFORCE update to the action that
+produced that candidate. It never reads hidden cases or clean target bytes for
+the reward. The resulting checkpoint is a research candidate and needs a new
+held-out freeze before use.
