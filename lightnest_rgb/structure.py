@@ -43,6 +43,11 @@ def lex_tokens(raw):
  text=raw.decode('utf-8','ignore'); tokens=re.findall(r'[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[^\sA-Za-z_0-9]',text)[:4096]
  return [int.from_bytes(hashlib.sha256(t.encode()).digest()[:2],'little')%512 for t in tokens] or [0]
 
+def ast_tokens(raw):
+ try: tree=ast.parse(raw.decode('utf-8','ignore')); names=[type(n).__name__ for n in ast.walk(tree)]
+ except Exception: names=['Invalid']
+ return [int.from_bytes(hashlib.sha256(n.encode()).digest()[:2],'little')%512 for n in names] or [0]
+
 class TokenStructureNet(nn.Module):
  def __init__(self,width=64):
   super().__init__();self.token=nn.Embedding(512,width);self.gru=nn.GRU(width,width,2,batch_first=True);self.head=nn.Sequential(nn.Linear(width,width),nn.GELU(),nn.Linear(width,6))
@@ -53,6 +58,21 @@ class TokenStructureNet(nn.Module):
    def run(tokens): return self.gru(self.token(tokens))[1]
    h=checkpoint(run,x,use_reentrant=False);states.append(h[-1])
   return self.head(torch.stack(states).mean(0))
+
+class ASTStructureNet(TokenStructureNet):
+ def forward(self,raw):
+  ids=ast_tokens(raw); states=[]
+  for start in range(0,len(ids),256):
+   x=torch.tensor(ids[start:start+256],dtype=torch.long)[None];_,h=self.gru(self.token(x));states.append(h[-1])
+  return self.head(torch.stack(states).mean(0))
+
+def train_ast(out,steps=512,seed=104755):
+ out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed)+external_sources();model=ASTStructureNet();opt=torch.optim.AdamW(model.parameters(),lr=1e-3);rng=random.Random(seed);losses=[]
+ with (out/'updates.jsonl').open('x') as log:
+  for step in range(steps):
+   raw=rng.choice(samples);target=torch.tensor([facts(raw)]);loss=F.mse_loss(model(raw),target);opt.zero_grad();loss.backward();opt.step();losses.append(float(loss.detach()))
+   if (step+1)%64==0:log.write(json.dumps({'step':step+1,'loss':sum(losses)/len(losses)})+'\n');log.flush();losses=[]
+ torch.save({'state_dict':model.state_dict(),'seed':seed,'steps':steps},out/f'ast-{seed}.pt')
 
 def train(out,steps=1024,seed=104748,resume=None):
  out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed)+external_sources()
