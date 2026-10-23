@@ -30,8 +30,11 @@ class SemanticLoop:
   root=Path(root); files=[p for p in root.rglob('*') if p.is_file() and not ({'.git','.venv','archive','__pycache__'} & set(p.parts))][:128]
   calls=[]; neural=[]; model=None
   if any2any_checkpoint:
-   payload=torch.load(any2any_checkpoint,map_location='cpu',weights_only=True);model=ArtifactCore(**payload['config']);missing,unexpected=model.load_state_dict(payload['state_dict'],strict=False)
-   allowed_missing={'copy_query.weight'} | {name for name in missing if name.startswith('budget.')}
+   payload=torch.load(any2any_checkpoint,map_location='cpu',weights_only=True); config=dict(payload['config'])
+   if 'sequence_limit' not in config: config['sequence_limit']=payload['state_dict']['position.weight'].shape[0]
+   if 'note_slots' not in config: config['note_slots']=32
+   model=ArtifactCore(**config);missing,unexpected=model.load_state_dict(payload['state_dict'],strict=False)
+   allowed_missing={'copy_query.weight'} | {name for name in missing if name.startswith(('budget.', 'notebook.'))}
    if set(unexpected) or not set(missing) <= allowed_missing: raise ValueError(f'Any2Any checkpoint mismatch: {missing} {unexpected}')
    model.eval()
   for path in files:
@@ -43,6 +46,7 @@ class SemanticLoop:
      with torch.inference_mode():
       window=raw[:256]
       enc,_=model.encode(window,ArtifactRequest(kind,'understand and route',path.name))
+      enc,context=model.contextualize(enc)
       abstract,guidance,budget=model.think_budgeted(enc)
       predicted=model.heads(enc,guidance[:,None],budget_logits=budget['logits'])
       pred=int(predicted['kind_logits'].argmax(-1)[0])
@@ -51,7 +55,9 @@ class SemanticLoop:
                      'neural_kind':KINDS[pred] if pred < len(KINDS) else 'custom',
                      'byte_accuracy':sum(a == b for a,b in zip(window,bytes_pred,strict=True))/len(window),
                      'summary':[round(float(value),6) for value in predicted['summary'][0]],
-                     'budget_index':budget['index'],'budget_depth':budget['depth']}
+                     'budget_index':budget['index'],'budget_depth':budget['depth'],
+                     'context_budget_index':int(context['budget_logits'].argmax(-1)[0]),
+                     'context_slots':int((context['weights'][0] > 0).sum())}
       target_summary=_python_summary(raw) if path.suffix == '.py' else None
       if target_summary is not None:
        record['summary_target']=target_summary

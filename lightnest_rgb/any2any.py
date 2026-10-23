@@ -13,9 +13,12 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from .context import NeuralNotebook
 
 KINDS = ("raw", "text", "json", "csv", "elf", "pe", "macho", "archive", "compressed", "image", "audio", "pdf", "sqlite", "bytecode")
 DEFAULT_RED_DEPTHS = (2, 4, 8, 16)
+DEFAULT_MAX_BYTES = 1 << 20
+DEFAULT_SEQUENCE_LIMIT = 4096
 
 @dataclass(frozen=True)
 class CopyPasteAction:
@@ -60,16 +63,17 @@ class ArtifactRequest:
 
 class ArtifactCore(nn.Module):
     """Format-agnostic shared encoder with green observation and red/blue heads."""
-    def __init__(self, width=128, heads=4, max_bytes=65536, red_depths=DEFAULT_RED_DEPTHS):
+    def __init__(self, width=128, heads=4, max_bytes=DEFAULT_MAX_BYTES, red_depths=DEFAULT_RED_DEPTHS,
+                 sequence_limit=DEFAULT_SEQUENCE_LIMIT, note_slots=32):
         super().__init__()
-        if width % heads or width < 32 or max_bytes < 256: raise ValueError("invalid Any2Any geometry")
+        if width % heads or width < 32 or max_bytes < 256 or sequence_limit < 256: raise ValueError("invalid Any2Any geometry")
         if not red_depths or tuple(sorted(set(red_depths))) != tuple(red_depths) or red_depths[0] <= 1:
             raise ValueError("invalid Any2Any thinking schedule")
-        self.width, self.max_bytes = width, max_bytes
+        self.width, self.max_bytes, self.sequence_limit = width, max_bytes, sequence_limit
         self.blue_depth, self.red_depths = 1, tuple(red_depths)
         self.byte = nn.Embedding(257, width)
         self.kind = nn.Embedding(256, width)
-        self.position = nn.Embedding(max_bytes, width)
+        self.position = nn.Embedding(sequence_limit, width)
         self.encoder = nn.TransformerEncoder(nn.TransformerEncoderLayer(width, heads, 4 * width, batch_first=True, norm_first=True), 4)
         self.red = nn.GRUCell(width, width)
         self.abstract = nn.Sequential(nn.Linear(width, 4 * width), nn.GELU(), nn.LayerNorm(4 * width))
@@ -78,6 +82,7 @@ class ArtifactCore(nn.Module):
         self.summary_head = nn.Linear(width, 5)
         self.budget = nn.Sequential(nn.Linear(2 * width, width), nn.GELU(), nn.LayerNorm(width),
                                     nn.Linear(width, len(self.red_depths) + 1))
+        self.notebook = NeuralNotebook(width, note_slots)
         self.copy_query = nn.Linear(width, width, bias=False)
         self.blue_byte = nn.Linear(width, 257)
         self.red_byte = nn.Linear(width, 257)
@@ -85,6 +90,7 @@ class ArtifactCore(nn.Module):
 
     def encode(self, raw: bytes, request: ArtifactRequest):
         if not 1 <= len(raw) <= self.max_bytes: raise ValueError("artifact exceeds Any2Any capacity")
+        if len(raw) > self.sequence_limit: raise ValueError("large artifacts must use hierarchical encoding")
         kind = torch.tensor([kind_index(request.kind)], device=self.byte.weight.device)
         values = torch.tensor(list(raw), device=self.byte.weight.device)[None]
         pos = torch.arange(len(raw), device=values.device)[None]
@@ -94,7 +100,7 @@ class ArtifactCore(nn.Module):
         return self.encoder(self.byte(values) + self.position(pos) + self.kind(kind)[:, None] + request_context), kind
 
     def encode_chunks(self, raw: bytes, request: ArtifactRequest, chunk_size=256, max_chunks=16):
-        if not 32 <= chunk_size <= self.max_bytes or not raw: raise ValueError("invalid hierarchical artifact")
+        if not 32 <= chunk_size <= self.sequence_limit or not raw or len(raw) > self.max_bytes: raise ValueError("invalid hierarchical artifact")
         starts=list(range(0, len(raw), chunk_size))
         if len(starts)>max_chunks:
             starts=[starts[int(i*(len(starts)-1)/(max_chunks-1))] for i in range(max_chunks)]
@@ -104,12 +110,19 @@ class ArtifactCore(nn.Module):
             chunks.append(encoded.mean(1))
         return torch.stack(chunks, 1)
 
+    def contextualize(self, encoded, *, hard=None):
+        if hard is None:
+            hard = not self.training
+        notes = self.notebook.compress(encoded, hard=hard)
+        return encoded + notes["context"][:, None], notes
+
     @torch.inference_mode()
     def summarize(self, raw: bytes, request: ArtifactRequest, depth=None, chunk_size=256):
         encoded=self.encode_chunks(raw, request, chunk_size)
+        encoded, notes=self.contextualize(encoded)
         if depth is None:
             abstract,guidance,budget=self.think_budgeted(encoded)
-            return abstract, self.heads(encoded, guidance[:, None], budget_logits=budget["logits"]) | {"budget": budget}
+            return abstract, self.heads(encoded, guidance[:, None], budget_logits=budget["logits"]) | {"budget": budget, "context": notes}
         abstract,guidance=self.think(encoded, depth)
         return abstract, self.heads(encoded, guidance[:, None])
 
@@ -155,14 +168,14 @@ class ArtifactCore(nn.Module):
 
     @torch.inference_mode()
     def propose_copy_paste(self, raw: bytes, request: ArtifactRequest):
-        encoded,_=self.encode(raw,request); abstract,guidance,budget=self.think_budgeted(encoded); scores=self.copy_paste_scores(encoded,guidance)
+        encoded,_=self.encode(raw,request); encoded,notes=self.contextualize(encoded); abstract,guidance,budget=self.think_budgeted(encoded); scores=self.copy_paste_scores(encoded,guidance)
         matrix=scores["source_start"][0]; flat=matrix.flatten()
         for index in flat.argsort(descending=True).tolist():
             start=index//matrix.shape[-1]; target=index%matrix.shape[-1]
             length=min(16,len(raw)-start,len(raw)-target)
             if length > 0: break
         end=start+length
-        return CopyPasteAction(start,end,target,"copy_replace"), {"abstract":abstract,"scores":scores,"budget":budget}
+        return CopyPasteAction(start,end,target,"copy_replace"), {"abstract":abstract,"scores":scores,"budget":budget,"context":notes}
 
 
 def artifact_budget_target(candidates, target, kind_target=None, summary_target=None):

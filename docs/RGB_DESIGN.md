@@ -29,6 +29,10 @@ blue's fast decisions, and they do not supply red's recurrent state by themselve
   occurrence, build a compact global expert and reusable top-k detail experts.
   Compression never authorizes erasing a byte range or treating distinct
   addresses as semantically identical.
+- Notebook: route chunk evidence into learned content-addressed note slots. A
+  context-budget head mixes candidate top-k slot sets during training and keeps
+  one selected set during inference, so the model controls what remains in its
+  working context instead of truncating by position.
 - Blue: shallow next-action proposal and calibrated routing; it must actually
   skip deeper computation when accepted. A learned budget head chooses
   blue-only or one configured red depth from the shared state and feedback

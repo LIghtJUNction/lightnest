@@ -14,7 +14,7 @@ import time
 import torch
 from torch.nn import functional as F
 
-from .any2any import ArtifactCore, ArtifactRequest, KINDS, artifact_budget_target, kind_index
+from .any2any import ArtifactCore, ArtifactRequest, DEFAULT_MAX_BYTES, DEFAULT_SEQUENCE_LIMIT, KINDS, artifact_budget_target, kind_index
 from .artifact_types import detect_kind
 
 
@@ -67,7 +67,7 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
             with zipfile.ZipFile(stream, "w", zipfile.ZIP_DEFLATED) as archive: archive.writestr("payload.bin", raw[:8192])
             samples.append((f"sample-{index}.zip", stream.getvalue(), "archive"))
     if not samples: raise RuntimeError('no mixed artifact samples')
-    model=ArtifactCore(width=width,heads=4,max_bytes=65536); optimizer=torch.optim.AdamW(model.parameters(),lr=3e-4)
+    model=ArtifactCore(width=width,heads=4,max_bytes=DEFAULT_MAX_BYTES,sequence_limit=DEFAULT_SEQUENCE_LIMIT); optimizer=torch.optim.AdamW(model.parameters(),lr=3e-4)
     rng=random.Random(seed); started=time.perf_counter(); losses=[]
     with (out/'updates.jsonl').open('x') as log:
         for step in range(steps):
@@ -75,7 +75,7 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
             window=raw[start:start+length]
             operation=rng.choice(('understand','edit','generate','copy_paste','transform'))
             request=ArtifactRequest(kind,operation,name)
-            encoded,_=model.encode(window,request)
+            encoded,_=model.encode(window,request); encoded,context_state=model.contextualize(encoded)
             blue_abstract,blue_guidance=model.think(encoded,depth=model.blue_depth)
             blue_heads=model.heads(encoded,blue_guidance)
             candidates=[blue_heads]
@@ -101,6 +101,7 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
                 loss=loss + .125 * (F.cross_entropy(source_scores,torch.tensor([pair[0]],device=output.device)) + F.cross_entropy(target_scores,torch.tensor([pair[1]],device=output.device)))
             if name.endswith('.py') and len(raw) <= 65536:
                 full_encoded=model.encode_chunks(raw,request,max_chunks=4)
+                full_encoded,_=model.contextualize(full_encoded)
                 _,full_guidance=model.think(full_encoded,depth=8)
                 full_summary=model.heads(full_encoded,full_guidance[:,None])['summary']
                 loss = loss + F.mse_loss(full_summary, summary_target)
@@ -108,5 +109,5 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
             if (step+1)%32==0:
                 event={'step':step+1,'loss':sum(losses)/len(losses),'samples':len(samples),'wall_seconds':time.perf_counter()-started}
                 log.write(json.dumps(event)+'\n'); log.flush(); print(event,flush=True); losses=[]
-    torch.save({'architecture':'lightnest-any2any-v1','kind':'artifact-core','config':{'width':width,'heads':4,'max_bytes':65536,'red_depths':model.red_depths},'state_dict':model.state_dict(),'metadata':{'seed':seed,'steps':steps,'samples':len(samples),'kinds':sorted({k for _,_,k in samples}),'status':'research_candidate'}},out/f'any2any-{seed}.pt')
+    torch.save({'architecture':'lightnest-any2any-v1','kind':'artifact-core','config':{'width':width,'heads':4,'max_bytes':model.max_bytes,'sequence_limit':model.sequence_limit,'red_depths':model.red_depths,'note_slots':model.notebook.slots},'state_dict':model.state_dict(),'metadata':{'seed':seed,'steps':steps,'samples':len(samples),'kinds':sorted({k for _,_,k in samples}),'status':'research_candidate'}},out/f'any2any-{seed}.pt')
     (out/'manifest.json').write_text(json.dumps({'samples':len(samples),'kinds':sorted({k for _,_,k in samples}),'steps':steps})+'\n')

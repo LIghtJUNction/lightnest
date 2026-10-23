@@ -107,6 +107,7 @@ class RGBEditor:
                 trace.append({"action": "THINK", "step": step, "image": digest(current),
                               "origin": action["origin"], "depth": action["depth"], "risk": action["risk"],
                               "budget": int(output["budget_logits"].argmax(-1)) if "budget_logits" in output else None,
+                              "context_budget": int(output["context_budget_logits"].argmax(-1)) if "context_budget_logits" in output else None,
                               "instances": state["observation"].instances,
                               "unique_chunks": len(state["observation"].payloads)})
                 if action["stop"]:

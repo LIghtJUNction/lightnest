@@ -9,6 +9,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from .observe import GreenObserver, ObservationStore
+from .context import NeuralNotebook
 
 ARCHITECTURE = "lightnest-rgb-full-elf-v1"
 
@@ -22,12 +23,13 @@ class RGBConfig:
     detail_k: int = 8
     blue_depth: int = 1
     red_depths: tuple[int, ...] = (2, 4, 8, 16)
+    note_slots: int = 16
 
     def __post_init__(self):
         for key, value in asdict(self).items():
             if key != "red_depths" and (type(value) is not int or value <= 0):
                 raise ValueError(f"{key} must be positive")
-        if self.width % self.heads or self.width % 8 or not 8 <= self.chunk_size <= 256:
+        if self.width % self.heads or self.width % 8 or not 8 <= self.chunk_size <= 256 or not 2 <= self.note_slots <= 256:
             raise ValueError("invalid RGB geometry")
         if not self.red_depths or tuple(sorted(set(self.red_depths))) != self.red_depths or self.blue_depth >= self.red_depths[0] or self.red_depths[-1] > 64:
             raise ValueError("thinking depths must strictly increase after blue")
@@ -56,7 +58,7 @@ class RGBPolicy(nn.Module):
         super().__init__()
         self.config = config; d = config.width
         self.green = GreenObserver(d, config.chunk_size, config.heads, config.landmarks, config.detail_k)
-        self.store = ObservationStore(config.chunk_size)
+        self.store = ObservationStore(config.chunk_size, max_instances=1 << 20)
         self.command = nn.Embedding(257, d, padding_idx=0)
         self.initial = nn.LayerNorm(d)
         self.message = nn.Linear(3 * d, d)
@@ -77,6 +79,7 @@ class RGBPolicy(nn.Module):
             nn.Linear(2 * d, d), nn.GELU(), nn.LayerNorm(d),
             nn.Linear(d, len(config.red_depths) + 1),
         )
+        self.notebook = NeuralNotebook(d, config.note_slots)
         nn.init.zeros_(self.red_to_blue.weight); nn.init.zeros_(self.red_to_blue.bias)
         nn.init.zeros_(self.abstract_to_blue.weight); nn.init.zeros_(self.abstract_to_blue.bias)
         nn.init.zeros_(self.blue_language.weight); nn.init.zeros_(self.blue_language.bias)
@@ -90,13 +93,15 @@ class RGBPolicy(nn.Module):
         tokens = torch.tensor(list(command.encode()), device=self.command.weight.device) + 1
         condition = self.command(tokens).mean(0)[None]
         features, raw, bank = self.green.build(observation, condition)
+        notebook = self.notebook.compress(features, condition.squeeze(1), hard=not self.training)
         hidden = self.initial(features + condition[:, None])
         n = (len(image) + self.config.chunk_size - 1) // self.config.chunk_size
         unique = torch.tensor(observation.unique_ids[:n], device=raw.device)
         byte_embeddings = self.green.byte(raw[unique])
         return {"observation": observation, "condition": condition, "features": features,
                 "bank": bank, "hidden": hidden, "byte_embeddings": byte_embeddings,
-                "length": len(image), "depth": 0}
+                "length": len(image), "depth": 0, "notes": notebook["notes"],
+                "context": notebook["context"], "context_budget_logits": notebook["budget_logits"]}
 
     def advance(self, state, depth, mode="routed"):
         if type(depth) is not int or not state["depth"] < depth <= self.config.red_depths[-1]:
@@ -104,7 +109,10 @@ class RGBPolicy(nn.Module):
         for step in range(state["depth"] + 1, depth + 1):
             memory = self.green.memory.read(state["hidden"], state["bank"], mode=mode)
             repeated = state["condition"][:, None].expand_as(state["hidden"])
-            message = self.message(torch.cat((state["features"], memory, repeated), -1)) + self.depth.weight[step]
+            notebook = self.notebook.compress(state["features"], state["hidden"].mean(1), state["notes"], hard=not self.training)
+            state["notes"], state["context"], state["context_budget_logits"] = notebook["notes"], notebook["context"], notebook["budget_logits"]
+            context = state["context"][:, None].expand_as(state["hidden"])
+            message = self.message(torch.cat((state["features"], memory + context, repeated), -1)) + self.depth.weight[step]
             shape = state["hidden"].shape
             state["hidden"] = self.thought_norm(self.thought(message.flatten(0, 1), state["hidden"].flatten(0, 1)).reshape(shape))
             abstract = self.red_abstraction(state["hidden"].mean(1, keepdim=True))
@@ -126,7 +134,8 @@ class RGBPolicy(nn.Module):
         language = self.blue_language(hidden.mean(1)) if blue else None
         budget_logits = self.budget(torch.cat((pooled, state["condition"].squeeze(1)), -1))
         return {"logits": logits, "bits": values, "risk_logit": risk, "language_logits": language,
-                "budget_logits": budget_logits, "depth": state["depth"],
+                "budget_logits": budget_logits, "context_budget_logits": state["context_budget_logits"],
+                "depth": state["depth"],
                 "origin": "blue" if blue else "red"}
 
     def select_budget(self, output):
