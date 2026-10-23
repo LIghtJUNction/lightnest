@@ -166,15 +166,22 @@ class ArtifactCore(nn.Module):
 
 
 def artifact_budget_target(candidates, target, kind_target=None, summary_target=None):
-    """Choose the lowest task loss among the observed compute candidates."""
+    """Choose a Pareto-style compute point from observed task losses.
+
+    Each available task head contributes a rank, so byte scale cannot drown
+    out kind or structure supervision.  The budget head learns this choice;
+    this helper only constructs training labels from task outcomes.
+    """
     if not candidates or target.ndim != 2 or target.shape[0] != 1:
         raise ValueError("invalid Any2Any budget supervision")
-    losses = []
+    metrics = [[] for _ in range(3)]
     for candidate in candidates:
-        loss = F.cross_entropy(candidate["red_logits"].reshape(-1, 257), target.reshape(-1))
-        if kind_target is not None:
-            loss = loss + .25 * F.cross_entropy(candidate["kind_logits"], kind_target)
-        if summary_target is not None:
-            loss = loss + .5 * F.mse_loss(candidate["summary"], summary_target)
-        losses.append(loss.detach().item())
-    return min(range(len(losses)), key=losses.__getitem__)
+        metrics[0].append(F.cross_entropy(candidate["red_logits"].reshape(-1, 257), target.reshape(-1)).detach().item())
+        metrics[1].append(F.cross_entropy(candidate["kind_logits"], kind_target).detach().item() if kind_target is not None else 0.)
+        metrics[2].append(F.mse_loss(candidate["summary"], summary_target).detach().item() if summary_target is not None else 0.)
+    ranks = [[0] * len(candidates) for _ in metrics]
+    for values, rank in zip(metrics, ranks, strict=True):
+        for position, index in enumerate(sorted(range(len(values)), key=values.__getitem__)):
+            rank[index] = position
+    scores = [sum(rank[index] for rank in ranks) for index in range(len(candidates))]
+    return min(range(len(scores)), key=lambda index: (scores[index], index))

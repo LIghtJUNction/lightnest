@@ -36,10 +36,10 @@ blue's fast decisions, and they do not supply red's recurrent state by themselve
 - Red: shared recurrent state with a configurable depth schedule. It queries the
   same current-image evidence bank repeatedly; it does not rebuild the entire
   context for each thought step. A committed edit invalidates affected state.
-- Budget supervision uses the earliest observed depth whose proposed action
-  satisfies the task target. The label comes from task utility; file length,
-  duplicate ratios, and format-specific thresholds do not allocate inference
-  compute.
+- Budget supervision ranks the observed byte, format, and structure task losses
+  and learns the lowest compute point on that joint objective. The label comes
+  from task utility; file length, duplicate ratios, and format-specific
+  thresholds do not allocate inference compute.
 - Controller: one global action/candidate/time budget, explicit STOP, replayable
   before/after hashes, actual executable feedback, no hidden-test feedback.
 
