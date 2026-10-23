@@ -37,6 +37,6 @@ class RGBArtifactAgent:
         if output is not None: result["artifact"] = write_image(Path(output), raw)
         result["elf"] = inspect_elf(raw); return result
 
-    def inspect_project(self, root):
+    def inspect_project(self, root, structure_checkpoint=None):
         """Run the generic async inspection tools against an unseen project."""
-        return asyncio.run(SelfAgent().inspect(Path(root)))
+        return asyncio.run(SelfAgent().inspect(Path(root), structure_checkpoint))

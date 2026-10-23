@@ -2,6 +2,8 @@
 from __future__ import annotations
 import ast, subprocess
 from pathlib import Path
+import torch
+from .structure import StructureNet
 from .tools import ToolCall, ToolRegistry
 
 
@@ -25,6 +27,13 @@ def run_tests(root):
 class SelfAgent:
  def __init__(self):
   self.tools=ToolRegistry();self.tools.register('python_structure',python_structure);self.tools.register('module_graph',module_graph);self.tools.register('run_tests',run_tests)
- async def inspect(self,root):
+ async def inspect(self,root,structure_checkpoint=None):
   root=Path(root);results=await self.tools.call_many([ToolCall('module_graph',{'root':str(root)},'graph'),ToolCall('run_tests',{'root':str(root)},'tests')])
-  return {'root':str(root),'tools':self.tools.describe(),'graph':results[0].output,'tests':results[1].output,'errors':[r.error for r in results if r.error]}
+  report={'root':str(root),'tools':self.tools.describe(),'graph':results[0].output,'tests':results[1].output,'errors':[r.error for r in results if r.error]}
+  if structure_checkpoint:
+   payload=torch.load(structure_checkpoint,map_location='cpu',weights_only=True);model=StructureNet();model.load_state_dict(payload['state_dict']);model.eval();predictions={}
+   for name in ('lightnest_rgb/model.py','lightnest_rgb/any2any.py','lightnest_rgb/explainer.py'):
+    path=root/name
+    if path.exists(): predictions[name]=model(path.read_bytes())[0].tolist()
+   report['neural_structure_predictions']=predictions
+  return report
