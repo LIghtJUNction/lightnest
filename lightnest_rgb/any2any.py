@@ -48,6 +48,7 @@ class ArtifactCore(nn.Module):
         self.abstract = nn.Sequential(nn.Linear(width, 4 * width), nn.GELU(), nn.LayerNorm(4 * width))
         self.to_blue = nn.Linear(4 * width, width)
         self.kind_head = nn.Linear(width, 256)
+        self.summary_head = nn.Linear(width, 5)
         self.blue_byte = nn.Linear(width, 257)
         self.red_byte = nn.Linear(width, 257)
         self.stop = nn.Linear(width, 1)
@@ -70,7 +71,7 @@ class ArtifactCore(nn.Module):
         red = self.red_byte(encoded)
         kind_context = blue_guidance.mean(1) if blue_guidance.ndim == 3 else blue_guidance
         return {"blue_logits": blue, "red_logits": red, "stop_logits": self.stop(encoded).squeeze(-1),
-                "kind_logits": self.kind_head(kind_context)}
+                "kind_logits": self.kind_head(kind_context), "summary": self.summary_head(kind_context)}
 
     def fingerprint(self, request: ArtifactRequest):
         return hashlib.sha256(f"{request.kind}\0{request.operation}\0{request.specification}".encode()).hexdigest()

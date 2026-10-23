@@ -6,6 +6,7 @@ import gzip
 import io
 import sqlite3
 import zipfile
+import ast
 from pathlib import Path
 import random
 import time
@@ -19,7 +20,7 @@ from .artifact_types import detect_kind
 
 def collect_files():
     paths=[]
-    for root in (Path('/usr/bin'), Path('/usr/lib'), Path('/etc'), Path('/usr/share')):
+    for root in (Path('/usr/bin'), Path('/usr/lib'), Path('/usr/lib/python3.13/site-packages'), Path('/etc'), Path('/usr/share')):
         if root.exists():
             found=0
             for path in root.rglob('*'):
@@ -27,6 +28,14 @@ def collect_files():
                     paths.append(path); found += 1
                 if found >= 256: break
     return paths
+
+
+def code_summary(raw: bytes) -> list[float]:
+    """Generic Python structure labels, computed only for training samples."""
+    try:
+        tree=ast.parse(raw.decode('utf-8')); nodes=list(ast.walk(tree))
+        return [min(len(raw)/65536,1.), min(raw.count(b'\n')/2048,1.), min(sum(isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef)) for n in nodes)/64,1.), min(sum(isinstance(n,ast.ClassDef) for n in nodes)/32,1.), min(sum(isinstance(n,ast.Import) or isinstance(n,ast.ImportFrom) for n in nodes)/64,1.)]
+    except (SyntaxError,UnicodeDecodeError): return [0.,0.,0.,0.,0.]
 
 
 def train_any2any(out, *, steps=256, seed=104734, width=64):
@@ -59,7 +68,8 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
             heads=model.heads(encoded,guidance[:,None]); output=heads['red_logits']
             target=torch.tensor(list(window),device=output.device)[None]
             kind_target=torch.tensor([kind_index(kind)],device=output.device)
-            loss=F.cross_entropy(output.reshape(-1,257),target.reshape(-1)) + .25 * F.cross_entropy(heads['kind_logits'],kind_target)
+            summary_target=torch.tensor([code_summary(raw)],device=output.device)
+            loss=F.cross_entropy(output.reshape(-1,257),target.reshape(-1)) + .25 * F.cross_entropy(heads['kind_logits'],kind_target) + .5 * F.mse_loss(heads['summary'],summary_target)
             optimizer.zero_grad(); loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(),1.); optimizer.step(); losses.append(float(loss.detach()))
             if (step+1)%32==0:
                 event={'step':step+1,'loss':sum(losses)/len(losses),'samples':len(samples),'wall_seconds':time.perf_counter()-started}
