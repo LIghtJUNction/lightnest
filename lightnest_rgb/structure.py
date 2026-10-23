@@ -37,7 +37,7 @@ class StructureNet(nn.Module):
   super().__init__();self.byte=nn.Embedding(257,width);self.conv=nn.Sequential(nn.Conv1d(width,width,5,padding=2),nn.GELU(),nn.Conv1d(width,width,5,padding=2),nn.GELU());self.head=nn.Sequential(nn.Linear(width,width),nn.GELU(),nn.Linear(width,6))
  def forward(self,raw):
   values=list(raw[:4096]) or [0]
-  values += [0] * max(0,5-len(values)); x=torch.tensor(values,dtype=torch.long)[None];h=self.byte(x).transpose(1,2);h=self.conv(h).mean(-1);return self.head(h)
+  values += [0] * max(0,5-len(values)); x=torch.tensor(values,dtype=torch.long)[None];h=self.byte(x).transpose(1,2);h=self.conv(h).sum(-1) / 64.;return self.head(h)
 
 def lex_tokens(raw):
  text=raw.decode('utf-8','ignore'); tokens=re.findall(r'[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[^\sA-Za-z_0-9]',text)[:4096]
