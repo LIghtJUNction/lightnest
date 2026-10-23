@@ -92,7 +92,7 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
             target=torch.tensor(list(window),device=output.device)[None]
             kind_target=torch.tensor([kind_index(kind)],device=output.device)
             summary_target=torch.tensor([code_summary(raw)],device=output.device)
-            selected_budget=artifact_budget_target(candidates,target)
+            selected_budget=artifact_budget_target(candidates,target,kind_target,summary_target)
             budget_loss=F.cross_entropy(blue_heads['budget_logits'],torch.tensor([selected_budget],device=output.device))
             loss=F.cross_entropy(output.reshape(-1,257),target.reshape(-1)) + .25 * F.cross_entropy(heads['kind_logits'],kind_target) + .5 * F.mse_loss(heads['summary'],summary_target) + .125 * budget_loss
             pair=repeated_pair(window)

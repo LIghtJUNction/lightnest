@@ -165,14 +165,16 @@ class ArtifactCore(nn.Module):
         return CopyPasteAction(start,end,target,"copy_replace"), {"abstract":abstract,"scores":scores,"budget":budget}
 
 
-def artifact_budget_target(candidates, target):
-    """Choose the earliest candidate that reconstructs the observed task target."""
+def artifact_budget_target(candidates, target, kind_target=None, summary_target=None):
+    """Choose the lowest task loss among the observed compute candidates."""
     if not candidates or target.ndim != 2 or target.shape[0] != 1:
         raise ValueError("invalid Any2Any budget supervision")
-    for index, candidate in enumerate(candidates):
-        prediction = candidate["red_logits"].argmax(-1)
-        if torch.equal(prediction, target):
-            return index
-    losses = [F.cross_entropy(candidate["red_logits"].reshape(-1, 257), target.reshape(-1)).detach().item()
-              for candidate in candidates]
+    losses = []
+    for candidate in candidates:
+        loss = F.cross_entropy(candidate["red_logits"].reshape(-1, 257), target.reshape(-1))
+        if kind_target is not None:
+            loss = loss + .25 * F.cross_entropy(candidate["kind_logits"], kind_target)
+        if summary_target is not None:
+            loss = loss + .5 * F.mse_loss(candidate["summary"], summary_target)
+        losses.append(loss.detach().item())
     return min(range(len(losses)), key=losses.__getitem__)
