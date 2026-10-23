@@ -13,5 +13,5 @@ class Any2AnyTests(unittest.TestCase):
         encoded,_=model.encode(b'{"x":1}',request); abstract,guidance=model.think(encoded,2); heads=model.heads(encoded,guidance[:,None])
         self.assertEqual(abstract.shape[-1],128); self.assertEqual(heads['blue_logits'].shape[-1],257)
     def test_invalid_request_kind(self):
-        with self.assertRaises(ValueError): ArtifactRequest('unknown','make')
+        with self.assertRaises(ValueError): ArtifactRequest('', 'make')
 if __name__=='__main__': unittest.main()

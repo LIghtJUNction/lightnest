@@ -16,6 +16,13 @@ from torch import nn
 KINDS = ("raw", "text", "json", "csv", "elf", "pe", "macho", "archive", "compressed", "image", "audio", "pdf", "sqlite", "bytecode")
 
 
+def kind_index(kind: str) -> int:
+    if not isinstance(kind, str) or not 1 <= len(kind) <= 128:
+        raise ValueError("artifact kind must be a short nonempty string")
+    if kind in KINDS: return KINDS.index(kind)
+    return 32 + int.from_bytes(hashlib.sha256(kind.encode()).digest()[:2], "little") % 224
+
+
 @dataclass(frozen=True)
 class ArtifactRequest:
     kind: str
@@ -23,7 +30,7 @@ class ArtifactRequest:
     specification: str = ""
 
     def __post_init__(self):
-        if self.kind not in KINDS or not self.operation or len(self.operation.encode()) > 512:
+        if not isinstance(self.kind, str) or not 1 <= len(self.kind) <= 128 or not self.operation or len(self.operation.encode()) > 512:
             raise ValueError("invalid Any2Any artifact request")
 
 
@@ -34,7 +41,7 @@ class ArtifactCore(nn.Module):
         if width % heads or width < 32 or max_bytes < 256: raise ValueError("invalid Any2Any geometry")
         self.width, self.max_bytes = width, max_bytes
         self.byte = nn.Embedding(257, width)
-        self.kind = nn.Embedding(len(KINDS), width)
+        self.kind = nn.Embedding(256, width)
         self.position = nn.Embedding(max_bytes, width)
         self.encoder = nn.TransformerEncoder(nn.TransformerEncoderLayer(width, heads, 4 * width, batch_first=True, norm_first=True), 4)
         self.red = nn.GRUCell(width, width)
@@ -46,7 +53,7 @@ class ArtifactCore(nn.Module):
 
     def encode(self, raw: bytes, request: ArtifactRequest):
         if not 1 <= len(raw) <= self.max_bytes: raise ValueError("artifact exceeds Any2Any capacity")
-        kind = torch.tensor([KINDS.index(request.kind)], device=self.byte.weight.device)
+        kind = torch.tensor([kind_index(request.kind)], device=self.byte.weight.device)
         values = torch.tensor(list(raw), device=self.byte.weight.device)[None]
         pos = torch.arange(len(raw), device=values.device)[None]
         return self.encoder(self.byte(values) + self.position(pos) + self.kind(kind)[:, None]), kind
