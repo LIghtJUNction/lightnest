@@ -1,0 +1,22 @@
+[project]
+name = "lightnest"
+version = "0.0.0"
+description = "Bounded RV32 program modification research"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "torch==2.10.0",
+  "numpy==2.3.5",
+  "iced-x86==1.21.0",
+  "pyelftools==0.32",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

@@ -10,21 +10,15 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v7
         with:
-          python-version: '3.13'
+          version: '0.13.4'
       - name: Install compiler test tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gcc clang lld
-          command -v gcc clang ld.lld
-      - name: Install CPU Torch
-        run: python -m pip install --index-url https://download.pytorch.org/whl/cpu torch==2.10.0
-      - name: Inspect source-only tree
-        run: python tools/check_source_tree.py
-      - name: Check Python code
-        run: python -m compileall -q hybrid baseline experiments tools tests
-      - name: Run tests without external weights
-        run: python -m unittest discover -s tests -t . -v
-      - name: Run template/cache/delta tests
-        run: PYTHONPATH=tools/template_io python -m unittest discover -s tools/template_io -p 'test_*.py' -v
+          sudo apt-get install -y --no-install-recommends gcc clang lld llvm
+          command -v gcc clang ld.lld llvm-mc
+      - name: Sync locked environment
+        run: uv sync --locked
+      - name: Run shared source checks
+        run: uv run --locked python tools/check.py

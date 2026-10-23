@@ -4,7 +4,7 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 ALLOWED = {'.py', '.c', '.md', '.json', '.txt', '.yml', '.yaml', '.toml', '.lean'}
-SPECIAL = {'.gitignore', 'lean-toolchain'}
+SPECIAL = {'.gitignore', '.editorconfig', '.python-version', 'uv.lock', 'lean-toolchain'}
 IGNORE = {'.git', '__pycache__', '.venv', '.pytest_cache', '.mypy_cache', '.ruff_cache', '.lake'}
 FORBIDDEN = {'data', 'baseline_data', 'models', 'results', 'runs', 'caches', 'checkpoints', '.lake'}
 
@@ -12,9 +12,13 @@ FORBIDDEN = {'data', 'baseline_data', 'models', 'results', 'runs', 'caches', 'ch
 def check(root: Path = ROOT) -> tuple[int, list[str]]:
     root = root.resolve()
     if (root / '.git').exists():
-        result = subprocess.run(['git', '-C', str(root), 'ls-files', '-z'],
+        result = subprocess.run(['git', '-C', str(root), 'ls-files', '--cached', '--others', '--exclude-standard', '-z'],
                                 capture_output=True, check=True)
-        paths = [root / p.decode('utf-8') for p in result.stdout.split(b'\0') if p]
+        deleted = subprocess.run(['git', '-C', str(root), 'ls-files', '--deleted', '-z'],
+                                 capture_output=True, check=True)
+        removed = set(deleted.stdout.split(b'\0'))
+        paths = [root / p.decode('utf-8') for p in sorted(set(result.stdout.split(b'\0')))
+                 if p and p not in removed]
     else:
         paths = [p for p in root.rglob('*') if p.is_file()
                  and not IGNORE.intersection(p.relative_to(root).parts)]

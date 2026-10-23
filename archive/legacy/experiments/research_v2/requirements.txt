@@ -1,0 +1,2 @@
+# Compatibility for older tooling; use uv sync --locked from the repository root.
+-r ../../requirements.txt

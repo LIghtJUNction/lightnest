@@ -11,10 +11,9 @@
 原始归档：<https://drive.google.com/file/d/1qRqHhF-NFh08VrAnQNjqbsVhF-xoOV1-/view>
 
 ```bash
-python -m pip install --index-url https://download.pytorch.org/whl/cpu torch==2.10.0
-python -m pip install numpy==2.3.5
+uv sync --locked
 export LIGHTNEST_ARTIFACT_ROOT=/absolute/path/to/LightNest_Hybrid_v1
-python -m unittest experiments.research_v2.test_methods -v
+uv run --locked python -m unittest experiments.research_v2.test_methods -v
 ```
 
 这 12 项机制检查不需要外部模型权重，可在源代码仓库中不设置环境变量直接运行。训练、模型推断、历史复算必须使用完整原始归档。只有基础源码的 Git 克隆不能代替已训练权重。
@@ -39,19 +38,19 @@ print(BackwardSlice().plan([request])[0])
 
 ```bash
 export RUN=/absolute/path/to/new-research-v2-run
-python -m experiments.research_v2.prepare --output "$RUN" --index-archive /path/to/LightNest_scale_v2_10k_dataset.zip
+uv run --locked python -m experiments.research_v2.prepare --output "$RUN" --index-archive /path/to/LightNest_scale_v2_10k_dataset.zip
 for seed in 104729 130363; do
-  python -m experiments.research_v2.run train --root "$RUN" --seed "$seed"
+  uv run --locked python -m experiments.research_v2.run train --root "$RUN" --seed "$seed"
 done
 for seed in 104729 130363; do
-  python -m experiments.research_v2.run develop --root "$RUN" --seed "$seed"
+  uv run --locked python -m experiments.research_v2.run develop --root "$RUN" --seed "$seed"
 done
 ```
 
 原实验是在公开校准结果出现后、任何新测试推断之前增加固定阈值 0 和始终 STOP 对照。复现时先保存这一说明，供冻结记录引用，不省略此步骤：
 
 ```bash
-python - <<'PY'
+uv run --locked python - <<'PY'
 import os
 from pathlib import Path
 from datetime import datetime, timezone
@@ -62,16 +61,16 @@ write(Path(os.environ['RUN'])/'driver-amendment.json', {
     'holdout_queries': 0})
 PY
 for seed in 104729 130363; do
-  python -m experiments.research_v2.controls development --root "$RUN" --seed "$seed"
+  uv run --locked python -m experiments.research_v2.controls development --root "$RUN" --seed "$seed"
 done
-python -m experiments.research_v2.controls freeze --root "$RUN"
+uv run --locked python -m experiments.research_v2.controls freeze --root "$RUN"
 for seed in 104729 130363; do
-  python -m experiments.research_v2.run test --root "$RUN" --seed "$seed"
-  python -m experiments.research_v2.controls holdout --root "$RUN" --seed "$seed"
+  uv run --locked python -m experiments.research_v2.run test --root "$RUN" --seed "$seed"
+  uv run --locked python -m experiments.research_v2.controls holdout --root "$RUN" --seed "$seed"
 done
-python -m experiments.research_v2.audit --root "$RUN"
-python -m experiments.research_v2.benchmark --root "$RUN"
-python -m experiments.research_v2.boundaries --root "$RUN"
+uv run --locked python -m experiments.research_v2.audit --root "$RUN"
+uv run --locked python -m experiments.research_v2.benchmark --root "$RUN"
+uv run --locked python -m experiments.research_v2.boundaries --root "$RUN"
 ```
 
 必须完成两个种子的公开开发阶段和选择冻结，再执行任何新测试；顺序不可交换。正式报告中的测试题现在已经公开使用，重跑这些命令是复现，不是新的泛化证据。

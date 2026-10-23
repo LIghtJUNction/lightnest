@@ -1,0 +1,56 @@
+# 开发约定
+
+## 环境与检查
+
+使用 uv 管理 Python 3.13、项目虚拟环境和依赖。`pyproject.toml` 声明直接依赖，
+`uv.lock` 固定完整依赖；Torch 使用官方 CPU 索引，与现有实验保持一致。
+编译测试还需要 GCC、Clang 和 LLD；检查入口会在缺少这些工具时失败，避免静默跳过编译测试。
+`environment.json` 记录原实验环境，不代表当前机器的环境。
+
+```bash
+uv sync --locked
+uv run --locked python tools/check.py
+```
+
+`tools/check.py` 统一执行源码树检查、Python 语法检查、根目录测试和
+template/cache/delta 测试，可从任意工作目录调用。不需要外部权重，也不启动训练。
+它不生成 Python 字节码；编译测试使用临时目录。
+
+修改 Lean 规格或证明工具时，安装 `formal/lean-toolchain` 指定的工具链，再执行：
+
+```bash
+uv run --locked python tools/check.py --lean
+```
+
+这会额外执行完整证明检查。普通 Python 测试通过不代表 Lean 证明已通过。
+只运行某组测试时，使用对应复现文档里的命令；完整提交检查使用统一入口。
+执行旧文档中的 Python 命令时，在命令前加 `uv run --locked`，即可使用项目环境。
+修改依赖后执行 `uv lock`，将 `pyproject.toml` 和 `uv.lock` 一起提交。
+`requirements.txt` 仅供旧工具兼容，由锁文件导出，不手工维护。依赖变更后同步更新：
+
+```bash
+uv export --locked --no-hashes --no-emit-project --emit-index-url --output-file requirements.txt
+```
+
+## 目录与修改范围
+
+- `experiments/<名称>_<版本>/`：独立实验源码及协议。新增实验同时补齐报告、复现步骤和索引。
+- `hybrid/`：Hybrid 研究实现。
+- `baseline/LightNest_RGB_v2/`：现有 RGB/C64 依赖；深层架构文件仍由运行时加载，不按目录名删除或移动。
+- `tools/`：源码检查、形式化辅助验证和独立工具。
+- `tests/`：无需外部权重的回归检查；template I/O 测试保留在工具目录。
+- `formal/`：Lean 规格、证明及固定工具链。
+- `docs/`：架构、研究记录和复现文档，入口见 [文档导航](docs/README.md)。
+
+新增 Python 代码使用四空格缩进、UTF-8 和 LF；编辑器设置见 `.editorconfig`。
+保留既有导入入口，不为排版批量改写历史实验或来源快照。
+
+## 实验资料与结论
+
+权重、数据集、运行日志、原始结果、编译产物和缓存放在仓库外；不要用
+`git add -f` 绕过忽略规则。外部资料说明见 [ARTIFACTS](docs/ARTIFACTS.md)。
+保留协议、源码来源和上游许可；来源未核实前不要自行添加项目许可证。
+
+修改机制时运行对应行为测试。修改研究结论时提供冻结输入、预算、对照和验收证据；
+区分单元测试、已有实验重放、新实验和模型晋升。历史报告保留当时的失败和限制，
+新增结果另写文档，不覆盖旧记录或改写冻结哈希。

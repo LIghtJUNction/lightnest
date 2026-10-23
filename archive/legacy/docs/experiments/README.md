@@ -1,6 +1,6 @@
 # LightNest 实验记录索引
 
-这些文档保留实验时的原始结论，包括**未通过的模型、错误早停、旧能力退步和负面结果**。文档不是当前可选源码版本；唯一最新实现见仓库 `hybrid/`、`baseline/LightNest_RGB_v2/` 和 `tools/template_io/`。
+这些文档保留实验时的原始结论，包括**未通过的模型、错误早停、旧能力退步和负面结果**。文档不是当前可选源码版本；现有实现位于 `experiments/`、`hybrid/`、`baseline/LightNest_RGB_v2/` 和 `tools/template_io/`。复现入口见 [文档导航](../README.md)。
 
 | 方向 | 文档 |
 |---|---|
@@ -11,7 +11,9 @@
 | 困难样本与大规模训练 | [困难训练](2026-10-18-harder.md)、[数据标准化](2026-10-18-dataset.md)、[10k 扩量](2026-10-18-scale-10k.md) |
 | 红蓝绿三模块 | [RGB v0](2026-10-18-rgb-v0.md)、[RGB v1](2026-10-18-rgb-v1.md)、[RGB v2](2026-10-19-rgb-v2.md) |
 | I/O 复用与自适应推理 | [模板 I/O](2026-10-18-template-io-v1.md)、[Hybrid v1](2026-10-19-hybrid-v1.md) |
-
+| 结构规则与学习对照 | [Research v2](2026-10-20-research-v2.md) |
+| 编译程序与局部修复 | [Compiled v3](2026-10-20-compiled-v3.md)、[Repair memory v1](2026-10-20-repair-memory-v1.md) |
+| 形式化辅助验证 | [Lean 验证记录](2026-10-20-lean-verification.md) |
 | 必要修改的训练反馈 | [反馈分配机制 v1（2026-10-20）](2026-10-20-required-edit-mechanism.md)：同预算对照，效果有限，未晋升 |
 
 **比较原则：** 每份报告的分母、模型起点、程序类别与数据冻结时间可能不同，不能拼接百分比。只有前后在同一批样本及同一评分规则下的对照才可比较。实验用过的保留题今后必须当作公开回归。

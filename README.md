@@ -1,63 +1,53 @@
 # LightNest
 
-受限 RV32 程序修改研究项目：读取请求及机器码，分析依赖，生成候选修改，并用有界解释器测试结果。**不是通用语言模型，也没有证明能安全修改真实大型软件。**
+**以多种 CPU 架构的机器码理解、修改和生成作为长期目标，先在本机 Linux x86-64 上训练。**
+当前主线是 PyTorch 实现的 Universal Machine v1：处理变长指令、架构标识、请求、
+寄存器依赖和可见输入/输出要求，预测整段代码的修改集合。
 
-## 当前版本与验收状态
+当前已接入 iced-x86 与 LLVM 多目标编解码、ELF 函数提取、本机编译训练语料和受限
+执行器。**解码支持、实际执行支持与经过训练的能力分别记录**；其他平台尚未训练，
+不能据此宣称已学会所有 CPU 指令或成为最强模型。实际结果见 [训练记录](docs/RESULTS.md)。
 
-- **最新机制探索：Repair memory v1（2026-10-20）**。不改神经架构，保留最多8个有可见进展的局部候选。2,448个任务中，相对同样允许双修改的随机搜索净增90个修复，候选尝试减少45.12%；但错误放行从41增至45，不默认启用。见 [机制报告](docs/experiments/2026-10-20-repair-memory-v1.md) 与 [复现](docs/reproduce/repair-memory-v1.md)。
-- **Compiled v3** 保留16类编译C程序与真实zlib补充实验、执行路径筛选及反例。见 [报告](docs/experiments/2026-10-20-compiled-v3.md)。
-- **当前稳定默认路径：C64（固定64轮）**。本轮无神经训练，不修改C64、Hybrid或原权重，不默认启用候选修复工具。
-- **Research v2** 保留结构规则、学习对照及反例；**Hybrid v1 / RGB v2** 保留现有神经源码；**template_io v1** 提供精确缓存、结构缓存与差量工具。
+## 使用
 
-编译修复任务额外接收可见的输入/输出测试要求。它与旧版仅接收请求文本和机器码的结构变换任务不同，不可直接比较准确率。真实函数的错误也是人工注入，不是生产缺陷修复成绩。
+```bash
+uv sync --locked
+uv run --locked python tools/check.py
+uv run --locked python -m lightnest_native targets
+uv run --locked python -m lightnest_native decode --architecture x86_64 --hex 4889f84801f0c3
+uv run --locked python -m lightnest_native inspect-elf /path/to/program.o
+```
 
-## 仓库范围
+汇编器从标准输入读取汇编，通过 LLVM 输出机器码；有未解决重定位时拒绝返回
+独立代码块。对应入口为 `uv run --locked python -m lightnest_native assemble --architecture aarch64`。
 
-只提交最新源码、必要协议、测试和研究文档。不提交模型权重、数据集、原始结果、生成的ELF/机器码、共享库或缓存。完整原始档案留在外部存储。
+修改代码时，用验证式解码入口指定真实检查点和仓库外的新工作目录：
+
+```bash
+uv run --locked python -m lightnest_native repair \
+  --checkpoint /path/to/universal-104729.pt --workdir /tmp/lightnest-repair-new < requests.jsonl
+```
+
+每行含 `architecture`、`command`、十六进制 `binary` 和 `examples`；可见样例包含
+三个 uint64 输入及一个 uint64 输出。`repair` 在受限子进程核对可见样例，按神经
+不确定性做有预算的候选搜索；通过仍不是正确性证明，不覆盖文件。
+`predict` 保留纯神经、完全不执行候选的诊断入口。当前训练检查点只接受 x86-64，
+跨平台请求会明确拒绝。
+
+## 目录
 
 ```text
-experiments/repair_memory_v1/     有证据的局部进展保留、五种对照与评价
-experiments/compiled_v3/          C生成、RV32IM解释器、候选搜索、评价与复算
-experiments/compiled_external_v3/ zlib函数提取、上游许可与独立补充实验
-experiments/research_v2/          既有结构/学习对照与反例
-hybrid/                          状态桥和模式切换研究
-baseline/LightNest_RGB_v2/       当前RGB/C64依赖源码
-formal/                          Lean规格、证明与公理审计，不含构建产物
-tools/template_io/               缓存与差量工具
-tools/replay_compiled_v3.py       最新源码重放既有正式决策
-tests/                           不依赖外部权重的源码检查
-docs/                            实验报告与复现步骤
+lightnest_native/   当前多架构接口、PyTorch 模型、x86-64 语料和受限执行器
+tests/             当前模型、指令后端、ELF 与执行边界测试
+tools/             统一检查和源码树检查
+docs/              当前架构、复现、能力边界及实测结果
+archive/legacy/    原 C64、RGB、Hybrid 和其他历史实验，保留测试与证明
+archive/rpn3_rv32/  本次先完成的 RV32 新架构，对照保留
 ```
 
-`baseline/.../work/.../arch/breakthrough_model.py` 是当前加载需要的固定架构定义，不是旧模型权重。
+训练数据、检查点、优化器状态和逐条结果均保存在仓库外。源代码检查使用 Python 3.13、
+PyTorch 2.10 CPU 和锁定依赖；需要 GCC、Clang、LLD、LLVM 工具。本机执行器使用 Linux
+seccomp、内存/时间限制和只读可执行代码页。
 
-## 本地检查
-
-Python 3.13。旧源码测试需要原依赖；编译与记忆机制实验本身只需标准库和GCC、Clang、LLD。自动检查会安装编译工具，避免编译测试因缺工具而跳过。
-
-```bash
-python -m pip install -r requirements.txt
-python tools/check_source_tree.py
-python -m unittest discover -s tests -t . -v
-PYTHONPATH=tools/template_io python -m unittest discover -s tools/template_io -p 'test_*.py' -v
-```
-
-所有输出目录必须在仓库外。模型推断和旧模型回归仍需 [外部权重与数据](docs/ARTIFACTS.md)，不能使用随机初始化冒充已训练模型。
-
-## Lean形式化辅助验证
-
-安装官方Elan并使 `lake` 可用后，在根目录执行：
-
-```bash
-python tools/check_lean.py
-```
-
-固定Lean 4.35.0，使用附带标准库，无需模型权重、GPU或Mathlib。完整检查在临时目录重建证明、审计公理、重新调用内核、对比Python实现，并确认故意错误的证明被拒绝；缺少工具会失败，不伪装为通过。每次push和PR都会运行独立的 `Lean proofs` CI。
-
-证明覆盖补丁不变量、共享循环分段、预算、有限验收记录保持及局部候选提交规则，不证明神经准确率、修复语义或整个Python/C实现正确。用法与未覆盖范围见 [Lean验证说明](docs/FORMAL_VERIFICATION.md)。
-
-## 阅读顺序
-
-[最新机制报告](docs/experiments/2026-10-20-repair-memory-v1.md) · [Compiled v3](docs/experiments/2026-10-20-compiled-v3.md) · [Research v2](docs/experiments/2026-10-20-research-v2.md) · [探索经验](docs/LESSONS.md) · [架构边界](docs/ARCHITECTURE.md) · [实验记录](docs/experiments/) · [来源说明](docs/SOURCE_PROVENANCE.md) · [版权说明](NOTICE.md)
-
-zlib提取代码的独立许可见 [LICENSE](experiments/compiled_external_v3/LICENSE.md)。通过少量样例不等于正确性证明。候选只在有界解释器执行，不覆盖输入文件，不运行宿主机候选。
+[架构](docs/ARCHITECTURE.md) · [复现](docs/REPRODUCE.md) · [结果](docs/RESULTS.md)
+· [开发约定](CONTRIBUTING.md) · [归档](archive/README.md) · [来源与版权](NOTICE.md)

@@ -1,0 +1,2 @@
+# Compatibility for archived tools; dependencies are owned by the root uv project.
+-r ../../requirements.txt

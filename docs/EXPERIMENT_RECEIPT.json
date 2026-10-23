@@ -1,0 +1,77 @@
+{
+  "architecture": "lightnest-universal-machine-v1",
+  "parameters": 544857,
+  "trained_architectures": [
+    "x86_64"
+  ],
+  "neural_protocol_sha256": "6dfc841fddc20d6cb8ef8a643b582587133d7ee594f02830608d172fadd25c2e",
+  "verified_protocol_sha256": "c5c77f62adfbc1c8a411c7a0c4e9045abcf58036a22327e89635e2c22d36e964",
+  "neural_models": {
+    "104729": {
+      "checkpoint_sha256": "34e02082e57850d8fa6e9651aa2e7a466e1102b3c8143dbe3ced3caae5161908",
+      "updates": 1536,
+      "presentations": 12288,
+      "unique_records": 640,
+      "stream_sha256": "fba7c968e801ea4d0d38bccc2a2ef344c35a17a6f7629eed99732adfd1f6f109"
+    },
+    "130363": {
+      "checkpoint_sha256": "86f5a88ae9be9c0becba819e256b0498d3c5dff880e2ecfcc8ecb1610d78ae7c",
+      "updates": 1536,
+      "presentations": 12288,
+      "unique_records": 640,
+      "stream_sha256": "fba7c968e801ea4d0d38bccc2a2ef344c35a17a6f7629eed99732adfd1f6f109"
+    }
+  },
+  "fresh_verified_test": {
+    "104729": {
+      "neural": {
+        "rows": 256,
+        "edits": 128,
+        "strict_edits": 95,
+        "strict_total": 212,
+        "false_edits": 11,
+        "false_accepts_on_hidden": 42
+      },
+      "verified": {
+        "rows": 256,
+        "edits": 128,
+        "strict_edits": 109,
+        "strict_total": 237,
+        "false_edits": 0,
+        "false_accepts_on_hidden": 0
+      },
+      "verified_candidate_attempts": 3127,
+      "lost_successes": 0,
+      "added_successes": 25
+    },
+    "130363": {
+      "neural": {
+        "rows": 256,
+        "edits": 128,
+        "strict_edits": 95,
+        "strict_total": 208,
+        "false_edits": 15,
+        "false_accepts_on_hidden": 48
+      },
+      "verified": {
+        "rows": 256,
+        "edits": 128,
+        "strict_edits": 108,
+        "strict_total": 236,
+        "false_edits": 0,
+        "false_accepts_on_hidden": 0
+      },
+      "verified_candidate_attempts": 3333,
+      "lost_successes": 0,
+      "added_successes": 28
+    }
+  },
+  "source_tests": {
+    "native": 23,
+    "archived_rpn3": 19,
+    "archived_legacy": 77,
+    "template_tools": 23
+  },
+  "promoted": false,
+  "scope": "synthetic x86-64 function transformations; other targets have compiler/decoder interfaces only"
+}
