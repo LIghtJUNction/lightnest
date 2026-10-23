@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+import asyncio
 
 from .artifact import inspect_elf, write_image
 from .execute import Case, ExecutableRunner
 from .iterate import Example, RGBEditor
 from .training import load_generator, load_policy
+from .self_agent import SelfAgent
 
 
 class RGBArtifactAgent:
@@ -34,3 +36,7 @@ class RGBArtifactAgent:
         if not result["stop"]: raise ValueError("editor abstained")
         if output is not None: result["artifact"] = write_image(Path(output), raw)
         result["elf"] = inspect_elf(raw); return result
+
+    def inspect_project(self, root):
+        """Run the generic async inspection tools against an unseen project."""
+        return asyncio.run(SelfAgent().inspect(Path(root)))
