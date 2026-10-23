@@ -15,6 +15,23 @@ from torch import nn
 
 KINDS = ("raw", "text", "json", "csv", "elf", "pe", "macho", "archive", "compressed", "image", "audio", "pdf", "sqlite", "bytecode")
 
+@dataclass(frozen=True)
+class CopyPasteAction:
+    source_start: int
+    source_end: int
+    target_start: int
+    operation: str = "copy_paste"
+
+    def __post_init__(self):
+        if self.operation != "copy_paste" or min(self.source_start,self.source_end,self.target_start) < 0 or self.source_end <= self.source_start:
+            raise ValueError("invalid copy/paste action")
+
+
+def apply_copy_paste(raw: bytes, action: CopyPasteAction, expected_sha256: str) -> bytes:
+    if hashlib.sha256(raw).hexdigest() != expected_sha256: raise ValueError("artifact identity changed")
+    if action.source_end > len(raw) or action.target_start + action.source_end-action.source_start > len(raw): raise ValueError("copy/paste range out of bounds")
+    result=bytearray(raw); result[action.target_start:action.target_start+action.source_end-action.source_start]=raw[action.source_start:action.source_end]; return bytes(result)
+
 
 def kind_index(kind: str) -> int:
     if not isinstance(kind, str) or not 1 <= len(kind) <= 128:
@@ -49,6 +66,7 @@ class ArtifactCore(nn.Module):
         self.to_blue = nn.Linear(4 * width, width)
         self.kind_head = nn.Linear(width, 256)
         self.summary_head = nn.Linear(width, 5)
+        self.copy_query = nn.Linear(width, width, bias=False)
         self.blue_byte = nn.Linear(width, 257)
         self.red_byte = nn.Linear(width, 257)
         self.stop = nn.Linear(width, 1)
@@ -88,7 +106,13 @@ class ArtifactCore(nn.Module):
         red = self.red_byte(encoded)
         kind_context = blue_guidance.mean(1) if blue_guidance.ndim == 3 else blue_guidance
         return {"blue_logits": blue, "red_logits": red, "stop_logits": self.stop(encoded).squeeze(-1),
-                "kind_logits": self.kind_head(kind_context), "summary": self.summary_head(kind_context)}
+                "kind_logits": self.kind_head(kind_context), "summary": self.summary_head(kind_context),
+                "copy_paste": self.copy_paste_scores(encoded, kind_context)}
 
     def fingerprint(self, request: ArtifactRequest):
         return hashlib.sha256(f"{request.kind}\0{request.operation}\0{request.specification}".encode()).hexdigest()
+
+    def copy_paste_scores(self, encoded, guidance):
+        """Native pointer scores for source interval and destination offset."""
+        tokens=encoded.shape[1]; query=self.copy_query(encoded + guidance[:,None]); scores=query @ query.transpose(-1,-2) / self.width**.5
+        return {"source_start": scores.mean(1), "source_end": scores.mean(1), "target_start": scores.mean(1), "length": scores.mean(1)}

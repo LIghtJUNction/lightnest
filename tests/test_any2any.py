@@ -1,5 +1,6 @@
 import unittest
-from lightnest_rgb.any2any import ArtifactCore, ArtifactRequest, KINDS
+from lightnest_rgb.any2any import ArtifactCore, ArtifactRequest, KINDS, CopyPasteAction, apply_copy_paste
+import hashlib
 from lightnest_rgb.artifact_types import detect_kind, inspect_artifact
 
 class Any2AnyTests(unittest.TestCase):
@@ -14,4 +15,8 @@ class Any2AnyTests(unittest.TestCase):
         self.assertEqual(abstract.shape[-1],128); self.assertEqual(heads['blue_logits'].shape[-1],257)
     def test_invalid_request_kind(self):
         with self.assertRaises(ValueError): ArtifactRequest('', 'make')
+    def test_native_copy_paste_is_hash_and_range_checked(self):
+        raw=b'abcabc'; out=apply_copy_paste(raw,CopyPasteAction(0,3,3),hashlib.sha256(raw).hexdigest())
+        self.assertEqual(out,raw)
+        with self.assertRaises(ValueError): apply_copy_paste(raw,CopyPasteAction(0,4,3),hashlib.sha256(raw).hexdigest())
 if __name__=='__main__': unittest.main()
