@@ -39,14 +39,17 @@ class StructureNet(nn.Module):
   values += [0] * max(0,5-len(values)); x=torch.tensor(values,dtype=torch.long)[None];h=self.byte(x).transpose(1,2);h=self.conv(h).mean(-1);return self.head(h)
 
 def lex_tokens(raw):
- text=raw.decode('utf-8','ignore'); tokens=re.findall(r'[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[^\sA-Za-z_0-9]',text)[:512]
+ text=raw.decode('utf-8','ignore'); tokens=re.findall(r'[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[^\sA-Za-z_0-9]',text)[:4096]
  return [int.from_bytes(hashlib.sha256(t.encode()).digest()[:2],'little')%512 for t in tokens] or [0]
 
 class TokenStructureNet(nn.Module):
  def __init__(self,width=64):
   super().__init__();self.token=nn.Embedding(512,width);self.gru=nn.GRU(width,width,2,batch_first=True);self.head=nn.Sequential(nn.Linear(width,width),nn.GELU(),nn.Linear(width,6))
  def forward(self,raw):
-  x=torch.tensor(lex_tokens(raw),dtype=torch.long)[None];_,h=self.gru(self.token(x));return self.head(h[-1])
+  ids=lex_tokens(raw); states=[]
+  for start in range(0,len(ids),256):
+   x=torch.tensor(ids[start:start+256],dtype=torch.long)[None];_,h=self.gru(self.token(x));states.append(h[-1])
+  return self.head(torch.stack(states).mean(0))
 
 def train(out,steps=1024,seed=104748,resume=None):
  out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed)+external_sources()
@@ -56,7 +59,7 @@ def train(out,steps=1024,seed=104748,resume=None):
  rng=random.Random(seed);losses=[]
  with (out/'updates.jsonl').open('x') as log:
   for step in range(start,start+steps):
-   raw=rng.choice(samples);target=torch.tensor([facts(raw)]);loss=F.mse_loss(model(raw),target);opt.zero_grad();loss.backward();opt.step();losses.append(float(loss.detach()))
+   raw=rng.choice(samples);target=torch.tensor([facts(raw)]);loss=F.mse_loss(model(raw[:8192]),target);opt.zero_grad();loss.backward();opt.step();losses.append(float(loss.detach()))
    if (step+1)%64==0:
     log.write(json.dumps({'step':step+1,'loss':sum(losses)/len(losses)})+'\n');log.flush();losses=[]
     torch.save({'state_dict':model.state_dict(),'step':step+1},out/f'step-{step+1}.pt')
