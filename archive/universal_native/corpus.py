@@ -16,7 +16,7 @@ from elftools.elf.elffile import ELFFile
 from .sandbox import Sandbox
 from .targets import decode, host_architecture
 
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parents[2]
 MASK=2**64-1
 FAMILIES=('add_sub','xor_or','and_or','left_right','rotate','minimum_maximum','constant','compare')
 
@@ -243,7 +243,7 @@ def prepare(out,historical_run,groups=32):
         if accepted==64:break
     if not accepted:raise ValueError('no historical TRAIN data converted')
     for split,rows in datasets.items():jsonl(out/'data'/f'{split}.jsonl',rows)
-    source={str(p.relative_to(ROOT)):sha(p) for p in sorted((ROOT/'lightnest_native').glob('*')) if p.suffix in ('.py','.c')}
+    source={str(p.relative_to(ROOT)):sha(p) for p in sorted((ROOT/'archive'/'universal_native').glob('*')) if p.suffix in ('.py','.c')}
     protocol={'architecture':'lightnest-universal-machine-v1','created_utc':datetime.now(timezone.utc).isoformat(),
               'host_architecture':host_architecture(),'compiler':subprocess.check_output(['clang','--version']).decode().splitlines()[0],
               'compiler_target':'x86-64-v3','historical_train_sha256':sha(train_path),'historical_groups_converted':accepted,

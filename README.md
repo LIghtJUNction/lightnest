@@ -1,53 +1,44 @@
 # LightNest
 
-**以多种 CPU 架构的机器码理解、修改和生成作为长期目标，先在本机 Linux x86-64 上训练。**
-当前主线是 PyTorch 实现的 Universal Machine v1：处理变长指令、架构标识、请求、
-寄存器依赖和可见输入/输出要求，预测整段代码的修改集合。
+RGB 是当前唯一训练主线：用 PyTorch 学习理解、编辑和生成完整二进制文件，先做本机 Linux x86-64。
 
-当前已接入 iced-x86 与 LLVM 多目标编解码、ELF 函数提取、本机编译训练语料和受限
-执行器。**解码支持、实际执行支持与经过训练的能力分别记录**；其他平台尚未训练，
-不能据此宣称已学会所有 CPU 指令或成为最强模型。实际结果见 [训练记录](docs/RESULTS.md)。
+参考北邮 [MiTA](https://arxiv.org/html/2602.01219v6) 对注意力与输入相关前馈网络的解释：
+绿区压缩全局信息并保留可路由的原始细节；蓝区快速提议；红区共享循环状态，按需增加思考深度。
+红区在同一文件上复用证据库，接受编辑后重新观测。
 
-## 使用
+目前真实语料包括 16 个安装在本机的命令行程序、2,048 个完整 ELF 编辑任务和 864 个
+完整 ELF 生成样本。故障是人工注入的；生成课程目前限定为指定退出码或输出 8 字节。
+这不等于任意程序理解、任意代码生成或已训练所有 CPU 指令。
 
 ```bash
 uv sync --locked
 uv run --locked python tools/check.py
-uv run --locked python -m lightnest_native targets
-uv run --locked python -m lightnest_native decode --architecture x86_64 --hex 4889f84801f0c3
-uv run --locked python -m lightnest_native inspect-elf /path/to/program.o
+uv run --locked python -m lightnest_rgb --help
+uv run --locked python -m lightnest_rgb inspect /usr/bin/sort
+uv run --locked python -m lightnest_rgb targets
+uv run --locked python -m lightnest_rgb decode --architecture x86_64 --hex 4889f84801f0c3
 ```
 
-汇编器从标准输入读取汇编，通过 LLVM 输出机器码；有未解决重定位时拒绝返回
-独立代码块。对应入口为 `uv run --locked python -m lightnest_native assemble --architecture aarch64`。
+多架构编解码接口沿用 iced-x86 / LLVM；实际训练和执行目前只有 x86-64。
+完整 ELF 解析给出入口、段、节、依赖与导入符号；这些确定性解析结果与模型学到的能力分别记录。
 
-修改代码时，用验证式解码入口指定真实检查点和仓库外的新工作目录：
-
-```bash
-uv run --locked python -m lightnest_native repair \
-  --checkpoint /path/to/universal-104729.pt --workdir /tmp/lightnest-repair-new < requests.jsonl
-```
-
-每行含 `architecture`、`command`、十六进制 `binary` 和 `examples`；可见样例包含
-三个 uint64 输入及一个 uint64 输出。`repair` 在受限子进程核对可见样例，按神经
-不确定性做有预算的候选搜索；通过仍不是正确性证明，不覆盖文件。
-`predict` 保留纯神经、完全不执行候选的诊断入口。当前训练检查点只接受 x86-64，
-跨平台请求会明确拒绝。
-
-## 目录
+生成器直接输出完整文件的所有字节；不会拼接文件头、套用模板或调用编译器代替模型生成。
+编辑器只接收原文件、请求和可见样例；候选在隔离环境中执行，测试通过也不是正确性证明。
+输出使用新路径，原文件保持不变。训练和使用步骤见 [RGB 复现](docs/RGB_REPRODUCE.md)。
 
 ```text
-lightnest_native/   当前多架构接口、PyTorch 模型、x86-64 语料和受限执行器
-tests/             当前模型、指令后端、ELF 与执行边界测试
-tools/             统一检查和源码树检查
-docs/              当前架构、复现、能力边界及实测结果
-archive/legacy/    原 C64、RGB、Hybrid 和其他历史实验，保留测试与证明
-archive/rpn3_rv32/  本次先完成的 RV32 新架构，对照保留
+lightnest_rgb/             RGB 主线、完整 ELF 工具、多架构编解码
+archive/universal_native/  原 Universal Machine v1 模型与工具
+archive/rpn3_rv32/         早期 RV32 架构
+archive/legacy/            其他历史实验与证明
+ tests/                   主线和归档行为测试
+ tools/                   本地统一检查
+ docs/                    设计、实验结果和复现步骤
 ```
 
-训练数据、检查点、优化器状态和逐条结果均保存在仓库外。源代码检查使用 Python 3.13、
-PyTorch 2.10 CPU 和锁定依赖；需要 GCC、Clang、LLD、LLVM 工具。本机执行器使用 Linux
-seccomp、内存/时间限制和只读可执行代码页。
+Python 3.13 / PyTorch 2.10 CPU 的依赖由 uv 锁定。测试需要 GCC、Clang、LLD、LLVM、
+bubblewrap 和 libseccomp；真实语料构建还需要对应命令行程序。权重、原始可执行文件、
+缓存、训练日志和逐条结果全部在仓库外。
 
-[架构](docs/ARCHITECTURE.md) · [复现](docs/REPRODUCE.md) · [结果](docs/RESULTS.md)
-· [开发约定](CONTRIBUTING.md) · [归档](archive/README.md) · [来源与版权](NOTICE.md)
+[RGB 设计](docs/RGB_DESIGN.md) · [历史结果](docs/RESULTS.md)
+· [开发约定](CONTRIBUTING.md) · [归档](archive/README.md) · [来源](NOTICE.md)

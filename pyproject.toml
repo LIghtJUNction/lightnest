@@ -1,7 +1,7 @@
 [project]
 name = "lightnest"
 version = "0.0.0"
-description = "Bounded RV32 program modification research"
+description = "RGB recurrent binary understanding, editing and complete ELF generation research"
 requires-python = ">=3.13,<3.14"
 dependencies = [
   "torch==2.10.0",

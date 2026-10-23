@@ -17,7 +17,7 @@ MiTA combines compressed global evidence and routed access to original details.
 Its shared and routed key/value pairs participate in one normalized attention;
 averaging two independently normalized answers changes the operator.
 
-Our adaptation will be a CPU-compatible PyTorch implementation, not a claimed
+Our adaptation is a CPU-compatible PyTorch implementation, not a claimed
 reproduction of the paper's vision training or GPU throughput. ELF addresses,
 duplicate occurrence maps and incremental edit invalidation are additional
 project-specific requirements. Paper fast weights are not synonymous with
@@ -52,7 +52,7 @@ Generation must output the complete image from trained model outputs. The writer
 does not append an ELF header, copy a template or silently repair invalid output.
 Linker-built examples are training targets, not the generation implementation.
 
-## Planned evidence
+## Evaluation protocol
 
 Use installed open-source CLI executables and separate program-level splits.
 Record package/artifact identity, real clean baselines, corruption difficulty,

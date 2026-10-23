@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE_DIRS = ("lightnest_rgb", "lightnest_native", "archive", "tools", "tests")
+SOURCE_DIRS = ("lightnest_rgb", "archive", "tools", "tests")
 
 
 def main() -> int:
@@ -19,7 +19,7 @@ def main() -> int:
 
     missing = [tool for tool in ("gcc", "clang", "ld.lld", "llvm-mc", "bwrap") if not shutil.which(tool)]
     if missing:
-        parser.exit(1, f"Missing compiler tools: {', '.join(missing)}. Install GCC, Clang, LLD and LLVM tools.\n")
+        parser.exit(1, f"Missing compiler tools: {', '.join(missing)}. Install GCC, Clang, LLD, LLVM tools and bubblewrap.\n")
 
     env = os.environ.copy()
     env["PYTHONDONTWRITEBYTECODE"] = "1"

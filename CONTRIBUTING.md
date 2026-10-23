@@ -4,7 +4,7 @@
 
 使用 uv 管理 Python 3.13、项目虚拟环境和依赖。`pyproject.toml` 声明直接依赖，
 `uv.lock` 固定完整依赖；Torch 使用官方 CPU 索引，与现有实验保持一致。
-编译测试还需要 GCC、Clang、LLD 和 LLVM 工具；检查入口会在缺少这些工具时失败，避免静默跳过编译测试。
+编译测试还需要 GCC、Clang、LLD、LLVM、bubblewrap 和 libseccomp；检查入口会在缺少这些工具时失败，避免静默跳过编译测试。
 `archive/legacy/environment.json` 记录原实验环境，不代表当前机器的环境。
 
 ```bash
@@ -34,7 +34,8 @@ uv export --locked --no-hashes --no-emit-project --emit-index-url --output-file 
 
 ## 目录与修改范围
 
-- `lightnest_native/`：当前多架构编解码、PyTorch 网络、本机数据、训练和受限执行。
+- `lightnest_rgb/`：当前 RGB 网络、完整 ELF 语料、多架构编解码、训练和隔离执行。
+- `archive/universal_native/`：原 Universal Machine v1，对照归档。
 - `tests/`：无需外部权重的新架构与证据边界检查。
 - `tools/`：统一检查与源码树检查。
 - `archive/legacy/`：历史架构、实验、测试、Lean 证明与文档；保留原内部相对结构。
@@ -42,7 +43,7 @@ uv export --locked --no-hashes --no-emit-project --emit-index-url --output-file 
 - `docs/`：当前架构、实测结果和复现步骤，入口见 [文档导航](docs/README.md)。
 
 新增 Python 代码使用四空格缩进、UTF-8 和 LF；编辑器设置见 `.editorconfig`。
-保留既有导入入口，不为排版批量改写历史实验或来源快照。
+迁移主线时同步迁移调用者；不为排版批量改写历史实验或来源快照。
 
 ## 实验资料与结论
 

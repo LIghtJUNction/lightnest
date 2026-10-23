@@ -9,11 +9,11 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 
 import torch
-from lightnest_native.corpus import FAMILIES,group,jsonl,outside,read,sha,write
-from lightnest_native.model import load
-from lightnest_native.repair import VerifiedRepair
-from lightnest_native.sandbox import Sandbox
-from lightnest_native.train import projected,sources
+from archive.universal_native.corpus import FAMILIES,group,jsonl,outside,read,sha,write
+from archive.universal_native.model import load
+from archive.universal_native.repair import VerifiedRepair
+from archive.universal_native.sandbox import Sandbox
+from archive.universal_native.train import projected,sources
 
 
 def prepare(out,models,previous):

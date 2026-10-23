@@ -25,3 +25,9 @@ uv run --locked python archive/legacy/tools/check_lean.py
 运行原来的 `hybrid`、`experiments` 等模块时先 `cd archive/legacy`，再以 `uv run --locked python ...`
 执行；uv 会向上找到根目录项目。源码树检查统一使用根目录 `tools/check_source_tree.py`。
 数据与权重仍放在仓库外，不因移动源码而迁移或删除外部档案。
+
+## Universal Machine v1
+
+`universal_native/` 保存原主线模型、数据与执行工具。当前主线已经迁移到
+`lightnest_rgb/`，其多架构编解码接口保留在 `lightnest_rgb/isa.py`。
+旧实验记录中的文件路径与源码哈希属于原始提交，不重新标记为 RGB 结果。

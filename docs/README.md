@@ -1,8 +1,6 @@
-# 当前文档
+# 文档导航
 
-- [架构与支持范围](ARCHITECTURE.md)
-- [本机训练与复现](REPRODUCE.md)
-- [实测结果](RESULTS.md)
-- [开发约定](../CONTRIBUTING.md)
-- [历史架构](../archive/README.md)
-- [外部数据与原始来源](../archive/legacy/docs/ARTIFACTS.md)
+当前主线：[RGB 设计](RGB_DESIGN.md) · [RGB 复现](RGB_REPRODUCE.md)。
+
+下面文档保留 Universal Machine v1 当时的架构、哈希和结果，旧入口已归档至
+`archive/universal_native/`：[架构](ARCHITECTURE.md) · [复现](REPRODUCE.md) · [结果](RESULTS.md)。

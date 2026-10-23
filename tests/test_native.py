@@ -5,11 +5,11 @@ import unittest
 
 import torch
 
-from lightnest_native.targets import assemble,canonical_arch,decode,elf_functions,host_architecture,llvm_targets
-from lightnest_native.sandbox import Sandbox
-from lightnest_native.model import Batch,Config,MachineNetwork,load,loss_for,save,validate
-from lightnest_native.corpus import compile_c,reference,specification,translate_rv32
-from lightnest_native.repair import VerifiedRepair
+from lightnest_rgb.isa import assemble,canonical_arch,decode,elf_functions,host_architecture,llvm_targets
+from archive.universal_native.sandbox import Sandbox
+from archive.universal_native.model import Batch,Config,MachineNetwork,load,loss_for,save,validate
+from archive.universal_native.corpus import compile_c,reference,specification,translate_rv32
+from archive.universal_native.repair import VerifiedRepair
 
 
 def row(code='4889f84801f0c3'):

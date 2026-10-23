@@ -18,7 +18,7 @@ def projected(rows):
 
 
 def sources():
-    return {str(p.relative_to(ROOT)):sha(p) for p in sorted((ROOT/'lightnest_native').glob('*')) if p.suffix in ('.py','.c')}
+    return {str(p.relative_to(ROOT)):sha(p) for p in sorted((ROOT/'archive'/'universal_native').glob('*')) if p.suffix in ('.py','.c')}
 
 
 def verify(out):
