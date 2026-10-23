@@ -16,8 +16,8 @@ jobs:
       - name: Install compiler test tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gcc clang lld llvm
-          command -v gcc clang ld.lld llvm-mc
+          sudo apt-get install -y --no-install-recommends gcc clang lld llvm bubblewrap libseccomp2
+          command -v gcc clang ld.lld llvm-mc bwrap
       - name: Sync locked environment
         run: uv sync --locked
       - name: Run shared source checks
