@@ -67,7 +67,7 @@ def external_python_files(limit=256):
                 if len(found)>=limit: return found
     return found
 
-def train_explainer(out,steps=512,seed=104742):
+def train_explainer(out,steps=512,seed=104742,resume=None):
     out=Path(out).resolve();out.mkdir(parents=True,exist_ok=False); torch.set_num_threads(1);torch.manual_seed(seed)
     samples=[]
     for path in external_python_files():
@@ -76,12 +76,15 @@ def train_explainer(out,steps=512,seed=104742):
             if raw: samples.append((path.name,raw,summary_text(raw,path.name)))
         except OSError: pass
     if len(samples)<8: raise RuntimeError('not enough external Python sources')
-    model=CodeExplainer(width=32);opt=torch.optim.AdamW(model.parameters(),lr=3e-4);rng=random.Random(seed);started=time.perf_counter();losses=[]
+    model=CodeExplainer(width=32);opt=torch.optim.AdamW(model.parameters(),lr=3e-4);rng=random.Random(seed);started=time.perf_counter();losses=[]; start_step=0
+    if resume:
+        state=torch.load(resume,map_location='cpu',weights_only=True); model.load_state_dict(state['state_dict']); start_step=state.get('step',0)
     with (out/'updates.jsonl').open('x') as log:
-        for step in range(steps):
+        for step in range(start_step, start_step + steps):
             name,raw,text=rng.choice(samples); target=encode_text(text)[None]
             logits=model(raw,target[:,:-1]); loss=F.cross_entropy(logits.reshape(-1,logits.shape[-1]),target[:,1:].reshape(-1),ignore_index=0)
             opt.zero_grad();loss.backward();torch.nn.utils.clip_grad_norm_(model.parameters(),1.);opt.step();losses.append(float(loss.detach()))
             if (step+1)%32==0:
                 event={'step':step+1,'loss':sum(losses)/len(losses),'samples':len(samples),'wall_seconds':time.perf_counter()-started};log.write(str(event)+'\n');log.flush();print(event,flush=True);losses=[]
-    torch.save({'architecture':'lightnest-explainer-v1','state_dict':model.state_dict(),'metadata':{'seed':seed,'steps':steps,'samples':len(samples),'status':'research_candidate'}},out/f'explainer-{seed}.pt')
+                torch.save({'architecture':'lightnest-explainer-v1','step':step+1,'state_dict':model.state_dict()},out/f'step-{step+1}.pt')
+    torch.save({'architecture':'lightnest-explainer-v1','state_dict':model.state_dict(),'metadata':{'seed':seed,'steps':start_step+steps,'samples':len(samples),'status':'research_candidate'}},out/f'explainer-{seed}.pt')
