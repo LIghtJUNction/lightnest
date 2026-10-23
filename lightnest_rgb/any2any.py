@@ -60,6 +60,21 @@ class ArtifactCore(nn.Module):
         pos = torch.arange(len(raw), device=values.device)[None]
         return self.encoder(self.byte(values) + self.position(pos) + self.kind(kind)[:, None]), kind
 
+    @torch.inference_mode()
+    def encode_chunks(self, raw: bytes, request: ArtifactRequest, chunk_size=256):
+        if not 32 <= chunk_size <= self.max_bytes or not raw: raise ValueError("invalid hierarchical artifact")
+        chunks=[]
+        for start in range(0, len(raw), chunk_size):
+            encoded, _ = self.encode(raw[start:start+chunk_size], request)
+            chunks.append(encoded.mean(1))
+        return torch.stack(chunks, 1)
+
+    @torch.inference_mode()
+    def summarize(self, raw: bytes, request: ArtifactRequest, depth=8, chunk_size=256):
+        encoded=self.encode_chunks(raw, request, chunk_size)
+        abstract,guidance=self.think(encoded, depth)
+        return abstract, self.heads(encoded, guidance[:, None])
+
     def think(self, encoded, depth=8):
         pooled = encoded.mean(1); hidden = pooled
         for _ in range(depth): hidden = self.red(pooled, hidden)

@@ -23,9 +23,10 @@ def main():
             raw=path.read_bytes()
             if not raw: continue
             window=raw[:256]; kind=detect_kind(window,path.name); request=ArtifactRequest(kind,'understand LightNest artifact',path.name)
-            encoded,_=model.encode(window,request); abstract,guidance=model.think(encoded,depth=8); heads=model.heads(encoded,guidance[:,None])
-            target=torch.tensor(list(window)); predicted=heads['red_logits'].argmax(-1)[0]
-            kind_pred=int(heads['kind_logits'].argmax(-1)[0]); row={'path':str(path.relative_to(root)),'kind':kind,'kind_correct':kind_pred==kind_index(kind),'byte_accuracy':float((predicted==target).float().mean()),'loss':float(F.cross_entropy(heads['red_logits'].reshape(-1,257),target)),'abstract_width':abstract.shape[-1],'sha256':hashlib.sha256(raw).hexdigest()}
+            abstract,heads=model.summarize(raw,request,depth=8)
+            encoded,_=model.encode(window,request); _,local_guidance=model.think(encoded,depth=8); local_heads=model.heads(encoded,local_guidance[:,None])
+            target=torch.tensor(list(window)); predicted=local_heads['red_logits'].argmax(-1)[0]
+            kind_pred=int(heads['kind_logits'].argmax(-1)[0]); row={'path':str(path.relative_to(root)),'kind':kind,'kind_correct':kind_pred==kind_index(kind),'byte_accuracy':float((predicted==target).float().mean()),'loss':float(F.cross_entropy(local_heads['red_logits'].reshape(-1,257),target)),'abstract_width':abstract.shape[-1],'sha256':hashlib.sha256(raw).hexdigest()}
             if path.suffix == '.py':
                 expected=torch.tensor([code_summary(raw)]); row['summary_mae']=float((heads['summary'].cpu()-expected).abs().mean())
             results.append(row)
