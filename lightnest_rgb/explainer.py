@@ -34,24 +34,30 @@ class CodeExplainer(nn.Module):
         self.byte=nn.Embedding(257,width); self.pos=nn.Embedding(256,width)
         self.encoder=nn.GRU(width,width,1,batch_first=True)
         self.decoder=nn.GRU(width,width,2,batch_first=True); self.out=nn.Linear(width,129)
+        self.query=nn.Linear(width,width,bias=False); self.gate=nn.Linear(width,1)
+    def encode_memory(self,raw):
+        x=torch.tensor(list(raw[:256]),device=self.byte.weight.device)[None]
+        p=torch.arange(x.shape[1],device=x.device)[None]
+        encoded,_=self.encoder(self.byte(x)+self.pos(p))
+        return encoded
     def encode(self,raw):
-        chunks=[]
-        starts=list(range(0,len(raw),256)) or [0]
-        if len(starts)>2: starts=[starts[0],starts[-1]]
-        for start in starts:
-            x=torch.tensor(list(raw[start:start+256]),device=self.byte.weight.device)[None]
-            p=torch.arange(x.shape[1],device=x.device)[None]
-            encoded,_=self.encoder(self.byte(x)+self.pos(p)); chunks.append(encoded.mean(1))
-        return torch.stack(chunks,1).mean(1)
+        return self.encode_memory(raw).mean(1)
+    def distribution(self,hidden,memory,source):
+        vocab=self.out(hidden); scores=self.query(hidden) @ memory.transpose(-1,-2) / self.width**.5
+        copy=scores.softmax(-1); copied=torch.zeros(*copy.shape[:2],129,device=copy.device)
+        ids=torch.tensor([CHAR.get(chr(i),CHAR[' ']) for i in source],device=copy.device)
+        copied.scatter_add_(2,ids[None,None,:].expand(copy.shape[0],copy.shape[1],-1),copy)
+        gate=self.gate(hidden).sigmoid()
+        return torch.log((1-gate).clamp_min(1e-6)*vocab.softmax(-1)+(gate*copied).clamp_min(1e-6))
     def forward(self,raw,target):
-        context=self.encode(raw)[:,None]; tokens=self.byte(target.clamp_max(256))
+        memory=self.encode_memory(raw); context=memory.mean(1)[:,None]; tokens=self.byte(target.clamp_max(256))
         hidden=context.transpose(0,1).expand(2,-1,-1).contiguous(); out,_=self.decoder(tokens,hidden)
-        return self.out(out)
+        return self.distribution(out,memory,raw[:256])
     @torch.inference_mode()
     def explain(self,raw,max_chars=240):
-        context=self.encode(raw)[:,None]; hidden=context.transpose(0,1).expand(2,-1,-1).contiguous(); token=torch.tensor([[BOS]],device=context.device); result=[]
+        memory=self.encode_memory(raw); context=memory.mean(1)[:,None]; hidden=context.transpose(0,1).expand(2,-1,-1).contiguous(); token=torch.tensor([[BOS]],device=context.device); result=[]
         for _ in range(max_chars):
-            out,hidden=self.decoder(self.byte(token[:,-1:]),hidden); value=int(self.out(out[:,-1]).argmax(-1)[0])
+            out,hidden=self.decoder(self.byte(token[:,-1:]),hidden); value=int(self.distribution(out,memory,raw[:256])[:,-1].argmax(-1)[0])
             if value==EOS: break
             result.append(VOCAB[value] if value<len(VOCAB) else ' '); token=torch.tensor([[value]],device=context.device)
         return ''.join(result)
