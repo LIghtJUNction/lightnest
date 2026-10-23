@@ -14,7 +14,7 @@ from .artifact import digest, inspect_elf
 from .corpus import ROOT, damaged_image, external, rows, sha, write
 from .execute import Case, ExecutableRunner
 from .generate import ELFGenerator, condition_tensor, generation_loss
-from .model import ARCHITECTURE, RGBConfig, RGBPolicy, greedy_action, patch_loss
+from .model import ARCHITECTURE, RGBConfig, RGBPolicy, budget_target, greedy_action, patch_loss
 from .iterate import Example, execution_frames
 
 
@@ -55,6 +55,7 @@ def load_policy(path, *, check_source=True):
     allowed_missing = {"red_to_blue.weight", "red_to_blue.bias", "red_abstraction.0.weight", "red_abstraction.0.bias",
                        "red_abstraction.2.weight", "red_abstraction.2.bias", "abstract_to_blue.weight", "abstract_to_blue.bias",
                        "blue_language.weight", "blue_language.bias"}
+    allowed_missing |= {name for name in missing if name.startswith("budget.")}
     if set(unexpected) or not set(missing) <= allowed_missing:
         raise ValueError(f"policy checkpoint mismatch: missing={missing}, unexpected={unexpected}")
     return model.eval(), payload["metadata"]
@@ -141,12 +142,27 @@ def train_policy(out, seed=104729, *, warmup_steps=2048, full_steps=512, width=6
                         results = [runner.run(image, Case.parse(c["input"])) for c in program["cases"][:2]]
                         frames = _frames(program, results); seen_tasks.add(task["id"]); stream.update((task["id"] + "\n").encode())
                     depth = config.red_depths[step % len(config.red_depths)]
-                    blue, red, state = model(image, "restore the executable to satisfy the visible program tests", frames, depth=depth)
+                    state = model.begin(image, "restore the executable to satisfy the visible program tests", frames)
+                    model.advance(state, config.blue_depth)
+                    blue = model.readout(state, blue=True)
+                    candidates = [blue]
+                    red = None
+                    for candidate_depth in config.red_depths:
+                        model.advance(state, candidate_depth)
+                        candidates.append(model.readout(state, blue=True))
+                        candidate_red = model.readout(state)
+                        if candidate_depth == depth:
+                            red = candidate_red
+                    if red is None:
+                        raise RuntimeError("training depth was not present in RGB schedule")
+                    selected_budget = budget_target(candidates, image, target)
                     with torch.no_grad():
                         action = greedy_action(blue, image)
                         legal = (image == target) if action["stop"] else image[action["offset"]] != target[action["offset"]] and action["value"] == target[action["offset"]]
                     risk = F.binary_cross_entropy_with_logits(blue["risk_logit"], torch.tensor(float(not legal)))
-                    loss = .3 * patch_loss(blue, image, target) + patch_loss(red, image, target) + .2 * risk
+                    budget_loss = F.cross_entropy(blue["budget_logits"], torch.tensor([selected_budget]))
+                    loss = (.3 * patch_loss(blue, image, target) + patch_loss(red, image, target)
+                            + .2 * risk + .1 * budget_loss)
                     if not torch.isfinite(loss):
                         raise FloatingPointError("nonfinite RGB policy loss")
                     (loss / microbatch).backward(); losses.append(float(loss.detach())); totals["sample_presentations"] += 1

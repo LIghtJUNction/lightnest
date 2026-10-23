@@ -10,7 +10,7 @@ from lightnest_rgb.corpus import compile_generation_target
 from lightnest_rgb.execute import Case, ExecutableRunner
 from lightnest_rgb.generate import ELFGenerator, condition_tensor, generation_loss
 from lightnest_rgb.iterate import Example, RGBEditor
-from lightnest_rgb.model import RGBConfig, RGBPolicy, patch_loss
+from lightnest_rgb.model import RGBConfig, RGBPolicy, budget_target, patch_loss
 
 
 class RGBPolicyTests(unittest.TestCase):
@@ -60,6 +60,31 @@ class RGBPolicyTests(unittest.TestCase):
         output = model.readout(state, blue=True)
         self.assertEqual(output["language_logits"].shape, (1, 257))
         self.assertEqual(len(model.blue_language_tokens(state)), 32)
+
+    def test_learned_budget_controls_red_depth_without_input_heuristics(self):
+        model = self.model().eval()
+        with torch.no_grad():
+            model.budget[-1].weight.zero_()
+            model.budget[-1].bias.fill_(-10)
+            model.budget[-1].bias[2] = 10
+        outputs = list(model.thoughts(bytes(range(128)), "repair", budgeted=True))
+        self.assertEqual([output["depth"] for output, _ in outputs], [1, 4])
+        self.assertEqual(outputs[0][0]["budget_logits"].shape[-1], 3)
+
+    def test_budget_target_uses_task_success(self):
+        model = self.model().eval()
+        image = bytes(range(128)); target = bytearray(image); target[7] ^= 4
+        state = model.begin(image, "repair")
+        model.advance(state, 1)
+        blue = model.readout(state, blue=True)
+        model.advance(state, 2)
+        red = model.readout(state, blue=True)
+        with torch.no_grad():
+            for output in (blue, red):
+                output["logits"].fill_(-20)
+            red["logits"][7] = 20
+            red["bits"][7] = torch.tensor([20 if (target[7] >> bit) & 1 else -20 for bit in range(8)])
+        self.assertEqual(budget_target([blue, red], image, bytes(target)), 1)
 
 
 class GeneratorTests(unittest.TestCase):

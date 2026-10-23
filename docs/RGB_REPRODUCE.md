@@ -100,8 +100,9 @@ uv run --locked python -m lightnest_rgb train-feedback --out "$OUT" \
 
 ## 统一生成与编辑入口
 
-`act` 把两条路径合成同一个 artifact agent。`mode=generate` 从请求生成 ELF，
-`mode=repair` 从已有 ELF 和可见样例开始编辑；两条路径都经过同一个 ELF 检查和隔离执行器。
+`act` 是统一 artifact agent。`mode=generate` 从请求生成 ELF，`mode=repair` 从已有 ELF
+和可见样例开始编辑。加载 Any2Any checkpoint 后，`mode=understand` 和 `mode=copy_paste`
+也进入同一个入口，支持任意字节流的模型观察和原生复制粘贴；ELF 路径经过 ELF 检查和隔离执行器。
 
 ```bash
 cat >/tmp/act-generate.json <<'EOF'
@@ -113,6 +114,7 @@ uv run --locked python -m lightnest_rgb act \
   --workdir /tmp/act-generate-run
 ```
 
-红区循环产生高维抽象状态，蓝区把它转换为字节动作、风险和语言 token。蓝区先给出
-低延迟动作，红区继续思考后更新蓝区指导。`async_thoughts` 在每个思考深度之间把控制权
-交回事件循环，外部执行反馈可以回流。
+红区循环产生高维抽象状态，蓝区把它转换为字节动作、风险和语言 token。预算头从蓝区
+状态中学习选择蓝区或一个红区深度；推理时只运行被选中的深度。`async_thoughts` 在每个
+思考深度之间把控制权交回事件循环，外部执行反馈可以回流。预算标签来自当前任务中最早
+成功的动作，不使用文件长度、重复率或 ELF 特判。

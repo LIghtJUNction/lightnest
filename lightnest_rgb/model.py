@@ -69,6 +69,14 @@ class RGBPolicy(nn.Module):
         self.red_abstraction = nn.Sequential(nn.Linear(d, 4 * d), nn.GELU(), nn.LayerNorm(4 * d))
         self.abstract_to_blue = nn.Linear(4 * d, d)
         self.blue_language = nn.Linear(d, 257)
+        # The budget is a learned categorical decision.  Its input is the
+        # shared state after blue has observed the artifact and all current
+        # feedback frames, so compute allocation is trained from task utility
+        # instead of a hand-written complexity rule.
+        self.budget = nn.Sequential(
+            nn.Linear(2 * d, d), nn.GELU(), nn.LayerNorm(d),
+            nn.Linear(d, len(config.red_depths) + 1),
+        )
         nn.init.zeros_(self.red_to_blue.weight); nn.init.zeros_(self.red_to_blue.bias)
         nn.init.zeros_(self.abstract_to_blue.weight); nn.init.zeros_(self.abstract_to_blue.bias)
         nn.init.zeros_(self.blue_language.weight); nn.init.zeros_(self.blue_language.bias)
@@ -116,9 +124,21 @@ class RGBPolicy(nn.Module):
         pooled = state["hidden"].mean(1)
         risk = self.risk(torch.cat((pooled.detach(), state["condition"].detach(), statistics.detach()), -1)).squeeze()
         language = self.blue_language(hidden.mean(1)) if blue else None
+        budget_logits = self.budget(torch.cat((pooled, state["condition"].squeeze(1)), -1))
         return {"logits": logits, "bits": values, "risk_logit": risk, "language_logits": language,
-                "depth": state["depth"],
+                "budget_logits": budget_logits, "depth": state["depth"],
                 "origin": "blue" if blue else "red"}
+
+    def select_budget(self, output):
+        """Decode the learned stop/depth choice from a blue readout.
+
+        Index zero means blue is sufficient; subsequent indices map to the
+        configured red depth schedule.  This function intentionally contains
+        no artifact-size or byte-pattern policy.
+        """
+        logits = output["budget_logits"]
+        index = int(logits.argmax(-1).item())
+        return {"index": index, "depth": None if index == 0 else self.config.red_depths[index - 1]}
 
     def blue_language_tokens(self, state, limit=32):
         """Return byte-level language tokens from the blue guided state."""
@@ -135,14 +155,19 @@ class RGBPolicy(nn.Module):
         return blue, red, state
 
     @torch.inference_mode()
-    def thoughts(self, image, command, frames=(), *, mode="routed", fixed_depth=None):
+    def thoughts(self, image, command, frames=(), *, mode="routed", fixed_depth=None, budgeted=False):
         if self.training:
             raise RuntimeError("eval() required")
         state = self.begin(image, command, frames)
         if fixed_depth is None:
             self.advance(state, self.config.blue_depth, mode)
-            yield self.readout(state, blue=True), state
-            depths = self.config.red_depths
+            blue = self.readout(state, blue=True)
+            yield blue, state
+            if budgeted:
+                selected = self.select_budget(blue)["depth"]
+                depths = () if selected is None else (selected,)
+            else:
+                depths = self.config.red_depths
         else:
             depths = (fixed_depth,)
         for depth in depths:
@@ -150,9 +175,9 @@ class RGBPolicy(nn.Module):
             state["guided_blue"] = self.readout(state, blue=True)
             yield self.readout(state), state
 
-    async def async_thoughts(self, image, command, frames=(), *, mode="routed", fixed_depth=None):
+    async def async_thoughts(self, image, command, frames=(), *, mode="routed", fixed_depth=None, budgeted=False):
         """Yield decisions cooperatively so execution and I/O can run beside thought steps."""
-        for output, state in self.thoughts(image, command, frames, mode=mode, fixed_depth=fixed_depth):
+        for output, state in self.thoughts(image, command, frames, mode=mode, fixed_depth=fixed_depth, budgeted=budgeted):
             yield output, state
             await asyncio.sleep(0)
 
@@ -184,5 +209,26 @@ def greedy_action(output, image):
     index = int(logits.argmax())
     value = sum(int(x >= 0) << k for k, x in enumerate(values[index]))
     return {"stop": bool(logits[index] < 0), "offset": index, "value": value,
-            "confidence": float(logits[index].sigmoid()), "risk": float(output["risk_logit"].sigmoid()),
+            "confidence": float(logits[index].sigmoid().detach()), "risk": float(output["risk_logit"].sigmoid().detach()),
             "origin": output["origin"], "depth": output["depth"], "no_progress": value == image[index]}
+
+
+def budget_target(outputs, image: bytes, target: bytes):
+    """Return the earliest observed budget whose action is task-correct.
+
+    The label is obtained from the target artifact and the model's actual
+    action proposals.  It is therefore a utility label from the task, not a
+    proxy based on file size, repetition, or a format-specific rule.
+    """
+    if len(image) != len(target) or not outputs:
+        raise ValueError("budget supervision needs equal nonempty images and outputs")
+    for index, output in enumerate(outputs):
+        action = greedy_action(output, image)
+        legal = image == target if action["stop"] else (
+            0 <= action["offset"] < len(image)
+            and image[action["offset"]] != target[action["offset"]]
+            and action["value"] == target[action["offset"]]
+        )
+        if legal:
+            return index
+    return len(outputs) - 1

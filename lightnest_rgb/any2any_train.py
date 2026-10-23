@@ -14,7 +14,7 @@ import time
 import torch
 from torch.nn import functional as F
 
-from .any2any import ArtifactCore, ArtifactRequest, KINDS, kind_index
+from .any2any import ArtifactCore, ArtifactRequest, KINDS, artifact_budget_target, kind_index
 from .artifact_types import detect_kind
 
 
@@ -72,13 +72,29 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
     with (out/'updates.jsonl').open('x') as log:
         for step in range(steps):
             name,raw,kind=rng.choice(samples); length=min(len(raw),256); start=0 if len(raw)<=length else rng.randrange(len(raw)-length)
-            window=raw[start:start+length]; request=ArtifactRequest(kind,'understand and transform',name)
-            encoded,_=model.encode(window,request); abstract,guidance=model.think(encoded,depth=4)
-            heads=model.heads(encoded,guidance[:,None]); output=heads['red_logits']
+            window=raw[start:start+length]
+            operation=rng.choice(('understand','edit','generate','copy_paste','transform'))
+            request=ArtifactRequest(kind,operation,name)
+            encoded,_=model.encode(window,request)
+            blue_abstract,blue_guidance=model.think(encoded,depth=model.blue_depth)
+            blue_heads=model.heads(encoded,blue_guidance)
+            candidates=[blue_heads]
+            heads=None
+            for candidate_depth in model.red_depths:
+                abstract,guidance=model.think(encoded,depth=candidate_depth)
+                candidate_heads=model.heads(encoded,guidance)
+                candidates.append(candidate_heads)
+                if candidate_depth == 4:
+                    heads=candidate_heads
+            if heads is None:
+                heads=candidates[-1]
+            output=heads['red_logits']
             target=torch.tensor(list(window),device=output.device)[None]
             kind_target=torch.tensor([kind_index(kind)],device=output.device)
             summary_target=torch.tensor([code_summary(raw)],device=output.device)
-            loss=F.cross_entropy(output.reshape(-1,257),target.reshape(-1)) + .25 * F.cross_entropy(heads['kind_logits'],kind_target) + .5 * F.mse_loss(heads['summary'],summary_target)
+            selected_budget=artifact_budget_target(candidates,target)
+            budget_loss=F.cross_entropy(blue_heads['budget_logits'],torch.tensor([selected_budget],device=output.device))
+            loss=F.cross_entropy(output.reshape(-1,257),target.reshape(-1)) + .25 * F.cross_entropy(heads['kind_logits'],kind_target) + .5 * F.mse_loss(heads['summary'],summary_target) + .125 * budget_loss
             pair=repeated_pair(window)
             if pair:
                 source_scores=heads['copy_paste']['source_start']; target_scores=heads['copy_paste']['target_start']
@@ -92,5 +108,5 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
             if (step+1)%32==0:
                 event={'step':step+1,'loss':sum(losses)/len(losses),'samples':len(samples),'wall_seconds':time.perf_counter()-started}
                 log.write(json.dumps(event)+'\n'); log.flush(); print(event,flush=True); losses=[]
-    torch.save({'architecture':'lightnest-any2any-v1','kind':'artifact-core','config':{'width':width,'heads':4,'max_bytes':65536},'state_dict':model.state_dict(),'metadata':{'seed':seed,'steps':steps,'samples':len(samples),'kinds':sorted({k for _,_,k in samples}),'status':'research_candidate'}},out/f'any2any-{seed}.pt')
+    torch.save({'architecture':'lightnest-any2any-v1','kind':'artifact-core','config':{'width':width,'heads':4,'max_bytes':65536,'red_depths':model.red_depths},'state_dict':model.state_dict(),'metadata':{'seed':seed,'steps':steps,'samples':len(samples),'kinds':sorted({k for _,_,k in samples}),'status':'research_candidate'}},out/f'any2any-{seed}.pt')
     (out/'manifest.json').write_text(json.dumps({'samples':len(samples),'kinds':sorted({k for _,_,k in samples}),'steps':steps})+'\n')

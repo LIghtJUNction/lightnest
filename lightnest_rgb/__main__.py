@@ -9,7 +9,7 @@ import sys
 
 import torch
 
-from .artifact import inspect_elf, write_image
+from .artifact import digest, inspect_elf, write_image
 from .corpus import external
 from .execute import Case, ExecutableRunner
 from .iterate import Example, RGBEditor
@@ -24,7 +24,7 @@ def main():
     p = commands.add_parser("inspect"); p.add_argument("image", type=Path)
     p = commands.add_parser("benchmark"); p.add_argument("image", type=Path); p.add_argument("--checkpoint", required=True)
     p = commands.add_parser("act"); p.add_argument("--request", type=Path, required=True); p.add_argument("--workdir", required=True)
-    p.add_argument("--generator"); p.add_argument("--policy"); p.add_argument("--image", type=Path); p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--generator"); p.add_argument("--policy"); p.add_argument("--any2any"); p.add_argument("--image", type=Path); p.add_argument("--output", type=Path, required=True)
     p = commands.add_parser("self-check"); p.add_argument("--root", type=Path, required=True); p.add_argument("--structure-checkpoint"); p.add_argument("--any2any-checkpoint")
     p = commands.add_parser("ask"); p.add_argument("--root", type=Path, required=True); p.add_argument("--path", required=True); p.add_argument("--question", required=True)
     p = commands.add_parser("prepare"); p.add_argument("--out", required=True); p.add_argument("--per-program", type=int, default=128)
@@ -70,16 +70,24 @@ def main():
     elif args.action == "act":
         from .unified import RGBArtifactAgent
         request = json.loads(args.request.read_text())
-        agent = RGBArtifactAgent(policy_checkpoint=args.policy, generator_checkpoint=args.generator, workdir=args.workdir)
+        agent = RGBArtifactAgent(policy_checkpoint=args.policy, generator_checkpoint=args.generator,
+                                 any2any_checkpoint=args.any2any, workdir=args.workdir)
         if set(request) != {"mode", "spec"}:
-            raise ValueError("act requires {mode: generate|repair, spec: ...}")
+            raise ValueError("act requires {mode: generate|repair|understand|copy_paste, spec: ...}")
+        spec = request["spec"]
         if request["mode"] == "generate":
-            result = agent.generate(request["spec"], output=args.output)
+            result = agent.generate(spec, output=args.output)
         elif request["mode"] == "repair":
             if not args.image: raise ValueError("repair mode requires --image")
-            spec = request["spec"]
             examples = [Example(Case.parse(v["input"]), v["expected"]) for v in spec["examples"]]
             result = agent.repair(args.image.read_bytes(), spec["command"], examples, output=args.output)
+        elif request["mode"] in {"understand", "copy_paste"}:
+            from .any2any import ArtifactRequest
+            if not args.image or not args.any2any:
+                raise ValueError("Any2Any modes require --image and --any2any")
+            raw=args.image.read_bytes(); artifact_request=ArtifactRequest(spec["kind"], spec["operation"], spec.get("specification", ""))
+            result=(agent.understand(raw, artifact_request) if request["mode"] == "understand"
+                    else agent.copy_paste(raw, artifact_request, digest(raw), output=args.output, apply=True))
         else: raise ValueError("unknown act mode")
     elif args.action == "self-check":
         from .unified import RGBArtifactAgent

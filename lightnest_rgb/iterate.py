@@ -45,7 +45,8 @@ def execution_frames(examples, results):
 
 
 class RGBEditor:
-    def __init__(self, policy, runner, *, max_edits=8, max_candidates=32, wall_seconds=10., blue_risk=.5):
+    def __init__(self, policy, runner, *, max_edits=8, max_candidates=32, wall_seconds=10., blue_risk=.5,
+                 budgeted=True):
         if policy.training:
             raise ValueError("editor requires an eval policy")
         if not 1 <= max_edits <= 64 or not 1 <= max_candidates <= 4096 or not 0 < wall_seconds <= 120:
@@ -54,6 +55,9 @@ class RGBEditor:
             raise ValueError("invalid blue risk threshold")
         self.policy, self.runner = policy, runner
         self.max_edits, self.max_candidates, self.wall_seconds, self.blue_risk = max_edits, max_candidates, wall_seconds, blue_risk
+        if type(budgeted) is not bool:
+            raise ValueError("budgeted must be a bool")
+        self.budgeted = budgeted
 
     @torch.inference_mode()
     def repair(self, image: bytes, command: str, examples: list[Example], *, mode="routed", fixed_depth=None):
@@ -96,11 +100,13 @@ class RGBEditor:
                 break
             frames = execution_frames(examples, actual)
             best = None
-            for output, state in self.policy.thoughts(current, command, frames, mode=mode, fixed_depth=fixed_depth):
+            for output, state in self.policy.thoughts(current, command, frames, mode=mode, fixed_depth=fixed_depth,
+                                                      budgeted=self.budgeted):
                 action_output = state.get("guided_blue", output) if output["origin"] == "red" else output
                 action = greedy_action(action_output, current)
                 trace.append({"action": "THINK", "step": step, "image": digest(current),
                               "origin": action["origin"], "depth": action["depth"], "risk": action["risk"],
+                              "budget": int(output["budget_logits"].argmax(-1)) if "budget_logits" in output else None,
                               "instances": state["observation"].instances,
                               "unique_chunks": len(state["observation"].payloads)})
                 if action["stop"]:

@@ -30,10 +30,16 @@ blue's fast decisions, and they do not supply red's recurrent state by themselve
   Compression never authorizes erasing a byte range or treating distinct
   addresses as semantically identical.
 - Blue: shallow next-action proposal and calibrated routing; it must actually
-  skip deeper computation when accepted. Quality and wrong STOP are measured.
+  skip deeper computation when accepted. A learned budget head chooses
+  blue-only or one configured red depth from the shared state and feedback
+  frames. Quality and wrong STOP are measured.
 - Red: shared recurrent state with a configurable depth schedule. It queries the
   same current-image evidence bank repeatedly; it does not rebuild the entire
   context for each thought step. A committed edit invalidates affected state.
+- Budget supervision uses the earliest observed depth whose proposed action
+  satisfies the task target. The label comes from task utility; file length,
+  duplicate ratios, and format-specific thresholds do not allocate inference
+  compute.
 - Controller: one global action/candidate/time budget, explicit STOP, replayable
   before/after hashes, actual executable feedback, no hidden-test feedback.
 
