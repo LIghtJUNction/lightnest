@@ -37,6 +37,6 @@ class RGBArtifactAgent:
         if output is not None: result["artifact"] = write_image(Path(output), raw)
         result["elf"] = inspect_elf(raw); return result
 
-    def inspect_project(self, root, structure_checkpoint=None):
+    def inspect_project(self, root, structure_checkpoint=None, any2any_checkpoint=None):
         """Run the generic async inspection tools against an unseen project."""
-        return asyncio.run(SelfAgent().inspect(Path(root), structure_checkpoint))
+        return asyncio.run(SelfAgent().inspect(Path(root), structure_checkpoint)) if not any2any_checkpoint else asyncio.run(__import__('lightnest_rgb.semantic_loop',fromlist=['SemanticLoop']).SemanticLoop().inspect(Path(root), any2any_checkpoint))
