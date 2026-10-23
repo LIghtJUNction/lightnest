@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import asyncio
 
 import torch
 from torch import nn
@@ -64,6 +65,13 @@ class RGBPolicy(nn.Module):
         self.depth = nn.Embedding(65, d)
         self.blue = ByteHead(d, d // 2, config.chunk_size)
         self.red = ByteHead(d, d, config.chunk_size)
+        self.red_to_blue = nn.Linear(d, d)
+        self.red_abstraction = nn.Sequential(nn.Linear(d, 4 * d), nn.GELU(), nn.LayerNorm(4 * d))
+        self.abstract_to_blue = nn.Linear(4 * d, d)
+        self.blue_language = nn.Linear(d, 257)
+        nn.init.zeros_(self.red_to_blue.weight); nn.init.zeros_(self.red_to_blue.bias)
+        nn.init.zeros_(self.abstract_to_blue.weight); nn.init.zeros_(self.abstract_to_blue.bias)
+        nn.init.zeros_(self.blue_language.weight); nn.init.zeros_(self.blue_language.bias)
         self.risk = nn.Sequential(nn.Linear(2 * d + 3, d // 2), nn.Tanh(), nn.Linear(d // 2, 1))
         self.recurrent_steps = 0
 
@@ -91,18 +99,32 @@ class RGBPolicy(nn.Module):
             message = self.message(torch.cat((state["features"], memory, repeated), -1)) + self.depth.weight[step]
             shape = state["hidden"].shape
             state["hidden"] = self.thought_norm(self.thought(message.flatten(0, 1), state["hidden"].flatten(0, 1)).reshape(shape))
+            abstract = self.red_abstraction(state["hidden"].mean(1, keepdim=True))
+            state["abstract"] = abstract
+            state["guidance"] = self.red_to_blue(state["hidden"].mean(1, keepdim=True)) + self.abstract_to_blue(abstract)
             self.recurrent_steps += 1
         state["depth"] = depth
 
     def readout(self, state, *, blue=False):
-        logits, values = (self.blue if blue else self.red)(state["hidden"], state["byte_embeddings"], state["length"])
+        hidden = state["hidden"]
+        if blue and "guidance" in state:
+            hidden = hidden + state["guidance"]
+        logits, values = (self.blue if blue else self.red)(hidden, state["byte_embeddings"], state["length"])
         probabilities = logits.sigmoid()
         top = probabilities.topk(min(2, len(probabilities))).values
         statistics = torch.stack((top[0], top[0] - top[-1], probabilities.mean()))[None]
         pooled = state["hidden"].mean(1)
         risk = self.risk(torch.cat((pooled.detach(), state["condition"].detach(), statistics.detach()), -1)).squeeze()
-        return {"logits": logits, "bits": values, "risk_logit": risk, "depth": state["depth"],
+        language = self.blue_language(hidden.mean(1)) if blue else None
+        return {"logits": logits, "bits": values, "risk_logit": risk, "language_logits": language,
+                "depth": state["depth"],
                 "origin": "blue" if blue else "red"}
+
+    def blue_language_tokens(self, state, limit=32):
+        """Return byte-level language tokens from the blue guided state."""
+        if "guidance" not in state: raise ValueError("red guidance is required before language output")
+        logits = self.blue_language((state["hidden"] + state["guidance"]).mean(1))[0]
+        return logits[:256].topk(min(limit, 256)).indices.tolist()
 
     def forward(self, image, command, frames=(), *, depth=None, mode="routed"):
         state = self.begin(image, command, frames)
@@ -125,7 +147,14 @@ class RGBPolicy(nn.Module):
             depths = (fixed_depth,)
         for depth in depths:
             self.advance(state, depth, mode)
+            state["guided_blue"] = self.readout(state, blue=True)
             yield self.readout(state), state
+
+    async def async_thoughts(self, image, command, frames=(), *, mode="routed", fixed_depth=None):
+        """Yield decisions cooperatively so execution and I/O can run beside thought steps."""
+        for output, state in self.thoughts(image, command, frames, mode=mode, fixed_depth=fixed_depth):
+            yield output, state
+            await asyncio.sleep(0)
 
 
 def patch_loss(output, image: bytes, target: bytes):

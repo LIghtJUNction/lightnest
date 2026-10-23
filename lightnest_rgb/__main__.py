@@ -22,6 +22,8 @@ def main():
     p = commands.add_parser("assemble"); p.add_argument("--architecture", required=True)
     p = commands.add_parser("inspect"); p.add_argument("image", type=Path)
     p = commands.add_parser("benchmark"); p.add_argument("image", type=Path); p.add_argument("--checkpoint", required=True)
+    p = commands.add_parser("act"); p.add_argument("--request", type=Path, required=True); p.add_argument("--workdir", required=True)
+    p.add_argument("--generator"); p.add_argument("--policy"); p.add_argument("--image", type=Path); p.add_argument("--output", type=Path, required=True)
     p = commands.add_parser("prepare"); p.add_argument("--out", required=True); p.add_argument("--per-program", type=int, default=128)
     for action in ("train-policy", "train-generator"):
         p = commands.add_parser(action); p.add_argument("--out", required=True); p.add_argument("--seed", type=int, default=104729)
@@ -61,6 +63,20 @@ def main():
     elif args.action == "benchmark":
         from .benchmark import benchmark
         result = benchmark(args.checkpoint, args.image.read_bytes())
+    elif args.action == "act":
+        from .unified import RGBArtifactAgent
+        request = json.loads(args.request.read_text())
+        agent = RGBArtifactAgent(policy_checkpoint=args.policy, generator_checkpoint=args.generator, workdir=args.workdir)
+        if set(request) != {"mode", "spec"}:
+            raise ValueError("act requires {mode: generate|repair, spec: ...}")
+        if request["mode"] == "generate":
+            result = agent.generate(request["spec"], output=args.output)
+        elif request["mode"] == "repair":
+            if not args.image: raise ValueError("repair mode requires --image")
+            spec = request["spec"]
+            examples = [Example(Case.parse(v["input"]), v["expected"]) for v in spec["examples"]]
+            result = agent.repair(args.image.read_bytes(), spec["command"], examples, output=args.output)
+        else: raise ValueError("unknown act mode")
     elif args.action == "prepare":
         from .corpus import prepare
         prepare(args.out, per_program=args.per_program); return

@@ -50,6 +50,17 @@ class RGBPolicyTests(unittest.TestCase):
         self.assertEqual(model.green.memory.bank_builds, 1)
         self.assertEqual(model.recurrent_steps, 4)
 
+    def test_red_guides_blue_and_emits_language_tokens(self):
+        model = self.model().eval()
+        state = model.begin(bytes(range(128)), "repair")
+        model.advance(state, 2)
+        guided = state["guidance"]
+        self.assertEqual(guided.shape[-1], model.config.width)
+        self.assertEqual(state["abstract"].shape[-1], 4 * model.config.width)
+        output = model.readout(state, blue=True)
+        self.assertEqual(output["language_logits"].shape, (1, 257))
+        self.assertEqual(len(model.blue_language_tokens(state)), 32)
+
 
 class GeneratorTests(unittest.TestCase):
     @classmethod

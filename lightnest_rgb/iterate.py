@@ -97,7 +97,8 @@ class RGBEditor:
             frames = execution_frames(examples, actual)
             best = None
             for output, state in self.policy.thoughts(current, command, frames, mode=mode, fixed_depth=fixed_depth):
-                action = greedy_action(output, current)
+                action_output = state.get("guided_blue", output) if output["origin"] == "red" else output
+                action = greedy_action(action_output, current)
                 trace.append({"action": "THINK", "step": step, "image": digest(current),
                               "origin": action["origin"], "depth": action["depth"], "risk": action["risk"],
                               "instances": state["observation"].instances,

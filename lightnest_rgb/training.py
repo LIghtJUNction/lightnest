@@ -50,7 +50,13 @@ def load_policy(path, *, check_source=True):
     if check_source and payload["metadata"]["math_sources"] != math_sources("policy"):
         raise ValueError("policy math source changed since this checkpoint")
     config = payload["config"]; config["red_depths"] = tuple(config["red_depths"])
-    model = RGBPolicy(RGBConfig(**config)); model.load_state_dict(payload["state_dict"], strict=True)
+    model = RGBPolicy(RGBConfig(**config))
+    missing, unexpected = model.load_state_dict(payload["state_dict"], strict=False)
+    allowed_missing = {"red_to_blue.weight", "red_to_blue.bias", "red_abstraction.0.weight", "red_abstraction.0.bias",
+                       "red_abstraction.2.weight", "red_abstraction.2.bias", "abstract_to_blue.weight", "abstract_to_blue.bias",
+                       "blue_language.weight", "blue_language.bias"}
+    if set(unexpected) or not set(missing) <= allowed_missing:
+        raise ValueError(f"policy checkpoint mismatch: missing={missing}, unexpected={unexpected}")
     return model.eval(), payload["metadata"]
 
 

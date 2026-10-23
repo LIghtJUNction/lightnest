@@ -22,7 +22,10 @@ def train_feedback(out, parent, seed=104732, *, steps=128, lr=1e-5):
     out = external(out); verify_corpus(out)
     if steps < 1: raise ValueError("feedback updates must be positive")
     torch.set_num_threads(1); torch.manual_seed(seed); torch.use_deterministic_algorithms(True)
-    model, parent_meta = load_policy(parent); model.train()
+    # The parent may predate the red abstraction/blue guidance heads. This is
+    # an explicit warm-start migration, recorded in the plan rather than
+    # pretending the old checkpoint matches the new math source.
+    model, parent_meta = load_policy(parent, check_source=False); model.train()
     folder, plan = _plan(out, "policy-feedback", seed, {"parent_sha256": sha(parent), "steps": steps, "lr": lr,
         "reward": "visible execution status/returncode/stdout/stderr plus ELF preflight",
         "hidden_feedback": False, "target_bytes_input": False})

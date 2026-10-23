@@ -90,3 +90,25 @@ uv run --locked python -m lightnest_rgb train-feedback --out "$OUT" \
 
 这是有界 REINFORCE 微调，不是完整 RL 收敛证明。它保存每步奖励、基线、错误类型、
 候选动作和实际执行计数；使用新检查点前重新执行 `freeze`。
+
+如果模型源码增加了红区抽象层或蓝区指导层，旧检查点会被源码哈希保护拒绝。此时用
+`train-feedback` 做显式 warm-start 迁移，生成的新检查点才可以加载。
+
+## 统一生成与编辑入口
+
+`act` 把两条路径合成同一个 artifact agent。`mode=generate` 从请求生成 ELF，
+`mode=repair` 从已有 ELF 和可见样例开始编辑；两条路径都经过同一个 ELF 检查和隔离执行器。
+
+```bash
+cat >/tmp/act-generate.json <<'EOF'
+{"mode":"generate","spec":{"stdout":"5247422e4f4b210a"}}
+EOF
+uv run --locked python -m lightnest_rgb act \
+  --generator "$OUT/training/generator-104730/step-256.pt" \
+  --request /tmp/act-generate.json --output /tmp/act-generated.elf \
+  --workdir /tmp/act-generate-run
+```
+
+红区循环产生高维抽象状态，蓝区把它转换为字节动作、风险和语言 token。蓝区先给出
+低延迟动作，红区继续思考后更新蓝区指导。`async_thoughts` 在每个思考深度之间把控制权
+交回事件循环，外部执行反馈可以回流。
