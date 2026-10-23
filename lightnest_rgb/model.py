@@ -156,25 +156,6 @@ class RGBPolicy(nn.Module):
             yield output, state
             await asyncio.sleep(0)
 
-    def adaptive_depth(self, image: bytes, frames=(), *, max_depth=None) -> int:
-        """Choose a compute budget from observable difficulty, never from labels."""
-        limit=max_depth or self.config.red_depths[-1]
-        repeated=len(image)-len(set(image)); repetition=repeated/max(1,len(image))
-        signal=sum(len(frame.payload) for frame in frames)
-        complexity=min(1., len(image)/65536) * .45 + min(1., signal/8192) * .35 + (1-repetition) * .2
-        if complexity < .18: return self.config.blue_depth
-        for depth in self.config.red_depths:
-            if complexity <= depth/limit: return depth
-        return limit
-
-    @torch.inference_mode()
-    def adaptive_thoughts(self, image, command, frames=(), *, mode="routed", max_depth=None):
-        """Fast path for easy observations, deeper Red path for hard ones."""
-        depth=self.adaptive_depth(image,frames,max_depth=max_depth)
-        if depth <= self.config.blue_depth:
-            state=self.begin(image,command,frames);self.advance(state,self.config.blue_depth,mode);yield self.readout(state,blue=True),state;return
-        yield from self.thoughts(image,command,frames,mode=mode,fixed_depth=depth)
-
 
 def patch_loss(output, image: bytes, target: bytes):
     if len(image) != len(target) or not image:
