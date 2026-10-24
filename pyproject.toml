@@ -4,7 +4,7 @@ version = "0.0.0"
 description = "RGB recurrent binary understanding, editing and complete ELF generation research"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-  "torch==2.10.0",
+  "torch==2.12.1+cpu",
   "numpy==2.3.5",
   "iced-x86==1.21.0",
   "pyelftools==0.32",
