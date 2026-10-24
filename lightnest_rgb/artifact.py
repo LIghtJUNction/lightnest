@@ -13,7 +13,7 @@ import tempfile
 from elftools.elf.elffile import ELFFile
 from elftools.common.exceptions import ELFError
 
-MAX_IMAGE = 32 * 1024 * 1024
+MAX_IMAGE = 1 << 30
 
 
 def digest(raw: bytes) -> str:

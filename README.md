@@ -26,7 +26,8 @@ Any2Any 主线的总输入容量为 1 MiB，局部注意力窗口为 4,096 token
 
 生成器直接输出完整文件的所有字节；不会拼接文件头、套用模板或调用编译器代替模型生成。
 编辑器只接收原文件、请求和可见样例；候选在隔离环境中执行，测试通过也不是正确性证明。
-输出使用新路径，原文件保持不变。训练和使用步骤见 [RGB 复现](docs/RGB_REPRODUCE.md)。
+输出使用新路径，原文件保持不变。训练和使用步骤见 [RGB 复现](docs/RGB_REPRODUCE.md)；
+单文件自解释 ELF 见 [Self-hosting ELF](docs/SELF_HOSTING.md)。
 
 ```text
 lightnest_rgb/             RGB 主线、完整 ELF 工具、多架构编解码
