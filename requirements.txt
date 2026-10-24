@@ -25,7 +25,7 @@ setuptools==84.2.1
     # via torch
 sympy==1.14.0
     # via torch
-torch==2.10.0 ; sys_platform == 'darwin'
+torch==2.12.1+cpu ; sys_platform == 'darwin'
     # via lightnest
 torch==2.10.0+cpu ; sys_platform != 'darwin'
     # via lightnest
