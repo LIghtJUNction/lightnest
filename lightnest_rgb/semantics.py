@@ -174,7 +174,7 @@ def read(out, split):
 
 def load(path):
     payload = torch.load(path, map_location="cpu", weights_only=True)
-    if payload.get("objective") != OBJECTIVE:
+    if payload.get("objective") not in {OBJECTIVE, 'external-binary-language-v1'}:
         raise ValueError("checkpoint lacks semantic training")
     model = ArtifactCore(**payload["config"])
     model.load_state_dict(payload["state_dict"], strict=True)
@@ -298,8 +298,11 @@ def evaluate(out, checkpoint, *, baseline=None):
 
 @torch.inference_mode()
 def match(model, raw, descriptions):
-    if not descriptions or any(not isinstance(text, str) or not text for text in descriptions):
+    if not isinstance(descriptions, (list, tuple)) or not descriptions or any(not isinstance(text, str) or not text for text in descriptions):
         raise ValueError("nonempty candidate descriptions required")
+    if model.semantic_bpe is not None:
+        from .binary_semantics import rank
+        return rank(model, raw, descriptions)
     vectors = embed(model, [raw, *[text.encode() for text in descriptions]])
     scores = vectors[0] @ vectors[1:].T
     order = scores.argsort(descending=True).tolist()

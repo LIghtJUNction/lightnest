@@ -8,6 +8,7 @@ dependencies = [
   "numpy==2.3.5",
   "iced-x86==1.21.0",
   "pyelftools==0.32",
+  "tokenizers==0.23.3",
 ]
 
 [tool.uv]

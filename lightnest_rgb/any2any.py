@@ -65,7 +65,7 @@ class ArtifactCore(nn.Module):
     """Format-agnostic shared encoder with green observation and red/blue heads."""
     def __init__(self, width=128, heads=4, max_bytes=DEFAULT_MAX_BYTES, red_depths=DEFAULT_RED_DEPTHS,
                  sequence_limit=DEFAULT_SEQUENCE_LIMIT, note_slots=32, request_encoding="gru",
-                 semantic_chunk_size=0):
+                 semantic_chunk_size=0, semantic_bpe=None):
         super().__init__()
         if width % heads or width < 32 or max_bytes < 256 or sequence_limit < 256: raise ValueError("invalid Any2Any geometry")
         if not red_depths or tuple(sorted(set(red_depths))) != tuple(red_depths) or red_depths[0] <= 1:
@@ -77,6 +77,9 @@ class ArtifactCore(nn.Module):
         if type(semantic_chunk_size) is not int or semantic_chunk_size not in (0, 4, 8, 16):
             raise ValueError("invalid semantic chunk size")
         self.semantic_chunk_size = semantic_chunk_size
+        self.semantic_bpe = semantic_bpe
+        if semantic_bpe is not None and semantic_chunk_size:
+            raise ValueError("choose byte chunks or lossless BPE")
         self.blue_depth, self.red_depths = 1, tuple(red_depths)
         self.byte = nn.Embedding(257, width)
         self.kind = nn.Embedding(256, width)
@@ -99,6 +102,103 @@ class ArtifactCore(nn.Module):
         self.blue_byte = nn.Linear(width, 257)
         self.red_byte = nn.Linear(width, 257)
         self.stop = nn.Linear(width, 1)
+        if semantic_bpe is not None:
+            from .byte_tokenizer import ByteBPE
+            self.semantic_tokenizer = ByteBPE(semantic_bpe)
+            vocabulary = self.semantic_tokenizer.vocab_size + 2
+            self.semantic_token = nn.Embedding(vocabulary, width)
+            self.semantic_pool = nn.Linear(width, 1)
+            self.semantic_absolute_position = nn.Linear(8, width, bias=False)
+            self.semantic_norm = nn.LayerNorm(width)
+            self.semantic_context = nn.Linear(width, width)
+            nn.init.zeros_(self.semantic_context.weight)
+            nn.init.constant_(self.semantic_context.bias, -4.)
+            self.language = nn.GRU(width, width, 2, batch_first=True)
+            self.language_attention = nn.MultiheadAttention(width, heads, batch_first=True)
+            self.language_norm = nn.LayerNorm(width)
+            self.language_copy = nn.Linear(width, 1)
+            nn.init.constant_(self.language_copy.bias, -2.)
+
+    def semantic_tokens(self, artifacts):
+        if self.semantic_bpe is None:
+            raise ValueError("token-level semantics requires a BPE checkpoint")
+        if not artifacts or any(not 1 <= len(raw) <= self.max_bytes for raw in artifacts):
+            raise ValueError("artifact exceeds semantic byte capacity")
+        ids = [self.semantic_tokenizer.encode(raw) for raw in artifacts]
+        device = self.byte.weight.device
+        tokens = torch.zeros(len(ids), max(map(len, ids)), dtype=torch.long, device=device)
+        byte_offsets = torch.zeros_like(tokens, dtype=self.byte.weight.dtype)
+        lengths = torch.tensor([len(row) for row in ids], device=device)
+        for index, row in enumerate(ids):
+            tokens[index, :len(row)] = torch.tensor(row, device=device)
+            offset = 0; starts = []
+            for token_id in row:
+                starts.append(offset); offset += len(self.semantic_tokenizer.pieces[token_id])
+            byte_offsets[index, :len(row)] = torch.tensor(starts, device=device)
+        positions = torch.arange(tokens.shape[1], device=device)[None]
+        valid = positions < lengths[:, None]
+        requests = [ArtifactRequest("raw", "represent content")] * len(ids)
+        scales = byte_offsets.new_tensor((1., 64., 4096., 262144.))
+        angle = byte_offsets[..., None] / scales
+        absolute = self.semantic_absolute_position(torch.cat((angle.sin(), angle.cos()), -1))
+        inputs = (self.semantic_token(tokens) + self.position(positions % self.sequence_limit)
+                  + absolute + self.encode_requests(requests)[:, None])
+        chunks = []
+        for start in range(0, tokens.shape[1], self.sequence_limit):
+            end = min(start + self.sequence_limit, tokens.shape[1])
+            active = (lengths > start).nonzero().flatten()
+            chunk = self.encoder(inputs[active, start:end], src_key_padding_mask=~valid[active, start:end])
+            full = inputs.new_zeros(len(ids), end - start, self.width).index_copy(0, active, chunk)
+            chunks.append(full)
+        encoded = torch.cat(chunks, 1)
+        pooled = (encoded * valid[..., None]).sum(1) / lengths[:, None]
+        notes = self.notebook.compress(encoded, pooled, hard=not self.training, valid=valid)
+        encoded = encoded + self.semantic_context(pooled).sigmoid()[:, None] * notes['context'][:, None]
+        pooled = (encoded * valid[..., None]).sum(1) / lengths[:, None]
+        _, guidance = self.think(pooled[:, None], depth=4)
+        features = self.semantic_norm(encoded + guidance[:, None])
+        weights = self.semantic_pool(features).squeeze(-1).masked_fill(~valid, -torch.inf).softmax(-1)
+        return {"features": features, "valid": valid, "weights": weights, "tokens": tokens,
+                "context_budget": notes['budget_logits'].argmax(-1)}
+
+    def language_forward(self, memory, previous, hidden=None):
+        if hidden is None:
+            pooled = (memory["features"] * memory["weights"][..., None]).sum(1)
+            hidden = pooled[None].expand(2, -1, -1).contiguous()
+        decoded, hidden = self.language(self.semantic_token(previous), hidden)
+        context, attention = self.language_attention(decoded, memory["features"], memory["features"],
+                                                     key_padding_mask=~memory["valid"])
+        value = self.language_norm(decoded + context)
+        vocabulary = F.linear(value, self.semantic_token.weight).div(self.width**.5).softmax(-1)
+        copied = torch.zeros_like(vocabulary)
+        indices = memory["tokens"][:, None].expand(-1, previous.shape[1], -1)
+        copied.scatter_add_(2, indices, attention)
+        gate = self.language_copy(value).sigmoid()
+        return ((1 - gate) * vocabulary + gate * copied).clamp_min(1e-9).log(), hidden
+
+    @torch.inference_mode()
+    def explain_bytes(self, raw, max_tokens=96):
+        if self.training:
+            raise RuntimeError("eval() required")
+        memory = self.semantic_tokens([raw])
+        token = torch.tensor([[self.semantic_tokenizer.bos]], device=self.byte.weight.device)
+        ids = []; hidden = None; stopped = False; invalid = False
+        for _ in range(max_tokens):
+            output, hidden = self.language_forward(memory, token, hidden)
+            value = int(output[0, -1].argmax())
+            if value == self.semantic_tokenizer.eos:
+                stopped = True; break
+            if value == self.semantic_tokenizer.bos:
+                invalid = True; break
+            ids.append(value); token = torch.tensor([[value]], device=token.device)
+        result = self.semantic_tokenizer.decode(ids)
+        try:
+            text = result.decode('utf-8'); utf8_valid = True
+        except UnicodeDecodeError:
+            text = result.decode('utf-8', errors='replace'); utf8_valid = False
+        return {"text": text, "raw_hex": result.hex(), "stopped": stopped,
+                "utf8_valid": utf8_valid, "invalid_special_token": invalid, "tokens": len(ids),
+                "context_budget": int(memory['context_budget'][0])}
 
     def encode_batch(self, artifacts, requests):
         """Encode complete local windows, masking padding in both modalities."""
@@ -143,6 +243,9 @@ class ArtifactCore(nn.Module):
 
     def semantic_embedding(self, artifacts):
         """Shared learned representation; no parser, filenames or target text."""
+        if self.semantic_bpe is not None:
+            state = self.semantic_tokens(artifacts)
+            return F.normalize((state["features"] * state["weights"][..., None]).sum(1), dim=-1)
         requests = [ArtifactRequest("text", "represent content")] * len(artifacts)
         if not self.semantic_chunk_size:
             encoded, valid, _ = self.encode_batch(artifacts, requests)
@@ -249,6 +352,17 @@ class ArtifactCore(nn.Module):
             if length > 0: break
         end=start+length
         return CopyPasteAction(start,end,target,"copy_replace"), {"abstract":abstract,"scores":scores,"budget":budget,"context":notes}
+
+
+def semantic_similarity(left, right):
+    """Learned token matching; padding never participates in either direction."""
+    a, b = F.normalize(left['features'], dim=-1), F.normalize(right['features'], dim=-1)
+    scores = torch.einsum('bnd,cmd->bcnm', a, b)
+    valid = left['valid'][:, None, :, None] & right['valid'][None, :, None, :]
+    scores = scores.masked_fill(~valid, -2.)
+    forward = (scores.max(-1).values * left['weights'][:, None]).sum(-1)
+    backward = (scores.max(-2).values * right['weights'][None]).sum(-1)
+    return (forward + backward) / 2
 
 
 def artifact_budget_target(candidates, target, kind_target=None, summary_target=None):

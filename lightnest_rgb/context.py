@@ -29,7 +29,7 @@ class NeuralNotebook(nn.Module):
         self.budget = nn.Sequential(nn.Linear(2 * width, width), nn.GELU(), nn.LayerNorm(width),
                                     nn.Linear(width, slots + 1))
 
-    def write(self, evidence, notes=None):
+    def write(self, evidence, notes=None, *, valid=None):
         if evidence.ndim != 3 or evidence.shape[-1] != self.width or not evidence.shape[1]:
             raise ValueError("notebook evidence must be [batch, items, width]")
         if notes is None:
@@ -37,7 +37,12 @@ class NeuralNotebook(nn.Module):
         if notes.shape != (evidence.shape[0], self.slots, self.width):
             raise ValueError("notebook state shape mismatch")
         address = torch.softmax(self.key(evidence) @ self.slot_keys.T / math.sqrt(self.width), -1)
-        candidate = torch.einsum("bns,bnd->bsd", address, self.value(evidence))
+        values = self.value(evidence)
+        if valid is not None:
+            if valid.shape != evidence.shape[:2] or valid.dtype != torch.bool or not valid.any(-1).all():
+                raise ValueError("invalid notebook evidence mask")
+            values = values * valid[..., None]
+        candidate = torch.einsum("bns,bnd->bsd", address, values)
         gate = torch.sigmoid(self.write_gate(torch.cat((notes, candidate), -1)))
         return notes + gate * (candidate - notes), {"address": address, "write_gate": gate}
 
@@ -77,10 +82,10 @@ class NeuralNotebook(nn.Module):
         context = torch.einsum("bs,bsd->bd", weights, notes)
         return context, weights, budget_logits
 
-    def compress(self, evidence, query=None, notes=None, *, hard=False):
+    def compress(self, evidence, query=None, notes=None, *, hard=False, valid=None):
         if query is None:
-            query = evidence.mean(1)
-        notes, write = self.write(evidence, notes)
+            query = evidence.mean(1) if valid is None else (evidence * valid[..., None]).sum(1) / valid.sum(1)[:, None].clamp_min(1)
+        notes, write = self.write(evidence, notes, valid=valid)
         context, weights, budget_logits = self.read(notes, query, hard=hard)
         return {"notes": notes, "context": context, "weights": weights,
                 "budget_logits": budget_logits, "write": write}

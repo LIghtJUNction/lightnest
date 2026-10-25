@@ -25,6 +25,8 @@ def main():
     p = commands.add_parser("match-description", help="rank supplied descriptions with a semantic checkpoint")
     p.add_argument("image", type=Path); p.add_argument("--checkpoint", required=True)
     p.add_argument("--descriptions", type=Path, required=True, help="JSON array of candidate descriptions")
+    p = commands.add_parser("explain-artifact", help="generate text with a trained binary-language checkpoint")
+    p.add_argument("image", type=Path); p.add_argument("--checkpoint", required=True)
     p = commands.add_parser("benchmark"); p.add_argument("image", type=Path); p.add_argument("--checkpoint", required=True)
     p = commands.add_parser("act"); p.add_argument("--request", type=Path, required=True); p.add_argument("--workdir", required=True)
     p.add_argument("--generator"); p.add_argument("--policy"); p.add_argument("--any2any"); p.add_argument("--image", type=Path); p.add_argument("--output", type=Path, required=True)
@@ -73,12 +75,22 @@ def main():
         if not isinstance(descriptions, list):
             raise ValueError("descriptions must be a JSON array")
         model, _ = load(args.checkpoint)
-        limit = min(model.max_bytes, model.sequence_limit)
+        limit = model.max_bytes if model.semantic_bpe is not None else min(model.max_bytes, model.sequence_limit)
         with args.image.open("rb") as file:
             raw = file.read(limit + 1)
         if len(raw) > limit:
             raise ValueError("file exceeds semantic checkpoint capacity")
         result = match(model, raw, descriptions)
+    elif args.action == "explain-artifact":
+        from .semantics import load
+        model, payload = load(args.checkpoint)
+        if model.semantic_bpe is None or payload.get('language_steps', 0) < 1:
+            raise ValueError('checkpoint has no trained language decoder')
+        with args.image.open('rb') as file:
+            raw = file.read(model.max_bytes + 1)
+        if len(raw) > model.max_bytes:
+            raise ValueError('file exceeds semantic checkpoint capacity')
+        result = model.explain_bytes(raw) | {'input_sha256': digest(raw), 'input_bytes': len(raw)}
     elif args.action == "benchmark":
         from .benchmark import benchmark
         result = benchmark(args.checkpoint, args.image.read_bytes())
