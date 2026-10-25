@@ -75,9 +75,9 @@ sympy==1.14.0
     # via torch
 tokenizers==0.23.3
     # via lightnest
-torch==2.10.0 ; sys_platform == 'darwin'
+torch==2.12.1+cpu ; sys_platform == 'darwin'
     # via lightnest
-torch==2.10.0+cpu ; sys_platform != 'darwin'
+torch==2.12.1+cpu ; sys_platform != 'darwin'
     # via lightnest
 tqdm==4.70.1
     # via huggingface-hub
