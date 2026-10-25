@@ -5,6 +5,32 @@ import hashlib
 from lightnest_rgb.artifact_types import detect_kind, inspect_artifact
 
 class Any2AnyTests(unittest.TestCase):
+    def test_opposite_requests_keep_word_order(self):
+        torch.manual_seed(17)
+        model = ArtifactCore(width=32, heads=4, max_bytes=256).eval()
+        with torch.inference_mode():
+            forward, _ = model.encode(b'alpha beta', ArtifactRequest('text', 'replace alpha with beta'))
+            backward, _ = model.encode(b'alpha beta', ArtifactRequest('text', 'replace beta with alpha'))
+        self.assertGreater(float((forward - backward).abs().max()), .001)
+
+    def test_batch_padding_does_not_change_artifact_representation(self):
+        torch.manual_seed(19)
+        model = ArtifactCore(width=32, heads=4, max_bytes=256).eval()
+        request = ArtifactRequest('text', 'read')
+        with torch.inference_mode():
+            alone, _ = model.encode(b'a short file', request)
+            batch, valid, _ = model.encode_batch([b'a short file', bytes(range(128))],
+                                                [request, ArtifactRequest('raw', 'compare ordered content')])
+        self.assertTrue(torch.allclose(alone[0], batch[0, valid[0]], atol=1e-5))
+
+    def test_legacy_mean_request_encoding_loads_without_random_new_weights(self):
+        model = ArtifactCore(width=32, heads=4, max_bytes=256, request_encoding='mean').eval()
+        with torch.inference_mode():
+            a, _ = model.encode(b'alpha beta', ArtifactRequest('text', 'replace alpha with beta'))
+            b, _ = model.encode(b'alpha beta', ArtifactRequest('text', 'replace beta with alpha'))
+        self.assertTrue(torch.allclose(a, b, atol=1e-5))
+        self.assertFalse(any(name.startswith('request_encoder.') for name in model.state_dict()))
+
     def test_detects_multiple_real_formats(self):
         self.assertEqual(detect_kind(b'{"x":1}', 'x.json'), 'json')
         self.assertEqual(detect_kind(b'PK\x03\x04rest', 'x.zip'), 'archive')

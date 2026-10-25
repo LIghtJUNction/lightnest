@@ -31,6 +31,7 @@ class SemanticLoop:
   calls=[]; neural=[]; model=None
   if any2any_checkpoint:
    payload=torch.load(any2any_checkpoint,map_location='cpu',weights_only=True); config=dict(payload['config'])
+   config.setdefault('request_encoding', 'mean')
    if 'sequence_limit' not in config: config['sequence_limit']=payload['state_dict']['position.weight'].shape[0]
    if 'note_slots' not in config: config['note_slots']=32
    model=ArtifactCore(**config);missing,unexpected=model.load_state_dict(payload['state_dict'],strict=False)

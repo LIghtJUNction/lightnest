@@ -88,6 +88,7 @@ def _sample(raw, limit):
 def _neural_observation(raw, checkpoint):
     payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
     config = dict(payload["config"])
+    config.setdefault("request_encoding", "mean")
     if "sequence_limit" not in config: config["sequence_limit"] = payload["state_dict"]["position.weight"].shape[0]
     if "note_slots" not in config: config["note_slots"] = 32
     model = ArtifactCore(**config)

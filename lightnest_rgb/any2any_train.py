@@ -109,5 +109,5 @@ def train_any2any(out, *, steps=256, seed=104734, width=64):
             if (step+1)%32==0:
                 event={'step':step+1,'loss':sum(losses)/len(losses),'samples':len(samples),'wall_seconds':time.perf_counter()-started}
                 log.write(json.dumps(event)+'\n'); log.flush(); print(event,flush=True); losses=[]
-    torch.save({'architecture':'lightnest-any2any-v1','kind':'artifact-core','config':{'width':width,'heads':4,'max_bytes':model.max_bytes,'sequence_limit':model.sequence_limit,'red_depths':model.red_depths,'note_slots':model.notebook.slots},'state_dict':model.state_dict(),'metadata':{'seed':seed,'steps':steps,'samples':len(samples),'kinds':sorted({k for _,_,k in samples}),'status':'research_candidate'}},out/f'any2any-{seed}.pt')
+    torch.save({'architecture':'lightnest-any2any-v1','kind':'artifact-core','config':{'width':width,'heads':4,'max_bytes':model.max_bytes,'sequence_limit':model.sequence_limit,'red_depths':model.red_depths,'note_slots':model.notebook.slots,'request_encoding':model.request_encoding},'state_dict':model.state_dict(),'metadata':{'seed':seed,'steps':steps,'samples':len(samples),'kinds':sorted({k for _,_,k in samples}),'status':'research_candidate'}},out/f'any2any-{seed}.pt')
     (out/'manifest.json').write_text(json.dumps({'samples':len(samples),'kinds':sorted({k for _,_,k in samples}),'steps':steps})+'\n')

@@ -24,6 +24,7 @@ class RGBArtifactAgent:
             if payload.get('architecture') != 'lightnest-any2any-v1' or payload.get('kind') != 'artifact-core':
                 raise ValueError('checkpoint is not an Any2Any artifact core')
             config=dict(payload['config'])
+            config.setdefault('request_encoding', 'mean')
             if 'sequence_limit' not in config: config['sequence_limit']=payload['state_dict']['position.weight'].shape[0]
             if 'note_slots' not in config: config['note_slots']=32
             self.any2any=ArtifactCore(**config)

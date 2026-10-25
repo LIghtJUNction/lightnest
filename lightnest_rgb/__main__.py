@@ -22,6 +22,9 @@ def main():
     p = commands.add_parser("decode"); p.add_argument("--architecture", required=True); p.add_argument("--hex", required=True)
     p = commands.add_parser("assemble"); p.add_argument("--architecture", required=True)
     p = commands.add_parser("inspect"); p.add_argument("image", type=Path)
+    p = commands.add_parser("match-description", help="rank supplied descriptions with a semantic checkpoint")
+    p.add_argument("image", type=Path); p.add_argument("--checkpoint", required=True)
+    p.add_argument("--descriptions", type=Path, required=True, help="JSON array of candidate descriptions")
     p = commands.add_parser("benchmark"); p.add_argument("image", type=Path); p.add_argument("--checkpoint", required=True)
     p = commands.add_parser("act"); p.add_argument("--request", type=Path, required=True); p.add_argument("--workdir", required=True)
     p.add_argument("--generator"); p.add_argument("--policy"); p.add_argument("--any2any"); p.add_argument("--image", type=Path); p.add_argument("--output", type=Path, required=True)
@@ -64,6 +67,18 @@ def main():
         from .isa import assemble
         result = {"hex": assemble(args.architecture, sys.stdin.read()).hex()}
     elif args.action == "inspect": result = inspect_elf(args.image.read_bytes())
+    elif args.action == "match-description":
+        from .semantics import load, match
+        descriptions = json.loads(args.descriptions.read_text())
+        if not isinstance(descriptions, list):
+            raise ValueError("descriptions must be a JSON array")
+        model, _ = load(args.checkpoint)
+        limit = min(model.max_bytes, model.sequence_limit)
+        with args.image.open("rb") as file:
+            raw = file.read(limit + 1)
+        if len(raw) > limit:
+            raise ValueError("file exceeds semantic checkpoint capacity")
+        result = match(model, raw, descriptions)
     elif args.action == "benchmark":
         from .benchmark import benchmark
         result = benchmark(args.checkpoint, args.image.read_bytes())

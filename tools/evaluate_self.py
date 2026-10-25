@@ -15,7 +15,8 @@ from lightnest_rgb.any2any_train import code_summary
 def main():
     parser=argparse.ArgumentParser(); parser.add_argument('--checkpoint',required=True); parser.add_argument('--output',required=True)
     args=parser.parse_args(); root=Path(__file__).resolve().parents[1]
-    payload=torch.load(args.checkpoint,map_location='cpu',weights_only=True); model=ArtifactCore(**payload['config']); model.load_state_dict(payload['state_dict']); model.eval()
+    payload=torch.load(args.checkpoint,map_location='cpu',weights_only=True); config=dict(payload['config']); config.setdefault('request_encoding','mean')
+    model=ArtifactCore(**config); model.load_state_dict(payload['state_dict']); model.eval()
     files=[p for p in root.rglob('*') if p.is_file() and '.git' not in p.parts and '.venv' not in p.parts]
     results=[]; overlap=[]
     with torch.inference_mode():

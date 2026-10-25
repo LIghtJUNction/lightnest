@@ -64,16 +64,28 @@ class ArtifactRequest:
 class ArtifactCore(nn.Module):
     """Format-agnostic shared encoder with green observation and red/blue heads."""
     def __init__(self, width=128, heads=4, max_bytes=DEFAULT_MAX_BYTES, red_depths=DEFAULT_RED_DEPTHS,
-                 sequence_limit=DEFAULT_SEQUENCE_LIMIT, note_slots=32):
+                 sequence_limit=DEFAULT_SEQUENCE_LIMIT, note_slots=32, request_encoding="gru",
+                 semantic_chunk_size=0):
         super().__init__()
         if width % heads or width < 32 or max_bytes < 256 or sequence_limit < 256: raise ValueError("invalid Any2Any geometry")
         if not red_depths or tuple(sorted(set(red_depths))) != tuple(red_depths) or red_depths[0] <= 1:
             raise ValueError("invalid Any2Any thinking schedule")
         self.width, self.max_bytes, self.sequence_limit = width, max_bytes, sequence_limit
+        if request_encoding not in {"mean", "gru"}:
+            raise ValueError("unknown request encoding")
+        self.request_encoding = request_encoding
+        if type(semantic_chunk_size) is not int or semantic_chunk_size not in (0, 4, 8, 16):
+            raise ValueError("invalid semantic chunk size")
+        self.semantic_chunk_size = semantic_chunk_size
         self.blue_depth, self.red_depths = 1, tuple(red_depths)
         self.byte = nn.Embedding(257, width)
         self.kind = nn.Embedding(256, width)
         self.position = nn.Embedding(sequence_limit, width)
+        if request_encoding == "gru":
+            self.request_encoder = nn.GRU(width, width, batch_first=True)
+        if semantic_chunk_size:
+            self.semantic_chunk = nn.Sequential(nn.Conv1d(width, width, 5, padding=2), nn.GELU(),
+                                                nn.Conv1d(width, width, 5, padding=2), nn.GELU())
         self.encoder = nn.TransformerEncoder(nn.TransformerEncoderLayer(width, heads, 4 * width, batch_first=True, norm_first=True), 4)
         self.red = nn.GRUCell(width, width)
         self.abstract = nn.Sequential(nn.Linear(width, 4 * width), nn.GELU(), nn.LayerNorm(4 * width))
@@ -88,16 +100,77 @@ class ArtifactCore(nn.Module):
         self.red_byte = nn.Linear(width, 257)
         self.stop = nn.Linear(width, 1)
 
+    def encode_batch(self, artifacts, requests):
+        """Encode complete local windows, masking padding in both modalities."""
+        if not artifacts or len(artifacts) != len(requests):
+            raise ValueError("artifact/request batch mismatch")
+        if any(not 1 <= len(raw) <= min(self.max_bytes, self.sequence_limit) for raw in artifacts):
+            raise ValueError("artifact exceeds local Any2Any capacity")
+        device = self.byte.weight.device
+        lengths = torch.tensor([len(raw) for raw in artifacts], device=device)
+        values = torch.zeros(len(artifacts), int(lengths.max()), dtype=torch.long, device=device)
+        for row, raw in enumerate(artifacts):
+            values[row, :len(raw)] = torch.tensor(list(raw), device=device)
+        positions = torch.arange(values.shape[1], device=device)[None]
+        valid = positions < lengths[:, None]
+        kinds = torch.tensor([kind_index(request.kind) for request in requests], device=device)
+        context = self.encode_requests(requests)
+        inputs = self.byte(values) + self.position(positions) + self.kind(kinds)[:, None] + context[:, None]
+        encoded = self.encoder(inputs, src_key_padding_mask=~valid)
+        return encoded, valid, kinds
+
+    def encode_requests(self, requests):
+        device = self.byte.weight.device
+        request_bytes = [(request.operation + "\0" + request.specification).encode() for request in requests]
+        request_tokens = torch.zeros(len(requests), max(map(len, request_bytes)), dtype=torch.long, device=device)
+        for row, raw in enumerate(request_bytes):
+            request_tokens[row, :len(raw)] = torch.tensor([value + 1 for value in raw], device=device)
+        embeddings = self.byte(request_tokens)
+        if self.request_encoding == "gru":
+            packed = nn.utils.rnn.pack_padded_sequence(embeddings, [len(raw) for raw in request_bytes],
+                                                      batch_first=True, enforce_sorted=False)
+            _, hidden = self.request_encoder(packed)
+            context = hidden[-1]
+        else:
+            request_valid = torch.arange(request_tokens.shape[1], device=device)[None] < torch.tensor(
+                [len(raw) for raw in request_bytes], device=device)[:, None]
+            context = (embeddings * request_valid[..., None]).sum(1) / request_valid.sum(1)[:, None]
+        return context
+
     def encode(self, raw: bytes, request: ArtifactRequest):
-        if not 1 <= len(raw) <= self.max_bytes: raise ValueError("artifact exceeds Any2Any capacity")
-        if len(raw) > self.sequence_limit: raise ValueError("large artifacts must use hierarchical encoding")
-        kind = torch.tensor([kind_index(request.kind)], device=self.byte.weight.device)
-        values = torch.tensor(list(raw), device=self.byte.weight.device)[None]
-        pos = torch.arange(len(raw), device=values.device)[None]
-        request_bytes = (request.operation + "\0" + request.specification).encode()
-        request_tokens = torch.tensor([value + 1 for value in request_bytes], device=values.device)
-        request_context = self.byte(request_tokens).mean(0)[None, None]
-        return self.encoder(self.byte(values) + self.position(pos) + self.kind(kind)[:, None] + request_context), kind
+        encoded, _, kinds = self.encode_batch([raw], [request])
+        return encoded, kinds
+
+    def semantic_embedding(self, artifacts):
+        """Shared learned representation; no parser, filenames or target text."""
+        requests = [ArtifactRequest("text", "represent content")] * len(artifacts)
+        if not self.semantic_chunk_size:
+            encoded, valid, _ = self.encode_batch(artifacts, requests)
+        else:
+            if not artifacts or any(not 1 <= len(raw) <= min(self.max_bytes, self.sequence_limit) for raw in artifacts):
+                raise ValueError("artifact exceeds local semantic capacity")
+            size = self.semantic_chunk_size
+            device = self.byte.weight.device
+            length = (max(map(len, artifacts)) + size - 1) // size * size
+            values = torch.zeros(len(artifacts), length, dtype=torch.long, device=device)
+            lengths = torch.tensor([len(raw) for raw in artifacts], device=device)
+            for row, raw in enumerate(artifacts):
+                values[row, :len(raw)] = torch.tensor(list(raw), device=device)
+            byte_valid = torch.arange(length, device=device)[None] < lengths[:, None]
+            local = self.byte(values).transpose(1, 2)
+            for layer in self.semantic_chunk:
+                local = layer(local) * byte_valid[:, None]
+            local = local.reshape(len(artifacts), self.width, -1, size).sum(-1).transpose(1, 2)
+            counts = byte_valid.reshape(len(artifacts), -1, size).sum(-1).clamp_min(1)
+            local = local / counts[..., None]
+            positions = torch.arange(0, length, size, device=device)[None]
+            valid = positions < lengths[:, None]
+            inputs = (local + self.position(positions)
+                      + self.kind.weight[kind_index("text")] + self.encode_requests(requests)[:, None])
+            encoded = self.encoder(inputs, src_key_padding_mask=~valid)
+        pooled = (encoded * valid[..., None]).sum(1) / valid.sum(1)[:, None]
+        _, guidance = self.think(pooled[:, None], depth=4)
+        return F.normalize(pooled + guidance, dim=-1)
 
     def encode_chunks(self, raw: bytes, request: ArtifactRequest, chunk_size=256, max_chunks=16):
         if not 32 <= chunk_size <= self.sequence_limit or not raw or len(raw) > self.max_bytes: raise ValueError("invalid hierarchical artifact")
