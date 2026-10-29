@@ -16,8 +16,9 @@ hypothesis class, or existing experiment checkpoints.
   in a new folder using CPython as a membership oracle and a hand-encoded
   RFC 3629 reference table as an exact counterexample teacher. Native execution
   uses the inherited bounded runner, not arbitrary direct execution.
-- `tests/test_validation_v9.py`: 15 **data-free** regression tests for core
-  mathematics, state-machine learning, and bounded native execution.
+- `tests/test_validation_v9.py`: 16 **data-free** regression tests for core
+  mathematics, state-machine learning, bounded native execution, and the
+  documented command-line entry point.
 
 The complete original experiment orchestration, 19 historical v9 tests,
 three frozen neural models, musl source labels, full native traces, and
