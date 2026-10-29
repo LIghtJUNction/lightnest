@@ -41,7 +41,7 @@ archive/legacy/            其他历史实验与证明
  docs/                    设计、实验结果和复现步骤
 ```
 
-Python 3.13 / PyTorch 2.10 CPU 的依赖由 uv 锁定。测试需要 GCC、Clang、LLD、LLVM、
+Python 3.13 / PyTorch 2.12.1 CPU 的依赖由 uv 锁定。测试需要 GCC、Clang、LLD、LLVM、
 bubblewrap 和 libseccomp；真实语料构建还需要对应命令行程序。权重、原始可执行文件、
 缓存、训练日志和逐条结果全部在仓库外。
 

@@ -67,7 +67,7 @@ pywin32-ctypes==0.2.3 ; sys_platform == 'win32'
     # via pyinstaller
 pyyaml==6.0.3
     # via huggingface-hub
-setuptools==84.2.1
+setuptools==81.0.0
     # via
     #   pyinstaller
     #   torch
@@ -75,9 +75,9 @@ sympy==1.14.0
     # via torch
 tokenizers==0.23.3
     # via lightnest
-torch==2.10.0 ; sys_platform == 'darwin'
+torch==2.12.1 ; sys_platform == 'darwin'
     # via lightnest
-torch==2.10.0+cpu ; sys_platform != 'darwin'
+torch==2.12.1+cpu ; sys_platform != 'darwin'
     # via lightnest
 tqdm==4.70.1
     # via huggingface-hub
