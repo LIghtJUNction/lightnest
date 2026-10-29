@@ -6,10 +6,12 @@ cases) lives in the separately hash-pinned evidence bundle, not in the git tree.
 from __future__ import annotations
 
 import itertools
+import os
 from pathlib import Path
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -19,6 +21,19 @@ from lightnest_rgb.risk_planner import (choose, entropy2_tree, entropy2_values,
                                         pair_features, query_values, tree_success)
 from lightnest_rgb.automata import (DFA, TableLearner, emit_demo_elf, emit_dfa,
                                     equivalent, utf8_reference, verify_relation)
+
+
+class DemoEntryPointTests(unittest.TestCase):
+    def test_documented_script_starts_outside_the_checkout(self):
+        script = Path(__file__).resolve().parents[1] / 'tools/validation_v9_demo.py'
+        env = os.environ.copy()
+        env.pop('PYTHONPATH', None)
+        env['PYTHONDONTWRITEBYTECODE'] = '1'
+        with tempfile.TemporaryDirectory() as temporary:
+            result = subprocess.run([sys.executable, str(script), '--help'], cwd=temporary,
+                                    env=env, capture_output=True, text=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('--out', result.stdout)
 
 
 def brute(h, p, x, z0, z1):

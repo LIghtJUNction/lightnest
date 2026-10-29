@@ -15,10 +15,12 @@ import platform
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from lightnest_rgb.automata import (TableLearner, emit_dfa, equivalent,
                                     utf8_reference, verify_relation)
 
