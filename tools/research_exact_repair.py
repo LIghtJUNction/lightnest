@@ -26,6 +26,7 @@ from lightnest_rgb.artifact import digest
 from lightnest_rgb.corpus import external
 from lightnest_rgb.exact_x86 import ExactX86Runner
 from lightnest_rgb.delta_policy import DeltaRGBPolicy
+from lightnest_rgb.single_bit_policy import SingleBitRGBPolicy
 from lightnest_rgb.execute import Case, ExecutableRunner, same_result
 from lightnest_rgb.iterate import Example, RGBEditor, execution_frames
 from lightnest_rgb.model import RGBConfig, RGBPolicy, greedy_action, patch_loss
@@ -38,7 +39,8 @@ COMMAND = 'Restore the executable to satisfy the visible program tests.'
 
 def hashes():
     return {name: digest((ROOT / name).read_bytes()) for name in
-            ('lightnest_rgb/model.py', 'lightnest_rgb/delta_policy.py', 'lightnest_rgb/observe.py', 'lightnest_rgb/attention.py',
+            ('lightnest_rgb/model.py', 'lightnest_rgb/delta_policy.py', 'lightnest_rgb/single_bit_policy.py',
+             'lightnest_rgb/observe.py', 'lightnest_rgb/attention.py',
              'lightnest_rgb/context.py', 'lightnest_rgb/iterate.py', 'lightnest_rgb/feedback.py',
              'lightnest_rgb/artifact.py', 'lightnest_rgb/execute.py', 'lightnest_rgb/corpus.py',
              'lightnest_rgb/exact_core.py', 'lightnest_rgb/exact_x86.py', 'tools/research_exact_repair.py', 'uv.lock')}
@@ -153,7 +155,7 @@ def verify(out):
     return out, protocol, tasks
 
 
-def refreeze(out, parent, *, steps=None, objective=None, edit_encoding=None):
+def refreeze(out, parent, *, steps=None, objective=None, edit_encoding=None, attention_mode=None):
     out, parent = external(out), external(parent)
     protocol = json.loads((parent / 'protocol.json').read_text())
     for name, value in protocol['sources'].items():
@@ -168,12 +170,18 @@ def refreeze(out, parent, *, steps=None, objective=None, edit_encoding=None):
     steps = protocol['steps'] if steps is None else steps
     objective = protocol.get('objective', 'balanced') if objective is None else objective
     edit_encoding = protocol.get('edit_encoding', 'replacement') if edit_encoding is None else edit_encoding
-    if steps < 256 or steps > 16384 or steps % 256 or objective not in ('balanced', 'ranking') or edit_encoding not in ('replacement', 'xor'):
-        raise ValueError('steps must be a multiple of 256 in 256..16384; objective balanced or ranking')
+    attention_mode = protocol.get('attention_mode', 'routed') if attention_mode is None else attention_mode
+    if steps < 256 or steps > 16384 or steps % 256 or objective not in ('balanced', 'ranking', 'categorical'):
+        raise ValueError('steps must be a multiple of 256 in 256..16384; objective balanced, ranking or categorical')
+    if edit_encoding not in ('replacement', 'xor', 'single_bit') or attention_mode not in ('routed', 'dense'):
+        raise ValueError('unknown edit encoding or attention mode')
+    if (objective == 'categorical') != (edit_encoding == 'single_bit'):
+        raise ValueError('single_bit encoding and categorical objective must be used together')
     out.mkdir(parents=True, exist_ok=False)
     for name in ('tasks.jsonl', 'counterexamples.json'):
         (out / name).write_bytes((parent / name).read_bytes())
     protocol |= {'sources': hashes(), 'steps': steps, 'objective': objective, 'edit_encoding': edit_encoding,
+                 'attention_mode': attention_mode,
                  'refrozen_from_protocol_sha256': digest((parent / 'protocol.json').read_bytes()),
                  'refreeze_reason': 'public-validation follow-up; unchanged task pool and unqueried neural test',
                  'validation_previously_exposed': True}
@@ -197,10 +205,22 @@ def ranking_loss(output, image, target):
     return location + 2 * replacement + .2 * positive
 
 
+def categorical_loss(output, image, target):
+    positions = [i for i, (a, b) in enumerate(zip(image, target, strict=True)) if a != b]
+    if len(positions) != 1: raise ValueError('single-bit supervision requires exactly one changed byte')
+    position = positions[0]; delta = image[position] ^ target[position]
+    if delta & (delta - 1): raise ValueError('single-bit supervision requires exactly one changed bit')
+    logits, flips = output['logits'], output['flip_logits']
+    location = F.cross_entropy(logits[None], torch.tensor([position], device=logits.device))
+    bit = F.cross_entropy(flips[position:position + 1], torch.tensor([delta.bit_length() - 1], device=flips.device))
+    return location + 2 * bit + .2 * F.softplus(-logits[position])
+
+
 def make_policy(config, protocol):
     encoding = protocol.get('edit_encoding', 'replacement')
-    if encoding not in ('replacement', 'xor'): raise ValueError('unknown edit encoding')
-    return (DeltaRGBPolicy if encoding == 'xor' else RGBPolicy)(config)
+    policies = {'replacement': RGBPolicy, 'xor': DeltaRGBPolicy, 'single_bit': SingleBitRGBPolicy}
+    if encoding not in policies: raise ValueError('unknown edit encoding')
+    return policies[encoding](config)
 
 
 def damaged(task):
@@ -217,13 +237,13 @@ def visible(task):
 
 
 @torch.inference_mode()
-def direct_validation(model, tasks):
+def direct_validation(model, tasks, *, mode='routed'):
     model.eval(); core = ExactX86Runner(trace_limit=0, max_steps=512)
     records = []
     for task in tasks:
         image, _ = damaged(task); examples = visible(task)
         frames = execution_frames(examples, task['observed'])
-        output, _, _ = model(image, COMMAND, frames, depth=2)
+        output, _, _ = model(image, COMMAND, frames, depth=2, mode=mode)
         action = greedy_action(output, image)
         candidate = bytearray(image)
         if not action['stop']: candidate[action['offset']] = action['value']
@@ -234,27 +254,59 @@ def direct_validation(model, tasks):
             'rate': sum(row['success'] for row in records) / len(records), 'records': records}
 
 
+def training_batches(tasks, protocol):
+    rows = [task for task in tasks if task['split'] == 'train']
+    if not rows: raise ValueError('no training tasks')
+    sampler = random.Random(protocol['seed']); batching = protocol.get('batching', 'independent')
+    if batching == 'independent':
+        if protocol.get('batch', 1) != 1: raise ValueError('independent pilot uses batch one')
+        return [[sampler.choice(rows)] for _ in range(protocol['steps'])]
+    if batching not in ('paired', 'shuffled') or protocol.get('batch') != 2:
+        raise ValueError('conditional batches require paired/shuffled and batch two')
+    grouped = {}
+    for task in rows: grouped.setdefault(task['damaged_sha256'], []).append(task)
+    groups = [sorted(group, key=lambda task: task['id']) for _, group in sorted(grouped.items()) if len(group) >= 2]
+    if not groups: raise ValueError('no conflicting requests for shared inputs')
+    batches = [sampler.sample(sampler.choice(groups), 2) for _ in range(protocol['steps'])]
+    if batching == 'shuffled':
+        # Rotate the second column, retaining precisely the same sample counts.
+        batches = [[batch[0], batches[(i + 1) % len(batches)][1]] for i, batch in enumerate(batches)]
+    return batches
+
+
+def schedule_identity(batches):
+    ids = [task['id'] for batch in batches for task in batch]
+    return {'stream_sha256': digest('\n'.join(ids).encode()),
+            'exposure_sha256': digest(json.dumps(dict(Counter(ids)), sort_keys=True).encode())}
+
+
 def train(out):
     out, protocol, tasks = verify(out)
+    batches = training_batches(tasks, protocol)
+    identity = schedule_identity(batches)
+    if 'training_schedule' in protocol and identity != protocol['training_schedule']:
+        raise ValueError('frozen training schedule changed')
     folder = out / 'training'; folder.mkdir(exist_ok=False)
     torch.manual_seed(protocol['seed']); torch.use_deterministic_algorithms(True)
     config = RGBConfig(width=32, heads=4, landmarks=2, detail_k=4, red_depths=(2,))
     model = make_policy(config, protocol); optimizer = torch.optim.AdamW(model.parameters(), lr=protocol['learning_rate'])
-    loss_function = ranking_loss if protocol.get('objective', 'balanced') == 'ranking' else patch_loss
-    train_rows = [task for task in tasks if task['split'] == 'train']
+    loss_function = {'balanced': patch_loss, 'ranking': ranking_loss, 'categorical': categorical_loss}[protocol.get('objective', 'balanced')]
+    mode = protocol.get('attention_mode', 'routed')
     validation = [task for task in tasks if task['split'] == 'validation' and task['id'] in protocol['selection'][task['program']]]
-    initial = direct_validation(model, validation)
+    initial = direct_validation(model, validation, mode=mode)
     (folder / 'initial-validation.json').write_text(json.dumps(initial, indent=2))
     print(json.dumps({'phase': 'initial', 'validation_rate': initial['rate']}), flush=True)
-    sampler = random.Random(protocol['seed']); started = time.perf_counter(); best = -1; loss_sum = 0
+    started = time.perf_counter(); best = -1; loss_sum = 0
     stream = []; seen = set()
     with (folder / 'updates.jsonl').open('x') as log:
-        for step in range(1, protocol['steps'] + 1):
-            task = sampler.choice(train_rows); image, target = damaged(task)
-            stream.append(task['id']); seen.add(task['id'])
+        for step, batch in enumerate(batches, 1):
             model.train(); optimizer.zero_grad(set_to_none=True)
-            blue, red, _ = model(image, COMMAND, execution_frames(visible(task), task['observed']), depth=2)
-            loss = loss_function(blue, image, target) + loss_function(red, image, target)
+            losses = []
+            for task in batch:
+                image, target = damaged(task); stream.append(task['id']); seen.add(task['id'])
+                blue, red, _ = model(image, COMMAND, execution_frames(visible(task), task['observed']), depth=2, mode=mode)
+                losses.append(loss_function(blue, image, target) + loss_function(red, image, target))
+            loss = torch.stack(losses).mean()
             if not torch.isfinite(loss): raise FloatingPointError('nonfinite repair loss')
             loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 1., error_if_nonfinite=True); optimizer.step()
             loss_sum += float(loss.detach())
@@ -262,7 +314,7 @@ def train(out):
                 event = {'step': step, 'loss': loss_sum / 32, 'wall_seconds': time.perf_counter() - started}
                 loss_sum = 0
                 if step % 256 == 0:
-                    result = direct_validation(model, validation); event['validation'] = result
+                    result = direct_validation(model, validation, mode=mode); event['validation'] = result
                     if result['rate'] > best:
                         best = result['rate']
                         torch.save({'config': config.__dict__, 'state_dict': model.state_dict(), 'step': step,
@@ -274,12 +326,15 @@ def train(out):
                                   for key, value in event.items()}), flush=True)
     torch.save({'config': config.__dict__, 'state_dict': model.state_dict(), 'step': protocol['steps'],
                 'optimizer': optimizer.state_dict(), 'torch_rng': torch.get_rng_state(),
-                'sampler_rng': sampler.getstate(), 'sources': hashes(),
+                'training_schedule': identity, 'sources': hashes(),
                 'protocol_sha256': digest((out / 'protocol.json').read_bytes())}, folder / 'final-state.pt')
     result = {'selected_validation_rate': best, 'initial_validation_rate': initial['rate'],
               'test_queries': 0, 'steps': protocol['steps'], 'unique_training_tasks': len(seen),
               'objective': protocol.get('objective', 'balanced'), 'edit_encoding': protocol.get('edit_encoding', 'replacement'),
+              'attention_mode': mode,
+              'batch': protocol.get('batch', 1), 'batching': protocol.get('batching', 'independent'),
               'stream_sha256': digest('\n'.join(stream).encode()),
+              'exposure_sha256': identity['exposure_sha256'],
               'validation_gate_passed': best >= .25 and best > initial['rate'],
               'major_breakthrough_claim': False}
     (folder / 'summary.json').write_text(json.dumps(result, indent=2))
@@ -288,6 +343,10 @@ def train(out):
 
 def evaluate(out):
     out, protocol, tasks = verify(out)
+    if protocol.get('neural_test_permitted') is False:
+        result = {'test_queries': 0, 'status': 'not_promoted', 'major_breakthrough_claim': False,
+                  'reason': 'public_validation_only'}
+        (out / 'review.json').write_text(json.dumps(result, indent=2)); return result
     candidate = torch.load(out / 'training/candidate.pt', map_location='cpu', weights_only=True)
     if candidate['sources'] != hashes() or candidate['protocol_sha256'] != digest((out / 'protocol.json').read_bytes()):
         raise ValueError('candidate does not match frozen protocol')
@@ -306,7 +365,7 @@ def evaluate(out):
         arms = {}
         for name, runner in [('tensor', ExactX86Runner(trace_limit=0, max_steps=512)), ('native', native)]:
             editor = RGBEditor(model, runner, max_edits=1, max_candidates=9, wall_seconds=120, blue_risk=1., budgeted=False)
-            proposal = editor.repair(image, COMMAND, visible(task))
+            proposal = editor.repair(image, COMMAND, visible(task), mode=protocol.get('attention_mode', 'routed'))
             checked = [native.run(proposal['bytes'], Case.parse(row['input'])) for row in task['hidden']] if proposal['stop'] else []
             strict = proposal['stop'] and all(same_result(actual, row['expected']) for actual, row in zip(checked, task['hidden']))
             arms[name] = {key: value for key, value in proposal.items() if key != 'bytes'} | {'hidden_success': strict}
@@ -326,13 +385,15 @@ def main():
     parser.add_argument('--out', required=True)
     parser.add_argument('--parent')
     parser.add_argument('--steps', type=int)
-    parser.add_argument('--objective', choices=('balanced', 'ranking'))
-    parser.add_argument('--edit-encoding', choices=('replacement', 'xor'))
+    parser.add_argument('--objective', choices=('balanced', 'ranking', 'categorical'))
+    parser.add_argument('--edit-encoding', choices=('replacement', 'xor', 'single_bit'))
+    parser.add_argument('--attention-mode', choices=('routed', 'dense'))
     args = parser.parse_args(); torch.set_num_threads(1)
     if args.phase in ('prepare', 'refreeze'):
         if not args.parent: parser.error('--parent is required')
         result = (prepare(args.out, args.parent) if args.phase == 'prepare' else
-                  refreeze(args.out, args.parent, steps=args.steps, objective=args.objective, edit_encoding=args.edit_encoding))
+                  refreeze(args.out, args.parent, steps=args.steps, objective=args.objective,
+                           edit_encoding=args.edit_encoding, attention_mode=args.attention_mode))
     else: result = train(args.out) if args.phase == 'train' else evaluate(args.out)
     print(json.dumps(result, indent=2))
 

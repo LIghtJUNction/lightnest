@@ -8,7 +8,7 @@ from unittest.mock import patch
 import torch
 
 from lightnest_rgb.artifact import digest
-from tools.research_exact_repair import ROOT, evaluate, hashes, ranking_loss, refreeze, verify
+from tools.research_exact_repair import ROOT, evaluate, hashes, ranking_loss, refreeze, schedule_identity, training_batches, verify
 
 
 class RepairProtocolTests(unittest.TestCase):
@@ -41,6 +41,30 @@ class RepairProtocolTests(unittest.TestCase):
             (root / 'tasks.jsonl').write_text('{}\n')
             with self.assertRaisesRegex(ValueError, 'frozen repair experiment changed'):
                 verify(root)
+
+    def test_public_only_protocol_does_not_load_a_test_checkpoint(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); self.fixture(root)
+            protocol = json.loads((root / 'protocol.json').read_text())
+            protocol['neural_test_permitted'] = False
+            (root / 'protocol.json').write_text(json.dumps(protocol))
+            with patch('tools.research_exact_repair.torch.load', side_effect=AssertionError('test checkpoint opened')):
+                result = evaluate(root)
+            self.assertEqual(result['test_queries'], 0)
+            self.assertEqual(result['reason'], 'public_validation_only')
+
+    def test_conditional_batch_controls_preserve_sample_exposure(self):
+        tasks = [{'id': f'{group}/{request}', 'split': 'train', 'damaged_sha256': str(group)}
+                 for group in range(12) for request in range(3)]
+        tasks.append({'id': 'sealed', 'split': 'test', 'damaged_sha256': 'sealed'})
+        protocol = {'seed': 17, 'steps': 64, 'batch': 2, 'batching': 'paired'}
+        pairs = training_batches(tasks, protocol)
+        shuffled = training_batches(tasks, protocol | {'batching': 'shuffled'})
+        self.assertTrue(all(a['damaged_sha256'] == b['damaged_sha256'] and a['id'] != b['id'] for a, b in pairs))
+        self.assertGreater(sum(a['damaged_sha256'] != b['damaged_sha256'] for a, b in shuffled), 40)
+        self.assertEqual(schedule_identity(pairs)['exposure_sha256'], schedule_identity(shuffled)['exposure_sha256'])
+        self.assertNotEqual(schedule_identity(pairs)['stream_sha256'], schedule_identity(shuffled)['stream_sha256'])
+        self.assertFalse(any(row['split'] != 'train' for batch in pairs + shuffled for row in batch))
 
     def test_refreeze_preserves_data_and_rejects_used_tests(self):
         with tempfile.TemporaryDirectory() as temporary:
