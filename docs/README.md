@@ -6,6 +6,7 @@
 可选精确计算原语：[Qwenputer 接入设计](QWENPUTER_ADAPTATION.md) · [P0 本地验证](QWENPUTER_P0_EXPERIMENT.md)。
 新的执行与训练研究：[受限 x86-64 差分执行及语义修复](EXACT_EXECUTION_RESEARCH.md)。
 可选规划研究：[v7 主动行为推断](BEHAVIOR_SPACE.md) · [v9 风险规划与状态机验证](VALIDATION_V9.md)。
+本轮本地验收：[研究分支合并检查](MERGE_VALIDATION_20261029.md)。
 
 下面文档保留 Universal Machine v1 当时的架构、哈希和结果，旧入口已归档至
 `archive/universal_native/`：[架构](ARCHITECTURE.md) · [复现](REPRODUCE.md) · [结果](RESULTS.md)。
