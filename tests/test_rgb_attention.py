@@ -2,8 +2,8 @@ import unittest
 
 import torch
 
-from lightnest_rgb.attention import CompressRouteAttention, joint_attention
-from lightnest_rgb.observe import Frame, GreenObserver, ObservationStore
+from lightnest.attention import CompressRouteAttention, joint_attention
+from lightnest.observe import Frame, GreenObserver, ObservationStore
 
 
 class AttentionTests(unittest.TestCase):

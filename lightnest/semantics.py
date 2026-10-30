@@ -101,7 +101,7 @@ def prepare(out, *, max_bytes=1024, from_corpus=None):
             bucket = int(hashlib.sha256(group.encode()).hexdigest()[:8], 16) % 5
             split = "test" if bucket == 0 else "validation" if bucket == 1 else "train"
             splits[split].extend(examples(path, root, group, max_bytes=max_bytes))
-    for path in sorted((ROOT / "lightnest_rgb").glob("*.py")):
+    for path in sorted((ROOT / "lightnest").glob("*.py")):
         splits["self"].extend(examples(path, ROOT, "lightnest", max_bytes=max_bytes))
     return freeze(out, splits, [str(root) for root in roots], max_bytes)
 

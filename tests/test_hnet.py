@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from lightnest_rgb.generate import condition_tensor, generation_loss
-from lightnest_rgb.hnet import HNetELFGenerator, HierarchicalGRU, ema_scan, ratio_loss
+from lightnest.generate import condition_tensor, generation_loss
+from lightnest.hnet import HNetELFGenerator, HierarchicalGRU, ema_scan, ratio_loss
 
 
 class HNetTests(unittest.TestCase):

@@ -21,7 +21,7 @@
 't  i 7i\\ne�i eeii  \\nii /  di si\\niiiv iiee i vie eeG/ i iifei   i i iti/i iqeisie see'
 ```
 
-对 `lightnest_rgb/model.py` 前 256 字节，输出为：
+对 `lightnest/model.py` 前 256 字节，输出为：
 
 ```text
 'vioq�ifei e o iiiie i v eee e\\ni.ee e7  ii ii  \\n�ie  meei meni  e  veei iie eiUvee'

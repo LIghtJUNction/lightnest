@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from lightnest_rgb.delta_policy import DeltaRGBPolicy
-from lightnest_rgb.model import RGBConfig, RGBPolicy
+from archive.research.delta_policy import DeltaRGBPolicy
+from lightnest.model import RGBConfig, RGBPolicy
 
 
 class DeltaPolicyTests(unittest.TestCase):

@@ -15,7 +15,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from lightnest_rgb.loop_lift import emit_scan, emit_demo_elf
+from archive.research.loop_lift import emit_scan, emit_demo_elf
 
 
 def pack_cases(cases: list[bytes]) -> bytes:

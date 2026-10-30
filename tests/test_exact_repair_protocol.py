@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import torch
 
-from lightnest_rgb.artifact import digest
+from lightnest.artifact import digest
 from tools.research_exact_repair import ROOT, evaluate, hashes, ranking_loss, refreeze, schedule_identity, training_batches, verify
 
 

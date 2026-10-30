@@ -34,7 +34,7 @@ uv export --locked --no-hashes --no-emit-project --emit-index-url --output-file 
 
 ## 目录与修改范围
 
-- `lightnest_rgb/`：当前 RGB 网络、完整 ELF 语料、多架构编解码、训练和隔离执行。
+- `lightnest/`：当前 RGB 网络、完整 ELF 语料、多架构编解码、训练和隔离执行。
 - `archive/universal_native/`：原 Universal Machine v1，对照归档。
 - `tests/`：无需外部权重的新架构与证据边界检查。
 - `tools/`：统一检查与源码树检查。

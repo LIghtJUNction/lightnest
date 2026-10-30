@@ -46,7 +46,7 @@
 
 本质上，动态分块是在逐字节网络中加入一个可训练的开关：开关打开时才更新中间层状态，其他时刻沿用最近的中间层信息。它改变的是模型内部计算的粒度，不是让生成器借助编译器输出程序。
 
-新模块 `lightnest_rgb/hnet.py` 的 `HNetELFGenerator` 继承现有 `ELFGenerator`，仅替换 `decode`。原有请求条件、复制头、蓝区位预测、红区迭代与停止头不变；旧类、旧默认行为与旧检查点格式没有改动。新实验从随机初始化训练，不是给现有已训练权重打补丁。本次没有更改 GreenObserver、Any2Any 主干、强化学习或模型自修改流程。
+新模块 `lightnest/hnet.py` 的 `HNetELFGenerator` 继承现有 `ELFGenerator`，仅替换 `decode`。原有请求条件、复制头、蓝区位预测、红区迭代与停止头不变；旧类、旧默认行为与旧检查点格式没有改动。新实验从随机初始化训练，不是给现有已训练权重打补丁。本次没有更改 GreenObserver、Any2Any 主干、强化学习或模型自修改流程。
 
 内部数据流为：字节与请求 → 因果 GRU 编码 → 学习边界 → 取出边界处的状态 → 较短序列上的 GRU → 平滑并展开 → 字节级 GRU → 现有 RGB 输出头。实现保留 H-Net 的相邻状态余弦路由、硬边界选择、指数平滑、直通梯度以及目标分块率损失 [1, §2.2]。最小表达式是：
 
@@ -90,7 +90,7 @@ output[t] = decoder(skip(h[t]) + smooth)
 
 ```bash
 uv run --locked python -m unittest discover -s tests -p 'test_hnet*.py' -v
-uv run --locked python -m lightnest_rgb.hnet_experiment \
+uv run --locked python -m lightnest.hnet_experiment \
   --out /tmp/lightnest-hnet-pilot-new \
   --steps 300 --width 32 --capacity 640 --batch-size 8 \
   --lr 0.003 --ratio-weight 0.03 --eval-every 100 \
@@ -103,7 +103,7 @@ uv run --locked python -m lightnest_rgb.hnet_experiment \
 
 [1] Hwang, S., Wang, B., Gu, A. *Dynamic Chunking for End-to-End Hierarchical Sequence Modeling*. arXiv:2507.07955v2, 2025. https://arxiv.org/html/2507.07955v2 。官方实现：https://github.com/goombalab/hnet 。本次依据机制独立实现 GRU 版本，未复制官方训练框架。
 
-[2] LightNest 源码基线：`143e8900dede5c5364da4913507c4c4ed814fa09`；现有 `lightnest_rgb/generate.py` 的 Git blob 为 `c930f9ad685f2d6cfb2b7053e22bf45d0f042325`。https://github.com/LIghtJUNction/lightnest/tree/143e8900dede5c5364da4913507c4c4ed814fa09 。
+[2] LightNest 源码基线：`143e8900dede5c5364da4913507c4c4ed814fa09`；原目录名 `lightnest_rgb/generate.py` 下该文件的 Git blob 为 `c930f9ad685f2d6cfb2b7053e22bf45d0f042325`。https://github.com/LIghtJUNction/lightnest/tree/143e8900dede5c5364da4913507c4c4ed814fa09 。
 
 [3] 报告使用用户指定的 Research-Paper-Writing-Skills 中实验设计和审稿核查指引，限定每个结论的证据范围。https://github.com/Master-cai/Research-Paper-Writing-Skills 。
 

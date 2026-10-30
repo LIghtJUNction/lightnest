@@ -5,12 +5,12 @@ import unittest
 
 import torch
 
-from lightnest_rgb.artifact import digest
-from lightnest_rgb.corpus import compile_generation_target
-from lightnest_rgb.execute import Case, ExecutableRunner
-from lightnest_rgb.generate import ELFGenerator, condition_tensor, generation_loss
-from lightnest_rgb.iterate import Example, RGBEditor
-from lightnest_rgb.model import RGBConfig, RGBPolicy, budget_target, patch_loss
+from lightnest.artifact import digest
+from lightnest.corpus import compile_generation_target
+from lightnest.execute import Case, ExecutableRunner
+from lightnest.generate import ELFGenerator, condition_tensor, generation_loss
+from lightnest.iterate import Example, RGBEditor
+from lightnest.model import RGBConfig, RGBPolicy, budget_target, patch_loss
 
 
 class RGBPolicyTests(unittest.TestCase):

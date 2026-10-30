@@ -152,10 +152,10 @@ uv run --locked python tools/check.py
 Explore deterministic interfaces:
 
 ```bash
-uv run --locked python -m lightnest_rgb --help
-uv run --locked python -m lightnest_rgb inspect /usr/bin/sort
-uv run --locked python -m lightnest_rgb targets
-uv run --locked python -m lightnest_rgb decode \
+uv run --locked python -m lightnest --help
+uv run --locked python -m lightnest inspect /usr/bin/sort
+uv run --locked python -m lightnest targets
+uv run --locked python -m lightnest decode \
   --architecture x86_64 \
   --hex 4889f84801f0c3
 ```
@@ -179,7 +179,7 @@ Weights, original executables, caches, training logs and per-example results rem
 ## Repository map
 
 ```text
-lightnest_rgb/              current RGB mainline and complete-ELF tools
+lightnest/              current RGB mainline and complete-ELF tools
 archive/universal_native/   previous Universal Machine v1 work
 archive/rpn3_rv32/          earlier RV32 architecture
 archive/legacy/             historical experiments and evidence

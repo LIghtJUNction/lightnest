@@ -8,11 +8,11 @@ from unittest.mock import patch
 
 import torch
 
-from lightnest_rgb.corpus import compile_generation_target
-from lightnest_rgb.exact_core import FixedWordAdder
-from lightnest_rgb.exact_x86 import ExactX86Runner
-from lightnest_rgb.execute import Case, ExecutableRunner, same_result
-from lightnest_rgb.iterate import Example, RGBEditor
+from lightnest.corpus import compile_generation_target
+from archive.research.exact_core import FixedWordAdder
+from archive.research.exact_x86 import ExactX86Runner
+from lightnest.execute import Case, ExecutableRunner, same_result
+from lightnest.iterate import Example, RGBEditor
 from tools.probe_exact_x86 import build_program
 
 

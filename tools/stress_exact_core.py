@@ -15,7 +15,7 @@ import time
 
 import torch
 
-from lightnest_rgb.exact_core import ExactBitRAM, FixedWordAdder, decode_words, encode_words
+from archive.research.exact_core import ExactBitRAM, FixedWordAdder, decode_words, encode_words
 from tools.probe_exact_core import probe
 
 
@@ -103,7 +103,7 @@ def main() -> None:
     torch.set_num_threads(1)
     root = Path(__file__).resolve().parents[1]
     source_hashes = {path: hashlib.sha256((root / path).read_bytes()).hexdigest() for path in
-                     ('lightnest_rgb/exact_core.py', 'tools/probe_exact_core.py', 'tools/stress_exact_core.py')}
+                     ('archive/research/exact_core.py', 'tools/probe_exact_core.py', 'tools/stress_exact_core.py')}
     results = []
     started = datetime.now(timezone.utc).isoformat()
     with torch.inference_mode():

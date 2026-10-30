@@ -6,7 +6,7 @@ import tempfile
 import unittest
 import zlib
 
-from lightnest_rgb.packed import COOKIE, COOKIE_MAGIC, ENTRY, PackedArtifact, WRAPPER_MAGIC
+from lightnest.packed import COOKIE, COOKIE_MAGIC, ENTRY, PackedArtifact, WRAPPER_MAGIC
 
 
 def packed_image(code, *, expanded_override=None):

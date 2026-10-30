@@ -3,9 +3,9 @@ import unittest
 
 import torch
 
-from lightnest_rgb.generate import ELFGenerator
-from lightnest_rgb.hnet import HNetELFGenerator
-from lightnest_rgb.hnet_experiment import batch, generate_batch, teacher_metrics, variable_positions
+from lightnest.generate import ELFGenerator
+from lightnest.hnet import HNetELFGenerator
+from lightnest.hnet_experiment import batch, generate_batch, teacher_metrics, variable_positions
 
 
 class ExperimentTests(unittest.TestCase):

@@ -7,8 +7,8 @@ import unittest
 import torch
 from torch.nn import functional as F
 
-from lightnest_rgb.any2any import semantic_similarity
-from lightnest_rgb.binary_semantics import behavior_probes, compile_bytecode, mine_negatives, sample_batch, score_matrix
+from lightnest.any2any import semantic_similarity
+from lightnest.binary_semantics import behavior_probes, compile_bytecode, mine_negatives, sample_batch, score_matrix
 
 
 class BinarySemanticTests(unittest.TestCase):

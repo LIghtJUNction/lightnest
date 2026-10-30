@@ -59,7 +59,7 @@ def jsonl(path, items):
 
 
 def source_hashes():
-    return {str(p.relative_to(ROOT)): sha(p) for p in sorted((ROOT / "lightnest_rgb").glob("*.py"))}
+    return {str(p.relative_to(ROOT)): sha(p) for p in sorted((ROOT / "lightnest").glob("*.py"))}
 
 
 def cases_for(name, args, seed=20261024):

@@ -10,8 +10,8 @@ import tempfile
 import unittest
 
 import numpy as np
-from lightnest_rgb.behavior_space import BehaviorSpace, InconsistentEvidence, fit_penalty, transitions
-from lightnest_rgb.loop_lift import emit_demo_elf, emit_scan
+from archive.research.behavior_space import BehaviorSpace, InconsistentEvidence, fit_penalty, transitions
+from archive.research.loop_lift import emit_demo_elf, emit_scan
 
 
 class PosteriorTests(unittest.TestCase):

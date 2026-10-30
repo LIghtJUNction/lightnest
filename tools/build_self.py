@@ -36,7 +36,7 @@ def main():
                    "--workpath", str(Path(work) / "build"), "--specpath", str(Path(work)),
                    "--collect-all", "torch", "--add-data", f"{staged_checkpoint}:.",
                    "--add-binary", f"{args.llama_server}:.", *backend_args,
-                   "--paths", ".", "lightnest_rgb/self_runtime.py"]
+                   "--paths", ".", "lightnest/self_runtime.py"]
         subprocess.run(command, check=True)
         built = Path(work) / "dist" / "lightnest-self"
         launcher = Path(work) / "lightnest-self-launcher"

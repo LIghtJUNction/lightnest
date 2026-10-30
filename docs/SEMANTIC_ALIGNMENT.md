@@ -114,7 +114,7 @@ uv run --locked python tools/semantic_research.py evaluate \
 候选说明的 JSON 数组：
 
 ```bash
-uv run --locked python -m lightnest_rgb match-description /path/to/function.py \
+uv run --locked python -m lightnest match-description /path/to/function.py \
   --checkpoint /path/to/candidate-N.pt --descriptions /path/to/descriptions.json
 ```
 

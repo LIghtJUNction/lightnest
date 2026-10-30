@@ -5,13 +5,13 @@ libseccomp；构建生成训练标签需要 GNU as / ld。数据必须放在仓�
 
 ```bash
 OUT=/path/outside/checkout/rgb-run
-uv run --locked python -m lightnest_rgb prepare --out "$OUT" --per-program 128
-uv run --locked python -m lightnest_rgb train-policy --out "$OUT" --seed 104729
-uv run --locked python -m lightnest_rgb train-generator --out "$OUT" --seed 104729
-uv run --locked python -m lightnest_rgb freeze --out "$OUT" --name final \
+uv run --locked python -m lightnest prepare --out "$OUT" --per-program 128
+uv run --locked python -m lightnest train-policy --out "$OUT" --seed 104729
+uv run --locked python -m lightnest train-generator --out "$OUT" --seed 104729
+uv run --locked python -m lightnest freeze --out "$OUT" --name final \
   --policy "$OUT/weights/rgb-104729.pt" --generator "$OUT/weights/generator-104729.pt"
-uv run --locked python -m lightnest_rgb evaluate --out "$OUT" --name final --kind policy
-uv run --locked python -m lightnest_rgb evaluate --out "$OUT" --name final --kind generation
+uv run --locked python -m lightnest evaluate --out "$OUT" --name final --kind policy
+uv run --locked python -m lightnest evaluate --out "$OUT" --name final --kind generation
 ```
 
 `prepare` 读取当前机器的真实程序，保存 SHA256、包版本、ELF 结构以及实际运行结果。
@@ -39,7 +39,7 @@ grep/zstd 验证，sed/jq 测试。每程序 128 个任务，包括无修改任�
 生成请求文件：`{"exit":37}`，或 `{"stdout":"68656c6c6f21210a"}`（恰好 8 字节）。
 
 ```bash
-uv run --locked python -m lightnest_rgb generate \
+uv run --locked python -m lightnest generate \
   --checkpoint "$OUT/weights/generator-104729.pt" --request request.json \
   --output /tmp/new-generated.elf --workdir /tmp/new-generation-run
 ```
@@ -52,7 +52,7 @@ uv run --locked python -m lightnest_rgb generate \
 stdin/stdout/stderr 使用十六进制。仅提供合法可见测试，不传损坏标签或隐藏结果。
 
 ```bash
-uv run --locked python -m lightnest_rgb repair /path/to/damaged.elf \
+uv run --locked python -m lightnest repair /path/to/damaged.elf \
   --checkpoint "$OUT/weights/rgb-104729.pt" --request repair.json \
   --output /tmp/new-repaired.elf --workdir /tmp/new-repair-run
 ```
@@ -68,9 +68,9 @@ uv run --locked python -m lightnest_rgb repair /path/to/damaged.elf \
 同一模型的继续训练，不是第二个独立随机种子，不可用作多种子稳定性的证据。
 
 ```bash
-uv run --locked python -m lightnest_rgb refine-policy --out "$OUT" \
+uv run --locked python -m lightnest refine-policy --out "$OUT" \
   --parent "$OUT/weights/rgb-104729.pt" --seed 104730
-uv run --locked python -m lightnest_rgb refine-generator --out "$OUT" \
+uv run --locked python -m lightnest refine-generator --out "$OUT" \
   --parent "$OUT/training/generator-104729/step-512.pt" --seed 104730
 ```
 
@@ -88,7 +88,7 @@ uv run --locked python -m lightnest_rgb refine-generator --out "$OUT" \
 信号、超时、入口预检和可见通过数构成奖励；不读取隐藏结果或干净目标字节。
 
 ```bash
-uv run --locked python -m lightnest_rgb train-feedback --out "$OUT" \
+uv run --locked python -m lightnest train-feedback --out "$OUT" \
   --parent "$OUT/weights/rgb-104731.pt" --seed 104732 --steps 128
 ```
 
@@ -108,7 +108,7 @@ uv run --locked python -m lightnest_rgb train-feedback --out "$OUT" \
 cat >/tmp/act-generate.json <<'EOF'
 {"mode":"generate","spec":{"stdout":"5247422e4f4b210a"}}
 EOF
-uv run --locked python -m lightnest_rgb act \
+uv run --locked python -m lightnest act \
   --generator "$OUT/training/generator-104730/step-256.pt" \
   --request /tmp/act-generate.json --output /tmp/act-generated.elf \
   --workdir /tmp/act-generate-run

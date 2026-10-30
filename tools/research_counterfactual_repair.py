@@ -18,10 +18,10 @@ sys.path.insert(0, str(ROOT))
 
 import torch
 
-from lightnest_rgb.artifact import digest
-from lightnest_rgb.corpus import external
-from lightnest_rgb.exact_x86 import ExactX86Runner
-from lightnest_rgb.execute import ExecutableRunner, same_result
+from lightnest.artifact import digest
+from lightnest.corpus import external
+from archive.research.exact_x86 import ExactX86Runner
+from lightnest.execute import ExecutableRunner, same_result
 from tools.research_exact_repair import damaged, hashes, outputs, refreeze, schedule_identity, train, training_batches, verify, visible
 
 

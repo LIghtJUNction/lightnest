@@ -17,7 +17,7 @@ import time
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from lightnest_rgb.behavior_space import BehaviorSpace, InconsistentEvidence, fit_penalty, transitions
+from archive.research.behavior_space import BehaviorSpace, InconsistentEvidence, fit_penalty, transitions
 
 
 def digest(data: bytes) -> str:
@@ -187,7 +187,7 @@ def main() -> int:
                     native_reference_sha256=digest((args.v6_root/"data/native_reference_tables.bin").read_bytes()),
                     train_sha256=digest(train.tobytes()), test_sha256=digest(targets.tobytes()),
                     source_sha256={p.name:digest(p.read_bytes()) for p in [
-                        Path(__file__), Path(__file__).resolve().parents[1]/"lightnest_rgb/behavior_space.py"]},
+                        Path(__file__), Path(__file__).resolve().parents[1]/"archive/research/behavior_space.py"]},
                     preregistration="local freeze before measurement, not external preregistration",
                     not_neural_training=True, oracle_access="only requested labels; full domain scoring is read-only",
                     assumptions="target in declared class; deterministic noiseless oracle",

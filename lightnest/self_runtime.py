@@ -20,8 +20,8 @@ from urllib import request
 
 import torch
 
-from lightnest_rgb.any2any import ArtifactCore, ArtifactRequest, KINDS
-from lightnest_rgb.artifact import inspect_elf
+from lightnest.any2any import ArtifactCore, ArtifactRequest, KINDS
+from lightnest.artifact import inspect_elf
 
 
 WRAPPER_MAGIC = b"LIGHTNEST_WRAPPER_V1"

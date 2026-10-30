@@ -1,4 +1,4 @@
-"""uv run --locked python -m lightnest_rgb --help"""
+"""uv run --locked python -m lightnest --help"""
 from __future__ import annotations
 
 import argparse

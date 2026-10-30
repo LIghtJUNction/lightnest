@@ -22,14 +22,14 @@ from elftools.elf.elffile import ELFFile
 import torch
 from torch.nn import functional as F
 
-from lightnest_rgb.artifact import digest
-from lightnest_rgb.corpus import external
-from lightnest_rgb.exact_x86 import ExactX86Runner
-from lightnest_rgb.delta_policy import DeltaRGBPolicy
-from lightnest_rgb.single_bit_policy import SingleBitRGBPolicy
-from lightnest_rgb.execute import Case, ExecutableRunner, same_result
-from lightnest_rgb.iterate import Example, RGBEditor, execution_frames
-from lightnest_rgb.model import RGBConfig, RGBPolicy, greedy_action, patch_loss
+from lightnest.artifact import digest
+from lightnest.corpus import external
+from archive.research.exact_x86 import ExactX86Runner
+from archive.research.delta_policy import DeltaRGBPolicy
+from archive.research.single_bit_policy import SingleBitRGBPolicy
+from lightnest.execute import Case, ExecutableRunner, same_result
+from lightnest.iterate import Example, RGBEditor, execution_frames
+from lightnest.model import RGBConfig, RGBPolicy, greedy_action, patch_loss
 
 SPLITS = {'arithmetic32': 'train', 'arithmetic64': 'train', 'logic32': 'train', 'loop': 'train',
           'unsigned_select': 'validation', 'memory': 'validation', 'signed_select': 'test', 'call': 'test'}
@@ -39,11 +39,11 @@ COMMAND = 'Restore the executable to satisfy the visible program tests.'
 
 def hashes():
     return {name: digest((ROOT / name).read_bytes()) for name in
-            ('lightnest_rgb/model.py', 'lightnest_rgb/delta_policy.py', 'lightnest_rgb/single_bit_policy.py',
-             'lightnest_rgb/observe.py', 'lightnest_rgb/attention.py',
-             'lightnest_rgb/context.py', 'lightnest_rgb/iterate.py', 'lightnest_rgb/feedback.py',
-             'lightnest_rgb/artifact.py', 'lightnest_rgb/execute.py', 'lightnest_rgb/corpus.py',
-             'lightnest_rgb/exact_core.py', 'lightnest_rgb/exact_x86.py', 'tools/research_exact_repair.py', 'uv.lock')}
+            ('lightnest/model.py', 'archive/research/delta_policy.py', 'archive/research/single_bit_policy.py',
+             'lightnest/observe.py', 'lightnest/attention.py',
+             'lightnest/context.py', 'lightnest/iterate.py', 'lightnest/feedback.py',
+             'lightnest/artifact.py', 'lightnest/execute.py', 'lightnest/corpus.py',
+             'archive/research/exact_core.py', 'archive/research/exact_x86.py', 'tools/research_exact_repair.py', 'uv.lock')}
 
 
 def outputs(record):

@@ -1,7 +1,7 @@
 import unittest
-from lightnest_rgb.data_io import pack, unpack
-from lightnest_rgb.any2any import ArtifactRequest, ArtifactCore
-from lightnest_rgb.tools import ToolCall, ToolRegistry
+from lightnest.data_io import pack, unpack
+from lightnest.any2any import ArtifactRequest, ArtifactCore
+from lightnest.tools import ToolCall, ToolRegistry
 import asyncio
 
 class DataIOTests(unittest.TestCase):

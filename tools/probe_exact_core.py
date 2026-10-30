@@ -14,7 +14,7 @@ import time
 
 import torch
 
-from lightnest_rgb.exact_core import ExactBitRAM, FixedWordAdder, decode_words, encode_words
+from archive.research.exact_core import ExactBitRAM, FixedWordAdder, decode_words, encode_words
 
 
 def probe(steps: int, seed: int, dtype: torch.dtype) -> dict:

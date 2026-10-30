@@ -1,8 +1,8 @@
 import unittest
 import torch
-from lightnest_rgb.any2any import ArtifactCore, ArtifactRequest, KINDS, CopyPasteAction, apply_copy_paste
+from lightnest.any2any import ArtifactCore, ArtifactRequest, KINDS, CopyPasteAction, apply_copy_paste
 import hashlib
-from lightnest_rgb.artifact_types import detect_kind, inspect_artifact
+from lightnest.artifact_types import detect_kind, inspect_artifact
 
 class Any2AnyTests(unittest.TestCase):
     def test_opposite_requests_keep_word_order(self):

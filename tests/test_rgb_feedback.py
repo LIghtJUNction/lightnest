@@ -1,9 +1,9 @@
 import unittest
 from pathlib import Path
 import torch
-from lightnest_rgb.feedback import outcome_reward, reinforce_loss, transition_reward
-from lightnest_rgb.execute import Case, ExecutableRunner
-from lightnest_rgb.iterate import Example
+from lightnest.feedback import outcome_reward, reinforce_loss, transition_reward
+from lightnest.execute import Case, ExecutableRunner
+from lightnest.iterate import Example
 
 class FeedbackTests(unittest.TestCase):
     def test_invalid_entry_is_typed_without_child(self):

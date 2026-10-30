@@ -1,6 +1,6 @@
 """Frozen full-ELF CPU pilot; all data, logs and weights stay outside checkout.
 
-Run: python -m lightnest_rgb.hnet_experiment --out /tmp/lightnest-hnet-run
+Run: python -m lightnest.hnet_experiment --out /tmp/lightnest-hnet-run
 This is a mechanism pilot, not the full locked-environment RGB benchmark.
 """
 from __future__ import annotations
@@ -296,7 +296,7 @@ def main():
                 'runtime': {'python': platform.python_version(), 'torch': torch.__version__, 'platform': platform.platform(),
                             'cuda': torch.cuda.is_available(), 'threads': args.threads},
                 'tools': {t: subprocess.check_output([t, '--version']).decode().splitlines()[0] for t in ('as', 'ld')},
-                'sources': {str(p.relative_to(root)): sha(p.read_bytes()) for p in sorted((root / 'lightnest_rgb').glob('*.py'))}}
+                'sources': {str(p.relative_to(root)): sha(p.read_bytes()) for p in sorted((root / 'lightnest').glob('*.py'))}}
     dump(out / 'protocol.json', protocol)
     rows = prepare(out); data = load_data(out, rows)
     if max(r['size'] for r in rows) > args.capacity: raise ValueError('capacity below target size')

@@ -4,8 +4,8 @@ import unittest
 import torch
 from torch.nn import functional as F
 
-from lightnest_rgb.any2any import ArtifactCore, semantic_similarity
-from lightnest_rgb.byte_tokenizer import ByteBPE
+from lightnest.any2any import ArtifactCore, semantic_similarity
+from lightnest.byte_tokenizer import ByteBPE
 
 
 class ByteTokenizerTests(unittest.TestCase):

@@ -3,8 +3,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from lightnest_rgb.artifact import BytePatch, apply_patches, digest, edit_file, inspect_elf, write_image
-from lightnest_rgb.execute import Case, ExecutableRunner, same_result
+from lightnest.artifact import BytePatch, apply_patches, digest, edit_file, inspect_elf, write_image
+from lightnest.execute import Case, ExecutableRunner, same_result
 
 
 class ArtifactTests(unittest.TestCase):
@@ -73,7 +73,7 @@ class FullExecutableTests(unittest.TestCase):
         # Reproduce an entry-address bit flip seen in real training failures.
         bad_entry = info["entry"] | (1 << 30)
         raw[24:32] = bad_entry.to_bytes(8, "little")
-        with patch("lightnest_rgb.execute.subprocess.run", side_effect=AssertionError("must not execute invalid entry")):
+        with patch("lightnest.execute.subprocess.run", side_effect=AssertionError("must not execute invalid entry")):
             result = self.runner.run(bytes(raw), Case(("-d,", "-f2"), b"a,b\n"))
         self.assertEqual(result["status"], "invalid_artifact")
         self.assertIn("entry", result["rejection"])

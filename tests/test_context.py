@@ -2,8 +2,8 @@ import unittest
 
 import torch
 
-from lightnest_rgb.any2any import ArtifactCore, ArtifactRequest
-from lightnest_rgb.context import NeuralNotebook
+from lightnest.any2any import ArtifactCore, ArtifactRequest
+from lightnest.context import NeuralNotebook
 
 
 class ContextTests(unittest.TestCase):

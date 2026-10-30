@@ -25,11 +25,11 @@ sys.path.insert(0, str(ROOT))
 
 import torch
 
-from lightnest_rgb.artifact import digest
-from lightnest_rgb.corpus import compile_generation_target, external
-from lightnest_rgb.exact_x86 import ExactX86Runner, SPEC
-from lightnest_rgb.exact_core import FixedWordAdder
-from lightnest_rgb.execute import Case, ExecutableRunner, same_result
+from lightnest.artifact import digest
+from lightnest.corpus import compile_generation_target, external
+from archive.research.exact_x86 import ExactX86Runner, SPEC
+from archive.research.exact_core import FixedWordAdder
+from lightnest.execute import Case, ExecutableRunner, same_result
 
 FAMILIES = {
     'arithmetic32': (32, 'return (a + b) ^ (a - b);'),
@@ -45,8 +45,8 @@ FAMILIES = {
 
 def source_hashes():
     return {name: digest((ROOT / name).read_bytes()) for name in
-            ('lightnest_rgb/exact_core.py', 'lightnest_rgb/exact_x86.py',
-             'lightnest_rgb/execute.py', 'tools/probe_exact_x86.py', 'uv.lock')}
+            ('archive/research/exact_core.py', 'archive/research/exact_x86.py',
+             'lightnest/execute.py', 'tools/probe_exact_x86.py', 'uv.lock')}
 
 
 def wrapper(width):

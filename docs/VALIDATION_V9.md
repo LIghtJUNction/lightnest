@@ -6,10 +6,10 @@ hypothesis class, or existing experiment checkpoints.
 
 ## Implemented code in Git
 
-- `lightnest_rgb/risk_planner.py`: exact one-/two-query candidate-identification
+- `archive/research/risk_planner.py`: exact one-/two-query candidate-identification
   value, greedy entropy, two-step risk, and horizon-matched two-step entropy.
   **The candidate catalogue is supplied; this is not general program synthesis.**
-- `lightnest_rgb/automata.py`: finite-state learner with membership and external
+- `archive/research/automata.py`: finite-state learner with membership and external
   equivalence queries, product-automaton equivalence checker, independent
   relation-closure validator, and a fixed x86-64 machine-code table interpreter.
 - `tools/validation_v9_demo.py`: repeat the UTF-8 state-machine experiment

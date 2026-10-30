@@ -26,8 +26,17 @@ uv run --locked python archive/legacy/tools/check_lean.py
 执行；uv 会向上找到根目录项目。源码树检查统一使用根目录 `tools/check_source_tree.py`。
 数据与权重仍放在仓库外，不因移动源码而迁移或删除外部档案。
 
+## Current-line research modules
+
+The current model package is `lightnest/`: RGB policy and complete-ELF generation,
+with the optional H-Net dynamic-chunking decoder. Standalone studies that are not
+part of that architecture live in `research/`: finite behavior planning, DFA
+learning, exact x86 execution primitives, and alternative edit policies. Their
+tests and experiment drivers remain under the root `tests/` and `tools/` folders
+so the recorded studies stay runnable; imports use `archive.research.*`.
+
 ## Universal Machine v1
 
-`universal_native/` 保存原主线模型、数据与执行工具。当前主线已经迁移到
-`lightnest_rgb/`，其多架构编解码接口保留在 `lightnest_rgb/isa.py`。
+`universal_native/` 保存原主线模型、数据与执行工具。当前 RGB 主线位于
+`lightnest/`，多架构编解码接口保留在 `lightnest/isa.py`。
 旧实验记录中的文件路径与源码哈希属于原始提交，不重新标记为 RGB 结果。

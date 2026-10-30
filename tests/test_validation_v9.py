@@ -17,9 +17,9 @@ import unittest
 
 import numpy as np
 
-from lightnest_rgb.risk_planner import (choose, entropy2_tree, entropy2_values,
+from archive.research.risk_planner import (choose, entropy2_tree, entropy2_values,
                                         pair_features, query_values, tree_success)
-from lightnest_rgb.automata import (DFA, TableLearner, emit_demo_elf, emit_dfa,
+from archive.research.automata import (DFA, TableLearner, emit_demo_elf, emit_dfa,
                                     equivalent, utf8_reference, verify_relation)
 
 

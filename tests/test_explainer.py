@@ -1,5 +1,5 @@
 import unittest
-from lightnest_rgb.explainer import CodeExplainer, summary_text
+from lightnest.explainer import CodeExplainer, summary_text
 class ExplainerTests(unittest.TestCase):
  def test_summary_and_forward(self):
   raw=b'def f(x):\n return x+1\n'; self.assertIn('functions f',summary_text(raw,'x.py'))

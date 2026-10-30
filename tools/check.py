@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE_DIRS = ("lightnest_rgb", "archive", "tools", "tests")
+SOURCE_DIRS = ("lightnest", "archive", "tools", "tests")
 
 
 def main() -> int:

@@ -126,8 +126,8 @@
 
 新增文件：
 
-    lightnest_rgb/behavior_space.py       结构后验、主动询问与解码
-    lightnest_rgb/loop_lift.py            固定的有界扫描机器码后端
+    archive/research/behavior_space.py       结构后验、主动询问与解码
+    archive/research/loop_lift.py            固定的有界扫描机器码后端
     tools/behavior_space_study.py        数据划分、冻结协议、主研究与失败诊断
     tools/behavior_space_native.py       原生循环及libc核对
     tools/behavior_native_runner.c       有界隔离执行器

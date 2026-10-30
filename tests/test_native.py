@@ -5,7 +5,7 @@ import unittest
 
 import torch
 
-from lightnest_rgb.isa import assemble,canonical_arch,decode,elf_functions,host_architecture,llvm_targets
+from lightnest.isa import assemble,canonical_arch,decode,elf_functions,host_architecture,llvm_targets
 from archive.universal_native.sandbox import Sandbox
 from archive.universal_native.model import Batch,Config,MachineNetwork,load,loss_for,save,validate
 from archive.universal_native.corpus import compile_c,reference,specification,translate_rv32

@@ -68,7 +68,7 @@ OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 RAYON_NUM_THREADS=1 TOKENIZERS_PARALLELISM=f
   --out /path/outside/repository --steps 4096
 uv run --locked python tools/binary_research.py evaluate \
   --out /path/outside/repository --checkpoint /path/to/selected-candidate.pt
-uv run --locked python -m lightnest_rgb explain-artifact /path/to/program.pyc \
+uv run --locked python -m lightnest explain-artifact /path/to/program.pyc \
   --checkpoint /path/to/selected-candidate.pt
 ```
 

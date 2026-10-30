@@ -4,8 +4,8 @@ from pathlib import Path
 
 import torch
 
-from lightnest_rgb.any2any import ArtifactCore
-from lightnest_rgb.semantics import examples, match, metrics
+from lightnest.any2any import ArtifactCore
+from lightnest.semantics import examples, match, metrics
 
 
 class SemanticTests(unittest.TestCase):

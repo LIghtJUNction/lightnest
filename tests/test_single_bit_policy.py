@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from lightnest_rgb.model import RGBConfig, RGBPolicy
-from lightnest_rgb.single_bit_policy import SingleBitRGBPolicy
+from lightnest.model import RGBConfig, RGBPolicy
+from archive.research.single_bit_policy import SingleBitRGBPolicy
 from tools.research_exact_repair import categorical_loss
 
 

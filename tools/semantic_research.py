@@ -6,7 +6,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from lightnest_rgb.semantics import evaluate, prepare, train
+from lightnest.semantics import evaluate, prepare, train
 
 
 def main():

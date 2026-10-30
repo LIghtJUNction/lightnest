@@ -5,7 +5,7 @@ import unittest
 import torch
 from torch.nn import functional as F
 
-from lightnest_rgb.exact_core import ExactBitRAM, FixedWordAdder, decode_words, encode_words
+from archive.research.exact_core import ExactBitRAM, FixedWordAdder, decode_words, encode_words
 
 
 class ExactCoreTests(unittest.TestCase):

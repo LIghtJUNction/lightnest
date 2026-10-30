@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import torch
 
-from .delta_policy import DeltaRGBPolicy
+from archive.research.delta_policy import DeltaRGBPolicy
 
 
 class SingleBitRGBPolicy(DeltaRGBPolicy):
