@@ -34,9 +34,14 @@ uv export --locked --no-hashes --no-emit-project --emit-index-url --output-file 
 
 ## 目录与修改范围
 
-- `lightnest/`：当前 RGB 网络、完整 ELF 语料、多架构编解码、训练和隔离执行。
+- `lightnest/architecture/`：RGB、H-Net 和 Any2Any 架构。
+- `lightnest/training/`：语料、训练和评估。
+- `lightnest/rl/`：编辑循环、反馈和策略优化。
+- `lightnest/runtime/`：ELF、隔离执行和 ISA 工具。
+- `lightnest/self_hosting/`：自托管检查与统一调用。
 - `archive/universal_native/`：原 Universal Machine v1，对照归档。
-- `tests/`：无需外部权重的新架构与证据边界检查。
+- `tests/`：按架构、训练、RL、运行时和自托管分组的当前测试。
+- `archive/research/`：非当前主线研究代码及其专属测试和脚本。
 - `tools/`：统一检查与源码树检查。
 - `archive/legacy/`：历史架构、实验、测试、Lean 证明与文档；保留原内部相对结构。
 - `archive/rpn3_rv32/`：本次历史任务预训练架构及其测试，用于对照和初始化。

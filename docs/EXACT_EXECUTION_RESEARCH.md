@@ -26,7 +26,7 @@ argv、任意系统调用或可写可执行段。每映射最多 4096 字节，�
 
 ## 冻结的差分实验
 
-`tools/probe_exact_x86.py prepare` 先固定所有二进制、输入、种子、源码、依赖哈希和
+`archive/research/tools/probe_exact_x86.py prepare` 先固定所有二进制、输入、种子、源码、依赖哈希和
 编译命令，再由 evaluate 执行。主评测没有根据原生答案修改机器状态。
 
 32 个 C 编译变体来自 8 个本地编写的功能族：32/64 位加减、逻辑、无符号选择、
@@ -74,7 +74,7 @@ argv、任意系统调用或可写可执行段。每映射最多 4096 字节，�
 
 ## 真实训练后的语义编辑
 
-`tools/research_exact_repair.py` 在本地编写 C 程序的 operation 函数内注入一个位错误。
+`archive/research/tools/research_exact_repair.py` 在本地编写 C 程序的 operation 函数内注入一个位错误。
 仅接纳完整运行且改变可见输出、并经独立原生执行核对的样本。输入模型的是完整
 损坏 ELF、统一修复请求和四个可见输入/输出；不提供故障位置、干净文件或隐藏输出。
 干净字节只用于训练监督和事后身份核对。
@@ -220,27 +220,27 @@ uv run --locked python tools/check.py
 冻结并差分执行：
 
 ```bash
-uv run --locked python tools/probe_exact_x86.py prepare --out "$OUT/core"
-uv run --locked python tools/probe_exact_x86.py evaluate --out "$OUT/core"
+uv run --locked python archive/research/tools/probe_exact_x86.py prepare --out "$OUT/core"
+uv run --locked python archive/research/tools/probe_exact_x86.py evaluate --out "$OUT/core"
 ```
 
 通过后构造新修复语料、训练并按门槛检查：
 
 ```bash
-uv run --locked python tools/research_exact_repair.py prepare \
+uv run --locked python archive/research/tools/research_exact_repair.py prepare \
   --out "$OUT/repair" --parent "$OUT/core"
-uv run --locked python tools/research_exact_repair.py train --out "$OUT/repair"
-uv run --locked python tools/research_exact_repair.py evaluate --out "$OUT/repair"
+uv run --locked python archive/research/tools/research_exact_repair.py train --out "$OUT/repair"
+uv run --locked python archive/research/tools/research_exact_repair.py evaluate --out "$OUT/repair"
 ```
 
 复用经哈希验证的任务池进行公开验证跟进时使用新目录：
 
 ```bash
-uv run --locked python tools/research_exact_repair.py refreeze \
+uv run --locked python archive/research/tools/research_exact_repair.py refreeze \
   --out "$OUT/ranking-xor" --parent "$OUT/repair" \
   --steps 4096 --objective ranking --edit-encoding xor
-uv run --locked python tools/research_exact_repair.py train --out "$OUT/ranking-xor"
-uv run --locked python tools/research_exact_repair.py evaluate --out "$OUT/ranking-xor"
+uv run --locked python archive/research/tools/research_exact_repair.py train --out "$OUT/ranking-xor"
+uv run --locked python archive/research/tools/research_exact_repair.py evaluate --out "$OUT/ranking-xor"
 ```
 
 如果父实验已经查询神经测试，refreeze 会拒绝把它重新包装成新的盲测。
@@ -248,14 +248,14 @@ uv run --locked python tools/research_exact_repair.py evaluate --out "$OUT/ranki
 在尚未查询神经测试的父语料上复现条件训练对照：
 
 ```bash
-uv run --locked python tools/research_counterfactual_repair.py prepare \
+uv run --locked python archive/research/tools/research_counterfactual_repair.py prepare \
   --out "$OUT/conditional-data" --parent "$OUT/repair"
-uv run --locked python tools/research_counterfactual_repair.py refreeze \
+uv run --locked python archive/research/tools/research_counterfactual_repair.py refreeze \
   --out "$OUT/paired" --parent "$OUT/conditional-data" --batching paired
-uv run --locked python tools/research_counterfactual_repair.py refreeze \
+uv run --locked python archive/research/tools/research_counterfactual_repair.py refreeze \
   --out "$OUT/shuffled" --parent "$OUT/conditional-data" --batching shuffled
-uv run --locked python tools/research_counterfactual_repair.py train --out "$OUT/paired"
-uv run --locked python tools/research_counterfactual_repair.py train --out "$OUT/shuffled"
+uv run --locked python archive/research/tools/research_counterfactual_repair.py train --out "$OUT/paired"
+uv run --locked python archive/research/tools/research_counterfactual_repair.py train --out "$OUT/shuffled"
 ```
 
 每个历史目录保存自己的源码和协议；复放旧结果应在独立 checkout 中叠加对应源码

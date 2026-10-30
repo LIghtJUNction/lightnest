@@ -30,13 +30,13 @@ uv run --locked python archive/legacy/tools/check_lean.py
 
 The current model package is `lightnest/`: RGB policy and complete-ELF generation,
 with the optional H-Net dynamic-chunking decoder. Standalone studies that are not
-part of that architecture live in `research/`: finite behavior planning, DFA
+part of the current architecture live in `research/`: finite behavior planning, DFA
 learning, exact x86 execution primitives, and alternative edit policies. Their
-tests and experiment drivers remain under the root `tests/` and `tools/` folders
+tests and experiment drivers are colocated in `research/tests/` and `research/tools/`
 so the recorded studies stay runnable; imports use `archive.research.*`.
 
 ## Universal Machine v1
 
 `universal_native/` 保存原主线模型、数据与执行工具。当前 RGB 主线位于
-`lightnest/`，多架构编解码接口保留在 `lightnest/isa.py`。
+`lightnest/`，多架构编解码接口保留在 `lightnest/runtime/isa.py`。
 旧实验记录中的文件路径与源码哈希属于原始提交，不重新标记为 RGB 结果。

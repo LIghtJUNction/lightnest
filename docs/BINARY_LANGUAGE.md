@@ -60,16 +60,16 @@
 
 ```bash
 uv sync --locked
-uv run --locked python tools/binary_research.py prepare \
+uv run --locked python archive/research/tools/binary_research.py prepare \
   --out /path/outside/repository \
   --parent /path/to/semantic-v4
 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 RAYON_NUM_THREADS=1 TOKENIZERS_PARALLELISM=false \
-  uv run --locked python tools/binary_research.py train \
+  uv run --locked python archive/research/tools/binary_research.py train \
   --out /path/outside/repository --steps 4096
-uv run --locked python tools/binary_research.py evaluate \
+uv run --locked python archive/research/tools/binary_research.py evaluate \
   --out /path/outside/repository --checkpoint /path/to/selected-candidate.pt
-uv run --locked python -m lightnest explain-artifact /path/to/program.pyc \
-  --checkpoint /path/to/selected-candidate.pt
+# `explain-artifact` was an older CLI entry and has been retired;
+# the experiment remains under archive/research/.
 ```
 
 具体候选使用 `selection.json` 的验证集选择。评价入口先复核公开验证和生成条件，
@@ -95,7 +95,7 @@ v1 的完整词表统计因换页开销终止，记录保留；v2 完成语料�
 当前锁定 CPU 版 Torch，训练器仍是 CPU 实现；GPU 依赖、设备适配及新协议冻结留到
 下次处理，本次没有启动云端任务。
 
-另有只读容器工具 `tools/inspect_packed.py`。实际 7,423,545,524 字节自解释 ELF 中，
+另有只读容器工具 `archive/research/tools/inspect_packed.py`。实际 7,423,545,524 字节自解释 ELF 中，
 读取 1,154,143 字节便提取了 15,000 字节的 Python 主入口，未执行它或载入 GGUF。
 输出只给原始 marshal 内容添加标准 `.pyc` 文件头，不改写程序体。提取件明确标记为
 `unsanitized`，仍含原始说明文字，不能直接拿来宣称无泄漏的神经自身理解。证据在

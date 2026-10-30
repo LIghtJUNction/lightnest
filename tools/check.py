@@ -26,6 +26,7 @@ def main() -> int:
     commands = [
         ["tools/check_source_tree.py"],
         ["-m", "unittest", "discover", "-s", "tests", "-t", ".", "-v"],
+        ["-m", "unittest", "discover", "-s", "archive/research/tests", "-t", ".", "-v"],
         ["-m", "unittest", "discover", "-s", "archive/rpn3_rv32/tests", "-t", "archive/rpn3_rv32", "-v"],
         ["-m", "unittest", "discover", "-s", "archive/legacy/tests", "-t", "archive/legacy", "-v"],
         ["-m", "unittest", "discover", "-s", "archive/legacy/tools/template_io", "-p", "test_*.py", "-v"],

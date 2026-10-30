@@ -7,9 +7,9 @@ from pathlib import Path
 import torch
 from torch.nn import functional as F
 
-from lightnest.any2any import ArtifactCore, ArtifactRequest, kind_index
-from lightnest.artifact_types import detect_kind
-from lightnest.any2any_train import code_summary
+from lightnest.architecture.any2any import ArtifactCore, ArtifactRequest, kind_index
+from lightnest.runtime.artifact_types import detect_kind
+from lightnest.training.any2any_train import code_summary
 
 
 def main():

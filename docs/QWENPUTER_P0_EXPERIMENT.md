@@ -77,7 +77,7 @@ bootstrap 或 RSI 证据。下一阶段是冻结现有 x86-64 课程的最小语
 ```bash
 uv sync --locked
 uv run --locked python -m unittest discover -s tests -p 'test_rgb_exact_core.py' -v
-PYTHONPATH=. uv run --locked python tools/stress_exact_core.py \
+PYTHONPATH=. uv run --locked python archive/research/tools/stress_exact_core.py \
   --ram-steps 100000 --addition-cases 131072 --feedback-steps 2048 \
   --seeds 20261029 20261030 20261031 > ../lightnest-p0-stress.json
 uv run --locked python tools/check.py

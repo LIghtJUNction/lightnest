@@ -96,30 +96,24 @@ checkpoint: 8aa60fd02bc68cff5ce7e527e50d27f3e21015ec3d860ed673d9bceeb7196fad
 ## 复现
 
 ```bash
-uv run --locked python tools/semantic_research.py prepare --out /path/outside/repository
-OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 uv run --locked python tools/semantic_research.py train \
+uv run --locked python archive/research/tools/semantic_research.py prepare --out /path/outside/repository
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 uv run --locked python archive/research/tools/semantic_research.py train \
   --out /path/outside/repository --steps 4096
 ```
 
 下面是通过公开验证后才使用的测试入口；本轮未执行：
 
 ```bash
-uv run --locked python tools/semantic_research.py evaluate \
+uv run --locked python archive/research/tools/semantic_research.py evaluate \
   --out /path/outside/repository \
   --checkpoint /path/outside/repository/training-20261026/candidate-N.pt \
   --baseline /path/to/any2any-104806.pt
 ```
 
-`N` 使用 `selection.json` 记录的验证集选择，不能按测试结果挑选。运行时接收原始文件和
-候选说明的 JSON 数组：
-
-```bash
-uv run --locked python -m lightnest match-description /path/to/function.py \
-  --checkpoint /path/to/candidate-N.pt --descriptions /path/to/descriptions.json
-```
-
-该入口不会给长文件偷偷抽样；超出检查点容量直接失败。权重、训练日志和逐条预测都
-保留在仓库外。正常本地测试无需这些材料。
+`N` 使用 `selection.json` 记录的验证集选择，不能按测试结果挑选。单文件匹配入口属于旧版
+CLI，已随研究代码归档；当前 `python -m lightnest` 不再提供 `match-description`。
+研究数据、训练与汇总评估仍可通过上面的 `archive/research/tools/semantic_research.py`
+复现。权重、训练日志和逐条预测都保留在仓库外。
 
 `prepare --from-corpus /path/to/parent` 可重用经过哈希校验的原始配对，记录父协议哈希并
 生成新的源码快照。重新冻结不会让已经使用过的测试数据重新变成盲测；本轮父语料 v3

@@ -128,18 +128,18 @@
 
     archive/research/behavior_space.py       结构后验、主动询问与解码
     archive/research/loop_lift.py            固定的有界扫描机器码后端
-    tools/behavior_space_study.py        数据划分、冻结协议、主研究与失败诊断
-    tools/behavior_space_native.py       原生循环及libc核对
-    tools/behavior_native_runner.c       有界隔离执行器
-    tests/test_behavior_space.py         无外部权重的17项测试
+    archive/research/tools/behavior_space_study.py        数据划分、冻结协议、主研究与失败诊断
+    archive/research/tools/behavior_space_native.py       原生循环及libc核对
+    archive/research/tools/behavior_native_runner.c       有界隔离执行器
+    archive/research/tests/test_behavior_space.py         无外部权重的17项测试
 
 从v6源码模型包解压得到`lightnest-function-v6`。所有输出目录必须在仓库外且尚不存在：
 
 ```bash
 uv run --locked python -m unittest discover -s tests -p 'test_behavior_space.py' -v
-uv run --locked python tools/behavior_space_study.py \
+uv run --locked python archive/research/tools/behavior_space_study.py \
   --v6-root /absolute/lightnest-function-v6 --out /absolute/v7-study
-uv run --locked python tools/behavior_space_native.py \
+uv run --locked python archive/research/tools/behavior_space_native.py \
   --study /absolute/v7-study --out /absolute/v7-native
 ```
 

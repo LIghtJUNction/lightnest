@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import torch
 
-from lightnest.model import RGBPolicy
+from lightnest.architecture.model import RGBPolicy
 
 
 class DeltaRGBPolicy(RGBPolicy):

@@ -12,11 +12,11 @@ hypothesis class, or existing experiment checkpoints.
 - `archive/research/automata.py`: finite-state learner with membership and external
   equivalence queries, product-automaton equivalence checker, independent
   relation-closure validator, and a fixed x86-64 machine-code table interpreter.
-- `tools/validation_v9_demo.py`: repeat the UTF-8 state-machine experiment
+- `archive/research/tools/validation_v9_demo.py`: repeat the UTF-8 state-machine experiment
   in a new folder using CPython as a membership oracle and a hand-encoded
   RFC 3629 reference table as an exact counterexample teacher. Native execution
   uses the inherited bounded runner, not arbitrary direct execution.
-- `tests/test_validation_v9.py`: 16 **data-free** regression tests for core
+- `archive/research/tests/test_validation_v9.py`: 16 **data-free** regression tests for core
   mathematics, state-machine learning, bounded native execution, and the
   documented command-line entry point.
 
@@ -62,7 +62,7 @@ Requires Linux x86-64, GCC and NumPy in the repository environment:
 
 ```bash
 uv run --locked python -m unittest discover -s tests -p 'test_validation_v9.py' -v
-uv run --locked python tools/validation_v9_demo.py --out /tmp/lightnest-v9-demo-fresh
+uv run --locked python archive/research/tools/validation_v9_demo.py --out /tmp/lightnest-v9-demo-fresh
 ```
 
 The demo output destination must not already exist. It writes a learned DFA,
@@ -80,7 +80,7 @@ The complete authored source and frozen data are stored in Google Drive:
 
 Archive SHA-256: `8764a586f9275f14b18ee064c5a4b0e6a989c1aedf41812b52309500e9bc40c3`.
 The archive contains `reproduce.py`, `inputs/`, the full `src/` scripts and
-`tests/test_validation.py`. Run that copy with a new absolute `--out` path,
+`archive/research/tests/test_validation_v9.py`. Run that copy with a new absolute `--out` path,
 under the recorded environment. The artifact is separate from the main Git
 tree to keep large datasets, weights, executable binaries, and raw traces out
 of normal source control.

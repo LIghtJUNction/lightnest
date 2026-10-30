@@ -179,13 +179,16 @@ Weights, original executables, caches, training logs and per-example results rem
 ## Repository map
 
 ```text
-lightnest/              current RGB mainline and complete-ELF tools
-archive/universal_native/   previous Universal Machine v1 work
-archive/rpn3_rv32/          earlier RV32 architecture
-archive/legacy/             historical experiments and evidence
-tests/                      current and archived behavior tests
-tools/                      unified checks and research scripts
-docs/                       design, results and reproduction protocols
+lightnest/architecture/   RGB, H-Net and Any2Any models
+lightnest/training/       corpus, training and evaluation
+lightnest/rl/             editing and feedback learning
+lightnest/runtime/        artifact and execution support
+lightnest/self_hosting/   project inspection and unified workflows
+tests/                    current tests grouped by package
+archive/research/         completed side experiments and their tests/tools
+archive/                   earlier model generations and evidence
+tools/                     current build and check entry points
+docs/                      design, results and reproduction protocols
 ```
 
 ## Source and licensing notice

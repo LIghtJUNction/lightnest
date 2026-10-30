@@ -9,10 +9,10 @@ import sys
 
 import torch
 
-from .artifact import digest, inspect_elf, write_image
-from .corpus import external
-from .execute import Case, ExecutableRunner
-from .iterate import Example, RGBEditor
+from .runtime.artifact import digest, inspect_elf, write_image
+from .training.corpus import external
+from .runtime.execute import Case, ExecutableRunner
+from .rl.iterate import Example, RGBEditor
 
 
 def main():
@@ -22,12 +22,6 @@ def main():
     p = commands.add_parser("decode"); p.add_argument("--architecture", required=True); p.add_argument("--hex", required=True)
     p = commands.add_parser("assemble"); p.add_argument("--architecture", required=True)
     p = commands.add_parser("inspect"); p.add_argument("image", type=Path)
-    p = commands.add_parser("match-description", help="rank supplied descriptions with a semantic checkpoint")
-    p.add_argument("image", type=Path); p.add_argument("--checkpoint", required=True)
-    p.add_argument("--descriptions", type=Path, required=True, help="JSON array of candidate descriptions")
-    p = commands.add_parser("explain-artifact", help="generate text with a trained binary-language checkpoint")
-    p.add_argument("image", type=Path); p.add_argument("--checkpoint", required=True)
-    p = commands.add_parser("benchmark"); p.add_argument("image", type=Path); p.add_argument("--checkpoint", required=True)
     p = commands.add_parser("act"); p.add_argument("--request", type=Path, required=True); p.add_argument("--workdir", required=True)
     p.add_argument("--generator"); p.add_argument("--policy"); p.add_argument("--any2any"); p.add_argument("--image", type=Path); p.add_argument("--output", type=Path, required=True)
     p = commands.add_parser("self-check"); p.add_argument("--root", type=Path, required=True); p.add_argument("--structure-checkpoint"); p.add_argument("--any2any-checkpoint")
@@ -59,43 +53,18 @@ def main():
     p.add_argument("--fixed-depth", type=int)
     args = parser.parse_args(); torch.set_num_threads(1)
     if args.action == "targets":
-        from .isa import llvm_targets
+        from .runtime.isa import llvm_targets
         result = llvm_targets()
     elif args.action == "decode":
         from dataclasses import asdict
-        from .isa import decode
+        from .runtime.isa import decode
         result = [{k: v.hex() if isinstance(v, bytes) else v for k, v in asdict(i).items()} for i in decode(args.architecture, bytes.fromhex(args.hex))]
     elif args.action == "assemble":
-        from .isa import assemble
+        from .runtime.isa import assemble
         result = {"hex": assemble(args.architecture, sys.stdin.read()).hex()}
     elif args.action == "inspect": result = inspect_elf(args.image.read_bytes())
-    elif args.action == "match-description":
-        from .semantics import load, match
-        descriptions = json.loads(args.descriptions.read_text())
-        if not isinstance(descriptions, list):
-            raise ValueError("descriptions must be a JSON array")
-        model, _ = load(args.checkpoint)
-        limit = model.max_bytes if model.semantic_bpe is not None else min(model.max_bytes, model.sequence_limit)
-        with args.image.open("rb") as file:
-            raw = file.read(limit + 1)
-        if len(raw) > limit:
-            raise ValueError("file exceeds semantic checkpoint capacity")
-        result = match(model, raw, descriptions)
-    elif args.action == "explain-artifact":
-        from .semantics import load
-        model, payload = load(args.checkpoint)
-        if model.semantic_bpe is None or payload.get('language_steps', 0) < 1:
-            raise ValueError('checkpoint has no trained language decoder')
-        with args.image.open('rb') as file:
-            raw = file.read(model.max_bytes + 1)
-        if len(raw) > model.max_bytes:
-            raise ValueError('file exceeds semantic checkpoint capacity')
-        result = model.explain_bytes(raw) | {'input_sha256': digest(raw), 'input_bytes': len(raw)}
-    elif args.action == "benchmark":
-        from .benchmark import benchmark
-        result = benchmark(args.checkpoint, args.image.read_bytes())
     elif args.action == "act":
-        from .unified import RGBArtifactAgent
+        from .self_hosting.unified import RGBArtifactAgent
         request = json.loads(args.request.read_text())
         agent = RGBArtifactAgent(policy_checkpoint=args.policy, generator_checkpoint=args.generator,
                                  any2any_checkpoint=args.any2any, workdir=args.workdir)
@@ -109,7 +78,7 @@ def main():
             examples = [Example(Case.parse(v["input"]), v["expected"]) for v in spec["examples"]]
             result = agent.repair(args.image.read_bytes(), spec["command"], examples, output=args.output)
         elif request["mode"] in {"understand", "copy_paste"}:
-            from .any2any import ArtifactRequest
+            from .architecture.any2any import ArtifactRequest
             if not args.image or not args.any2any:
                 raise ValueError("Any2Any modes require --image and --any2any")
             raw=args.image.read_bytes(); artifact_request=ArtifactRequest(spec["kind"], spec["operation"], spec.get("specification", ""))
@@ -117,40 +86,40 @@ def main():
                     else agent.copy_paste(raw, artifact_request, digest(raw), output=args.output, apply=True))
         else: raise ValueError("unknown act mode")
     elif args.action == "self-check":
-        from .unified import RGBArtifactAgent
+        from .self_hosting.unified import RGBArtifactAgent
         result = RGBArtifactAgent(workdir="/tmp/lightnest-self-check").inspect_project(args.root, args.structure_checkpoint, args.any2any_checkpoint)
     elif args.action == "ask":
-        from .semantic_loop import SemanticLoop
+        from .self_hosting.semantic_loop import SemanticLoop
         result = asyncio.run(SemanticLoop().ask(args.root, args.path, args.question))
     elif args.action == "prepare":
-        from .corpus import prepare
+        from .training.corpus import prepare
         prepare(args.out, per_program=args.per_program); return
     elif args.action == "train-policy":
-        from .training import train_policy
+        from .training.training import train_policy
         train_policy(args.out, args.seed, warmup_steps=args.warmup_steps, full_steps=args.full_steps); return
     elif args.action == "train-generator":
-        from .training import train_generator
+        from .training.training import train_generator
         train_generator(args.out, args.seed, steps=args.steps); return
     elif args.action == "refine-policy":
-        from .refine import refine_policy
+        from .training.refine import refine_policy
         refine_policy(args.out, args.parent, args.seed, header_steps=args.header_steps, full_steps=args.full_steps); return
     elif args.action == "refine-generator":
-        from .refine_generation import refine_generator
+        from .training.refine_generation import refine_generator
         refine_generator(args.out, args.parent, args.seed, steps=args.steps); return
     elif args.action == "train-feedback":
-        from .rl import train_feedback
+        from .rl.rl import train_feedback
         train_feedback(args.out, args.parent, args.seed, steps=args.steps); return
     elif args.action == "train-any2any":
-        from .any2any_train import train_any2any
+        from .training.any2any_train import train_any2any
         train_any2any(args.out, seed=args.seed, steps=args.steps); return
     elif args.action == "freeze":
-        from .evaluation import freeze
+        from .training.evaluation import freeze
         result = {"folder": str(freeze(args.out, args.name, args.policy, args.generator, per_program=args.per_program, generation_count=args.generation_count))}
     elif args.action == "evaluate":
-        from .evaluation import evaluate_policy, evaluate_generation
+        from .training.evaluation import evaluate_policy, evaluate_generation
         result = evaluate_generation(args.out, args.name) if args.kind == "generation" else evaluate_policy(args.out, args.name, mode=args.mode, fixed_depth=args.fixed_depth)
     else:
-        from .training import load_generator, load_policy
+        from .training.training import load_generator, load_policy
         workdir = external(args.workdir); workdir.mkdir(parents=True, exist_ok=False)
         output = external(args.output); runner = ExecutableRunner(workdir / "execution", cache=False)
         request = json.loads(args.request.read_text())

@@ -18,9 +18,9 @@ from elftools.common.exceptions import ELFError
 import torch
 from torch.nn import functional as F
 
-from lightnest.artifact import digest
+from lightnest.runtime.artifact import digest
 from archive.research.exact_core import ExactBitRAM, FixedWordAdder, decode_words, encode_words
-from lightnest.execute import Case
+from lightnest.runtime.execute import Case
 
 SPEC = "lightnest-exact-x86-p1-v1"
 MASK64 = (1 << 64) - 1
