@@ -4,7 +4,7 @@
   <p>RGB recurrent architecture · full ELF images · isolated execution · evidence-first evaluation</p>
 
   [![Python](https://img.shields.io/badge/Python-3.13-111111?style=flat-square&logo=python)](pyproject.toml)
-  [![PyTorch](https://img.shields.io/badge/PyTorch-2.12.1%20CPU-111111?style=flat-square&logo=pytorch)](pyproject.toml)
+  [![PyTorch](https://img.shields.io/badge/PyTorch-2.13.0%20CPU-111111?style=flat-square&logo=pytorch)](pyproject.toml)
   [![Target](https://img.shields.io/badge/training%20target-Linux%20x86--64-111111?style=flat-square)](docs/RGB_DESIGN.md)
   [![Status](https://img.shields.io/badge/status-research-111111?style=flat-square)](docs/RESULTS.md)
 
@@ -82,6 +82,15 @@ Faults are artificially injected. The current generation curriculum asks for ver
 
 Multi-architecture encode/decode interfaces reuse iced-x86 and LLVM, but actual model training and execution currently target x86-64.
 
+## Milestones and limits
+
+- The complete-image generator and isolated execution loop are implemented. A candidate must stop, pass ELF inspection and match the requested behavior before the `generate` command writes it.
+- A small H-Net pilot compared four architectures on 64 unseen request values per run. Dynamic chunking produced exact, correctly stopped files for 29, 0 and 0 requests across three seeds; all successful samples were exit-code programs. All eight-byte output requests scored 0/32 across every architecture and seed. These tasks share simple program skeletons, and exact-file matching is stricter than behavioral equivalence. See [H-Net pilot](docs/HNET_PILOT.md).
+- Earlier function-editing experiments combined neural proposals with visible-case verification and achieved 237/256 and 236/256 on two runs. These were limited synthetic-function tasks; the result includes the verifier, not just the neural model. See [historical results](docs/RESULTS.md).
+- The standalone executable evaluator has run the published Prompt2ELF Hello World example against two simple cases. This verifies an existing sample, not generation by LightNest. See [benchmark notes](docs/BINARY_GENERATION_BENCHMARK.md).
+
+The code-to-description alignment experiment below also records an important negative result.
+
 ## A negative result kept visible
 
 The external code-to-description alignment experiment changed the objective from byte reconstruction to matching complete functions with their documentation. It also fixed a request encoder that previously lost word order.
@@ -142,27 +151,73 @@ This is bounded reinforcement from an execution environment, not unrestricted se
 
 ## Run the tools
 
-Dependencies are locked for Python 3.13 and PyTorch 2.12.1 CPU:
+Use Linux x86-64, Python 3.13 and [uv](https://docs.astral.sh/uv/). Dependencies are locked to PyTorch 2.13.0 CPU on Linux. Native execution additionally requires `bwrap` and libseccomp; training and the full checks require GCC, Clang, LLD, LLVM and the command-line programs used by the corpus. The runner needs working Linux user namespaces.
 
 ```bash
 uv sync --locked
+uv run --locked python -m lightnest --help
 uv run --locked python tools/check.py
 ```
 
-Explore deterministic interfaces:
+### Inspect and decode
 
 ```bash
-uv run --locked python -m lightnest --help
+# Print ELF metadata for an installed program.
 uv run --locked python -m lightnest inspect /usr/bin/sort
+
+# List supported LLVM targets and decode an x86-64 byte sequence.
 uv run --locked python -m lightnest targets
 uv run --locked python -m lightnest decode \
-  --architecture x86_64 \
-  --hex 4889f84801f0c3
+  --architecture x86_64 --hex 4889f84801f0c3
 ```
 
-Training and execution tests additionally require GCC, Clang, LLD, LLVM, bubblewrap and libseccomp. Corpus construction requires the referenced local command-line programs.
+These commands use deterministic parsers and instruction decoders; they do not require trained weights.
 
-Weights, original executables, caches, training logs and per-example results remain outside the repository.
+### Evaluate an existing ELF
+
+Create a temporary suite and test `/usr/bin/cat` with two byte inputs:
+
+```bash
+TASK_DIR=$(mktemp -d)
+cat >"$TASK_DIR/cases.json" <<'EOF'
+{
+  "name": "cat-example",
+  "cases": [
+    {"input": {"args": [], "stdin": "610a"},
+     "expected": {"returncode": 0, "stdout": "610a", "stderr": ""}},
+    {"input": {"args": [], "stdin": "6200"},
+     "expected": {"returncode": 0, "stdout": "6200", "stderr": ""}}
+  ]
+}
+EOF
+uv run --locked python tools/evaluate_binary.py \
+  /usr/bin/cat "$TASK_DIR/cases.json"
+```
+
+`stdin`, `stdout` and `stderr` are hexadecimal bytes: `610a` means `a` followed by a newline. The JSON report includes the image and suite hashes, ELF metadata and each case's result. The command exits with status 0 only when every case passes. Remove the temporary directory when finished.
+
+The execution policy denies networking and process creation, so it cannot evaluate a network server or programs needing subprocesses as functional successes. An isolation error is an infrastructure failure, not a program correctness result. See [benchmark notes](docs/BINARY_GENERATION_BENCHMARK.md).
+
+### Generate an ELF with a trained checkpoint
+
+The repository does not include trained weights. You need a compatible LightNest generator checkpoint, or must first prepare a corpus and train one using [RGB reproduction](docs/RGB_REPRODUCE.md). The current generator accepts either an exit status from 0 to 255 or **exactly eight bytes** of output encoded as hex; it does not accept arbitrary natural-language programming requests.
+
+```bash
+# Replace with an existing, compatible checkpoint outside the checkout.
+CHECKPOINT=/path/to/generator.pt
+TASK_DIR=$(mktemp -d)
+printf '{"exit":37}\n' >"$TASK_DIR/request.json"
+
+uv run --locked python -m lightnest generate \
+  --checkpoint "$CHECKPOINT" \
+  --request "$TASK_DIR/request.json" \
+  --output "$TASK_DIR/generated.elf" \
+  --workdir "$TASK_DIR/work"
+```
+
+An output request can instead contain `{"stdout":"68656c6c6f21210a"}`, meaning `hello!!` followed by a newline. The output path and work directory must be new and outside the checkout. The command checks that the model stopped, the ELF parses and its isolated execution matches the request; a failure does not publish an output file. These checks cover the specified behavior only. Generation is experimental and is not guaranteed to succeed.
+
+For editing, frozen evaluation, and a complete training example, see [RGB reproduction](docs/RGB_REPRODUCE.md). Weights, original executables, caches, training logs and per-example results remain outside the repository.
 
 ## Reproduction map
 
