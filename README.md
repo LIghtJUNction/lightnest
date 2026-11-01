@@ -172,6 +172,7 @@ Weights, original executables, caches, training logs and per-example results rem
 | Understand the architecture and gates | [RGB design](docs/RGB_DESIGN.md) |
 | Inspect historical measured results | [Results](docs/RESULTS.md) |
 | Review the failed semantic experiment | [Semantic alignment](docs/SEMANTIC_ALIGNMENT.md) |
+| Evaluate complete ELF candidates and compare external approaches | [Binary generation benchmark](docs/BINARY_GENERATION_BENCHMARK.md) |
 | Inspect the self-contained ELF experiment | [Self-hosting ELF](docs/SELF_HOSTING.md) |
 | Review older research branches | [Archive](archive/README.md) |
 | Contribute without mixing evidence levels | [Contributing](CONTRIBUTING.md) |
