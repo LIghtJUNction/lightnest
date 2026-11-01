@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-ALLOWED = {'.py', '.c', '.md', '.json', '.txt', '.yml', '.yaml', '.toml', '.lean'}
+ALLOWED = {'.py', '.sh', '.c', '.md', '.json', '.txt', '.yml', '.yaml', '.toml', '.lean'}
 SPECIAL = {'.gitignore', '.editorconfig', '.python-version', 'uv.lock', 'lean-toolchain'}
 IGNORE = {'.git', '__pycache__', '.venv', '.pytest_cache', '.mypy_cache', '.ruff_cache', '.lake'}
 FORBIDDEN = {'data', 'baseline_data', 'models', 'results', 'runs', 'caches', 'checkpoints', '.lake'}

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 import json
+import os
 from pathlib import Path
 import random
 import time
@@ -94,12 +95,14 @@ def load_generator(path, *, check_source=True):
     return model.eval(), payload["metadata"]
 
 
-def _plan(out, kind, seed, settings):
+def _plan(out, kind, seed, settings, *, device="cpu"):
     folder = out / "training" / f"{kind}-{seed}"
     folder.mkdir(exist_ok=False)
     plan = {"kind": kind, "seed": seed, "settings": settings, "corpus_sha256": sha(out / "corpus.json"),
             "math_sources": math_sources(kind), "trainer_sha256": sha(Path(__file__)),
-            "uv_lock_sha256": sha(ROOT / "uv.lock"), "torch": str(torch.__version__), "device": "cpu", "test_model_queries": 0}
+            "uv_lock_sha256": sha(ROOT / "uv.lock"), "torch": str(torch.__version__), "torch_cuda": torch.version.cuda, "device": str(device),
+            "gpu_name": torch.cuda.get_device_name(torch.device(device)) if torch.device(device).type == "cuda" else None,
+            "test_model_queries": 0}
     write(folder / "plan.json", plan)
     # Preserve the exact implementation behind the recorded hashes, including
     # curriculum/controller helpers, even if later source work continues.
@@ -244,15 +247,20 @@ def generation_probe(model, items, runner):
     return result
 
 
-def train_generator(out, seed=104729, *, steps=1536, width=128):
+def train_generator(out, seed=104729, *, steps=1536, width=128, device="cpu"):
+    device = torch.device(device)
+    if device.type == "cuda":
+        os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    if device.type == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA unavailable: install a CUDA-enabled PyTorch build and check the NVIDIA driver")
     out = external(out); verify_corpus(out)
     if steps < 1:
         raise ValueError("training updates must be positive")
     torch.set_num_threads(1); torch.manual_seed(seed); torch.use_deterministic_algorithms(True)
-    model = ELFGenerator(width, 1024)
+    model = ELFGenerator(width, 1024).to(device)
     folder, plan = _plan(out, "generator", seed, {"steps": steps, "batch": 8, "native_lm_batch": 8,
                                                  "native_lm_length": 128, "native_lm_loss_weight": .25,
-                                                 "width": width, "capacity": 1024, "lr": .001})
+                                                 "width": width, "capacity": 1024, "lr": .001}, device=device)
     fit = rows(out / "generation" / "train.jsonl"); validation = rows(out / "generation" / "validation.jsonl")
     native = [p for p in json.loads((out / "executables.json").read_text()) if p["split"] == "train"]
     images = [(out / "objects" / (p["sha256"] + ".elf")).read_bytes() for p in native]
@@ -264,11 +272,11 @@ def train_generator(out, seed=104729, *, steps=1536, width=128):
         for step in range(steps):
             selected = [sampler.choice(fit) for _ in range(8)]
             seen.update(item["id"] for item in selected)
-            previous, target, valid, condition = _generation_batch(selected, out)
+            previous, target, valid, condition = (t.to(device) for t in _generation_batch(selected, out))
             model.train(); optimizer.zero_grad(set_to_none=True)
             output = model(previous, condition, red_depth=2)
             loss = generation_loss(output, target, valid)
-            previous_raw, target_raw, valid_raw, condition_raw = _raw_batch(images, sampler)
+            previous_raw, target_raw, valid_raw, condition_raw = (t.to(device) for t in _raw_batch(images, sampler))
             raw_output = model(previous_raw, condition_raw, red_depth=2)
             native_loss = generation_loss(raw_output, target_raw, valid_raw)
             total = loss + .25 * native_loss

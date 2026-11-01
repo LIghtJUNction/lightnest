@@ -16,9 +16,15 @@ from .rl.iterate import Example, RGBEditor
 
 
 def main():
-    parser = argparse.ArgumentParser(description="RGB complete-ELF research; PyTorch CPU")
+    parser = argparse.ArgumentParser(description="Complete ELF research and local model tools")
     commands = parser.add_subparsers(dest="action", required=True)
     commands.add_parser("targets")
+    for action in ("create", "explain", "edit"):
+        p = commands.add_parser(action, help="natural language ELF " + action)
+        if action in ("explain", "edit"): p.add_argument("image", type=Path)
+        if action in ("create", "edit"):
+            p.add_argument("instruction"); p.add_argument("-o", "--output", type=Path)
+        p.add_argument("--model", default="qwen3:8b", help="local Ollama model")
     p = commands.add_parser("decode"); p.add_argument("--architecture", required=True); p.add_argument("--hex", required=True)
     p = commands.add_parser("assemble"); p.add_argument("--architecture", required=True)
     p = commands.add_parser("inspect"); p.add_argument("image", type=Path)
@@ -31,7 +37,9 @@ def main():
         p = commands.add_parser(action); p.add_argument("--out", required=True); p.add_argument("--seed", type=int, default=104729)
         if action == "train-policy":
             p.add_argument("--warmup-steps", type=int, default=2048); p.add_argument("--full-steps", type=int, default=512)
-        else: p.add_argument("--steps", type=int, default=1536)
+        else:
+            p.add_argument("--steps", type=int, default=1536)
+            p.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
     for action in ("refine-policy", "refine-generator"):
         p = commands.add_parser(action); p.add_argument("--out", required=True); p.add_argument("--parent", required=True)
         p.add_argument("--seed", type=int, default=104730)
@@ -52,7 +60,22 @@ def main():
     p.add_argument("--kind", choices=("policy", "generation"), required=True); p.add_argument("--mode", choices=("routed", "compressed", "dense"), default="routed")
     p.add_argument("--fixed-depth", type=int)
     args = parser.parse_args(); torch.set_num_threads(1)
-    if args.action == "targets":
+    if args.action in ("create", "explain", "edit"):
+        from .runtime import natural
+        try:
+            if args.action == "create": result = natural.create(args.instruction, args.output or Path("generated.elf"), model=args.model)
+            elif args.action == "explain": result = natural.explain(args.image, model=args.model)
+            else: result = natural.edit(args.image, args.instruction, args.output or args.image.with_name(args.image.name + ".edited"), model=args.model)
+        except (ValueError, KeyError, TypeError, OSError, RuntimeError) as error:
+            parser.exit(1, f"{args.action}: {error}\n")
+        if args.action == "explain":
+            print(result["explanation"])
+            print("\n[静态分析：未运行文件；模型的推测需要进一步验证。]")
+        else:
+            print(f"已写入：{result['artifact']['path']}")
+            print("已检查 ELF 结构；程序行为尚未验证。")
+        return
+    elif args.action == "targets":
         from .runtime.isa import llvm_targets
         result = llvm_targets()
     elif args.action == "decode":
@@ -99,7 +122,7 @@ def main():
         train_policy(args.out, args.seed, warmup_steps=args.warmup_steps, full_steps=args.full_steps); return
     elif args.action == "train-generator":
         from .training.training import train_generator
-        train_generator(args.out, args.seed, steps=args.steps); return
+        train_generator(args.out, args.seed, steps=args.steps, device=args.device); return
     elif args.action == "refine-policy":
         from .training.refine import refine_policy
         refine_policy(args.out, args.parent, args.seed, header_steps=args.header_steps, full_steps=args.full_steps); return

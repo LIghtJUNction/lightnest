@@ -1,13 +1,13 @@
 # RGB 复现
 
-所有命令通过 `uv run --locked` 使用锁定环境。Linux 原生执行需要 bubblewrap、
+以下复现实验使用锁定的 CPU 环境；生成器训练默认选择 CUDA，因此示例显式使用 `--device cpu`。CUDA 环境的安装和设备说明见 [README](../README.md#gpu-generator-training)。所有命令通过 `uv run --locked` 使用锁定环境。Linux 原生执行需要 bubblewrap、
 libseccomp；构建生成训练标签需要 GNU as / ld。数据必须放在仓库外的新目录。
 
 ```bash
 OUT=/path/outside/checkout/rgb-run
 uv run --locked python -m lightnest prepare --out "$OUT" --per-program 128
 uv run --locked python -m lightnest train-policy --out "$OUT" --seed 104729
-uv run --locked python -m lightnest train-generator --out "$OUT" --seed 104729
+uv run --locked python -m lightnest train-generator --out "$OUT" --seed 104729 --device cpu
 uv run --locked python -m lightnest freeze --out "$OUT" --name final \
   --policy "$OUT/weights/rgb-104729.pt" --generator "$OUT/weights/generator-104729.pt"
 uv run --locked python -m lightnest evaluate --out "$OUT" --name final --kind policy
