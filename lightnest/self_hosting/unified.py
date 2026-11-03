@@ -1,5 +1,6 @@
 """One artifact agent for complete generation and executable editing."""
 from __future__ import annotations
+from lightnest.architecture.weightlang_io import load_any2any
 
 from pathlib import Path
 import asyncio
@@ -20,19 +21,7 @@ class RGBArtifactAgent:
         self.generator = load_generator(generator_checkpoint)[0] if generator_checkpoint else None
         self.any2any = None
         if any2any_checkpoint:
-            payload=torch.load(any2any_checkpoint,map_location='cpu',weights_only=True)
-            if payload.get('architecture') != 'lightnest-any2any-v1' or payload.get('kind') != 'artifact-core':
-                raise ValueError('checkpoint is not an Any2Any artifact core')
-            config=dict(payload['config'])
-            config.setdefault('request_encoding', 'mean')
-            if 'sequence_limit' not in config: config['sequence_limit']=payload['state_dict']['position.weight'].shape[0]
-            if 'note_slots' not in config: config['note_slots']=32
-            self.any2any=ArtifactCore(**config)
-            missing,unexpected=self.any2any.load_state_dict(payload['state_dict'],strict=False)
-            allowed={name for name in missing if name.startswith(('copy_query.','budget.','notebook.'))}
-            if set(unexpected) or set(missing) != allowed:
-                raise ValueError(f'Any2Any checkpoint mismatch: {missing} {unexpected}')
-            self.any2any.eval()
+            self.any2any, _ = load_any2any(any2any_checkpoint)
         self.runner = ExecutableRunner(Path(workdir) / "execution", cache=False)
 
     def understand(self, raw, request):

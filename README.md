@@ -1,4 +1,7 @@
 <div align="center">
+
+模型架构已接入仓库内的 WeightLang `.wgt`，使用本地尚未发布的 `torch-dynamic` 前端。
+[安装、训练／推理、检查点迁移及验证边界](docs/weightlang.md)。
   <h1>LightNest</h1>
   <p><strong>Research on learning to inspect, edit, and generate complete executable files.</strong></p>
   <p>RGB recurrent architecture · full ELF images · isolated execution · evidence-first evaluation</p>

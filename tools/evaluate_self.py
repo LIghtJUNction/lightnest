@@ -1,5 +1,6 @@
 """Evaluate Any2Any on the LightNest checkout as a held-out artifact set."""
 from __future__ import annotations
+from lightnest.architecture.weightlang_io import load_any2any, checkpoint_digest
 
 import argparse, hashlib, json
 from pathlib import Path
@@ -15,9 +16,8 @@ from lightnest.training.any2any_train import code_summary
 def main():
     parser=argparse.ArgumentParser(); parser.add_argument('--checkpoint',required=True); parser.add_argument('--output',required=True)
     args=parser.parse_args(); root=Path(__file__).resolve().parents[1]
-    payload=torch.load(args.checkpoint,map_location='cpu',weights_only=True); config=dict(payload['config']); config.setdefault('request_encoding','mean')
-    model=ArtifactCore(**config); model.load_state_dict(payload['state_dict']); model.eval()
-    files=[p for p in root.rglob('*') if p.is_file() and '.git' not in p.parts and '.venv' not in p.parts]
+    model, _ = load_any2any(args.checkpoint, strict=True)
+    files=[p for p in root.rglob('*') if p.is_file() and not ({'.git','.venv','weights','.cache','__pycache__'} & set(p.parts)) and not any(part.endswith('.egg-info') for part in p.parts)]
     results=[]; overlap=[]
     with torch.inference_mode():
         for path in files:
@@ -39,7 +39,7 @@ def main():
     for m in by.values():
         for key in ('kind_accuracy','byte_accuracy','loss'):m[key]/=m['files']
         if m.get('summary_files'):m['summary_mae']/=m['summary_files']
-    report={'checkpoint':str(Path(args.checkpoint).resolve()),'checkpoint_sha256':hashlib.sha256(Path(args.checkpoint).read_bytes()).hexdigest(),'repo_root':str(root),'files':len(results),'by_kind':by,'rows':results,'training_data_overlap':overlap,'claim':'held-out self inspection; format and byte diagnostics, not proof of semantic self-understanding'}
+    report={'checkpoint':str(Path(args.checkpoint).resolve()),'checkpoint_sha256':checkpoint_digest(args.checkpoint),'repo_root':str(root),'files':len(results),'by_kind':by,'rows':results,'training_data_overlap':overlap,'claim':'held-out self inspection; format and byte diagnostics, not proof of semantic self-understanding'}
     Path(args.output).write_text(json.dumps(report,indent=2)+'\n'); print(json.dumps({k:v for k,v in report.items() if k not in ('rows',)},indent=2))
 
 if __name__=='__main__': main()

@@ -47,3 +47,8 @@
 *.ilean
 *.ir
 *.olean.server
+
+# WeightLang durable models and disposable build cache
+weights/
+.cache/
+*.egg-info/

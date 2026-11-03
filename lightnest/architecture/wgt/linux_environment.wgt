@@ -1,0 +1,31 @@
+wgt 0.3
+backend torch-dynamic
+host lightnest.architecture.linux_environment
+extern nn, torch
+
+# 模型参数与前向运算由此文件定义；字节预处理和运行环境通过 extern 显式连接。
+# 本源码仅定义初始化；训练状态以保存制品及其训练记录为准。
+
+module LearnedOpenat(Module):
+    """Predict fd 3, ENOENT, or EACCES from a bounded path and open flags.
+
+    The network contains fitted observations, not a filesystem image. It does
+    not implement file descriptors, reads, writes, directory traversal, or the
+    full Linux permission model.
+    """
+
+    setup(self, path_size: int = 64, width: int = 16):
+        super().__init__()
+        if not 1 <= path_size <= 256 or not 1 <= width <= 128:
+            raise ValueError('invalid environment dimensions')
+        self.path_size = path_size
+        self.byte = embedding(256, width)
+        self.net = sequential(linear(path_size * width + 2, 64), relu(), linear(64, 3))
+
+    fn forward(self, path: torch.Tensor, flags: torch.Tensor):
+        if path.ndim != 2 or path.shape[1] != self.path_size or flags.shape != path.shape[:1]:
+            raise ValueError('path or flags shape mismatch')
+        before_null = torch.cat((torch.ones_like(path[:, :1]), path.ne(0).long().cumprod(dim=1)[:, :-1]), dim=1)
+        embeddings = self.byte(path.clamp(0,255)) * before_null[:, :, None]
+        modes = torch.stack(((flags & 1).float(), ((flags >> 1) & 1).float()), dim=1)
+        return self.net(torch.cat((embeddings.flatten(1), modes), dim=1))

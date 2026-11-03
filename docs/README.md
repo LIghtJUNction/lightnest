@@ -10,3 +10,5 @@
 
 下面文档保留 Universal Machine v1 当时的架构、哈希和结果，旧入口已归档至
 `archive/universal_native/`：[架构](ARCHITECTURE.md) · [复现](REPRODUCE.md) · [结果](RESULTS.md)。
+
+- [WeightLang 架构、运行入口与迁移验证](weightlang.md)

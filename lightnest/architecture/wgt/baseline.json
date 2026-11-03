@@ -1,0 +1,15 @@
+{
+  "commit": "6210dcaa1387c74616f997990f6c40d5c9598442",
+  "sha256": {
+    "lightnest/architecture/context.py": "b7ed490c33d2e16b2e4411fe0ba429af7ab958f9c51970be4d0b9cff13c5036b",
+    "lightnest/architecture/attention.py": "88a1a196df14840884681c49b78044e15d0cd52bf50cf14734f3302c10698d5e",
+    "lightnest/architecture/observe.py": "73ceeeaf6ddd2e7b6945e02e7d632469ecbdf7984b2100630504621b5f83fc9c",
+    "lightnest/architecture/model.py": "0531c8ee83306719e5b3b4581cdda529ac22cfcd43052cc29f2bf5bbd4df4806",
+    "lightnest/architecture/generate.py": "341f59efcb7c190d3d8f617e0b3a6813822ac4385123a81bb7d34ce0fb70dd2f",
+    "lightnest/architecture/hnet.py": "305c1ed758193c5404116b88be32db2f6b1f94720c0d60de9d86e130fe8770bd",
+    "lightnest/architecture/any2any.py": "5cc1c82779be3b0b069f363544204ae53e20ba944cb7d4b589e78ed3ceba13b5",
+    "lightnest/architecture/structure.py": "e0639fdaeab3a8535e65e5388546a71dea41279f27dcaa0c75791ebc91f53b86",
+    "lightnest/architecture/linux_environment.py": "e39dd3588085ce85abfa7e27e295020252940f14f42cd2f84a55a1c06b9d572a",
+    "lightnest/architecture/x86_world.py": "76f1ec114b271c679facaa5f195d6bfffd332c6aac48c165b6ab69aea0e4b88d"
+  }
+}

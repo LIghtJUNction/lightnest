@@ -1,5 +1,6 @@
 """Tool-augmented semantic loop for unseen typed artifacts."""
 from __future__ import annotations
+from lightnest.architecture.weightlang_io import load_any2any
 import ast, asyncio, json
 from pathlib import Path
 import torch
@@ -27,17 +28,10 @@ class SemanticLoop:
   self.registry.register('artifact_info',lambda payload,name: inspect_artifact(payload,name).__dict__)
 
  async def inspect(self, root, any2any_checkpoint=None):
-  root=Path(root); files=[p for p in root.rglob('*') if p.is_file() and not ({'.git','.venv','archive','__pycache__'} & set(p.parts))][:128]
+  root=Path(root); files=[p for p in root.rglob('*') if p.is_file() and not ({'.git','.venv','archive','__pycache__','weights','.cache'} & set(p.parts))][:128]
   calls=[]; neural=[]; model=None
   if any2any_checkpoint:
-   payload=torch.load(any2any_checkpoint,map_location='cpu',weights_only=True); config=dict(payload['config'])
-   config.setdefault('request_encoding', 'mean')
-   if 'sequence_limit' not in config: config['sequence_limit']=payload['state_dict']['position.weight'].shape[0]
-   if 'note_slots' not in config: config['note_slots']=32
-   model=ArtifactCore(**config);missing,unexpected=model.load_state_dict(payload['state_dict'],strict=False)
-   allowed_missing={'copy_query.weight'} | {name for name in missing if name.startswith(('budget.', 'notebook.'))}
-   if set(unexpected) or not set(missing) <= allowed_missing: raise ValueError(f'Any2Any checkpoint mismatch: {missing} {unexpected}')
-   model.eval()
+   model, _ = load_any2any(any2any_checkpoint)
   for path in files:
    try:
     raw=path.read_bytes()

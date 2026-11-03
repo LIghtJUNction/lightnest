@@ -34,7 +34,8 @@ def main():
         command = ["uv", "run", "--locked", "pyinstaller", "--clean", "--onefile",
                    "--name", "lightnest-self", "--distpath", str(Path(work) / "dist"),
                    "--workpath", str(Path(work) / "build"), "--specpath", str(Path(work)),
-                   "--collect-all", "torch", "--add-data", f"{staged_checkpoint}:.",
+                   "--collect-all", "torch", "--collect-all", "weightlang",
+                   "--collect-data", "lightnest", "--add-data", f"{staged_checkpoint}:.",
                    "--add-binary", f"{args.llama_server}:.", *backend_args,
                    "--paths", ".", "lightnest/self_hosting/self_runtime.py"]
         subprocess.run(command, check=True)

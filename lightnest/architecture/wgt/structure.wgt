@@ -1,0 +1,34 @@
+wgt 0.3
+backend torch-dynamic
+host lightnest.architecture.structure
+extern ast_tokens, checkpoint, lex_tokens, nn, torch
+
+# 模型参数与前向运算由此文件定义；字节预处理和运行环境通过 extern 显式连接。
+# 本源码仅定义初始化；训练状态以保存制品及其训练记录为准。
+
+module StructureNet(Module):
+ setup(self,width=48):
+  super().__init__();self.byte=embedding(257,width);self.conv=sequential(conv1d(width,width,5,padding=2),gelu(),conv1d(width,width,5,padding=2),gelu());self.head=sequential(linear(width,width),gelu(),linear(width,6))
+ fn forward(self,raw):
+  values=list(raw[:4096]) or [0]
+  values += [0] * max(0,5-len(values)); x=torch.tensor(values,dtype=torch.long)[None];h=self.byte(x).transpose(1,2);h=self.conv(h).sum(-1) / 64.;return self.head(h)
+
+module TokenStructureNet(Module):
+ setup(self,width=64):
+  super().__init__();self.token=embedding(512,width);self.gru=gru(width,width,2,batch_first=True);self.head=sequential(linear(width,width),gelu(),linear(width,6))
+ fn forward(self,raw):
+  ids=lex_tokens(raw); states=[]
+  for start in range(0,len(ids),256):
+   x=torch.tensor(ids[start:start+256],dtype=torch.long)[None]
+   fn run(tokens): return self.gru(self.token(tokens))[1]
+   h=checkpoint(run,x,use_reentrant=False);states.append(h[-1])
+  return self.head(torch.stack(states).mean(0))
+
+module ASTStructureNet(TokenStructureNet):
+ setup(self,width=32):
+  super().__init__(width);self.gru=gru(width,width,1,batch_first=True);self.head=sequential(linear(width,width),gelu(),linear(width,6))
+ fn forward(self,raw):
+  ids=ast_tokens(raw); states=[]
+  for start in range(0,len(ids),256):
+   x=torch.tensor(ids[start:start+256],dtype=torch.long)[None];_,h=self.gru(self.token(x));states.append(h[-1])
+  return self.head(torch.stack(states).mean(0))

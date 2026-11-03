@@ -1,0 +1,90 @@
+wgt 0.3
+backend torch-dynamic
+host lightnest.architecture.context
+extern math, nn, torch
+
+# evidence 为 [batch, items, width]，notes 为 [batch, slots, width]。
+# 训练对所有 keep 数混合，推理按预算选 top-k；两种分支不能互换。
+# 本源码仅定义初始化；训练状态以保存制品及其训练记录为准。
+
+module NeuralNotebook(Module):
+    """A differentiable fixed-slot notebook with a learned keep budget.
+
+    Evidence is written by content-addressed soft routing.  At inference the
+    budget head chooses how many slots remain active; training keeps routing
+    soft so the whole notebook receives task gradients.
+    """
+
+    setup(self, width=128, slots=32):
+        super().__init__()
+        if type(width) is not int or width < 8 or type(slots) is not int or not 2 <= slots <= 256:
+            raise ValueError("invalid neural notebook geometry")
+        self.width, self.slots = width, slots
+        self.slot_keys = parameter(torch.randn(slots, width) / math.sqrt(width))
+        self.key = linear(width, width, bias=False)
+        self.value = sequential(linear(width, width), gelu(), layernorm(width))
+        self.write_gate = sequential(linear(2 * width, width), gelu(), linear(width, 1))
+        self.query = linear(width, width, bias=False)
+        self.budget = sequential(linear(2 * width, width), gelu(), layernorm(width),
+                                    linear(width, slots + 1))
+
+    fn write(self, evidence, notes=None, *, valid=None):
+        if evidence.ndim != 3 or evidence.shape[-1] != self.width or not evidence.shape[1]:
+            raise ValueError("notebook evidence must be [batch, items, width]")
+        if notes is None:
+            notes = evidence.new_zeros(evidence.shape[0], self.slots, self.width)
+        if notes.shape != (evidence.shape[0], self.slots, self.width):
+            raise ValueError("notebook state shape mismatch")
+        address = torch.softmax(self.key(evidence) @ self.slot_keys.T / math.sqrt(self.width), -1)
+        values = self.value(evidence)
+        if valid is not None:
+            if valid.shape != evidence.shape[:2] or valid.dtype != torch.bool or not valid.any(-1).all():
+                raise ValueError("invalid notebook evidence mask")
+            values = values * valid[..., None]
+        candidate = torch.einsum("bns,bnd->bsd", address, values)
+        gate = torch.sigmoid(self.write_gate(torch.cat((notes, candidate), -1)))
+        return notes + gate * (candidate - notes), {"address": address, "write_gate": gate}
+
+    fn read(self, notes, query, *, hard=False):
+        if notes.ndim != 3 or notes.shape[1:] != (self.slots, self.width):
+            raise ValueError("notebook state shape mismatch")
+        if query.ndim == 1:
+            query = query[None]
+        if query.ndim != 2 or query.shape != (notes.shape[0], self.width):
+            raise ValueError("notebook query shape mismatch")
+        scores = self.query(query) @ self.slot_keys.T / math.sqrt(self.width)
+        weights = torch.softmax(scores, -1)
+        budget_logits = self.budget(torch.cat((query, notes.mean(1)), -1))
+        selected = budget_logits.argmax(-1)
+        if hard:
+            active = []
+            for row, count in zip(weights, selected.tolist(), strict=True):
+                if count == 0:
+                    active.append(torch.full_like(row, 1 / self.slots))
+                    continue
+                mask = torch.zeros_like(row)
+                mask[row.topk(count).indices] = 1
+                active.append(row * mask / row.mul(mask).sum().clamp_min(1e-8))
+            weights = torch.stack(active)
+        else:
+            probabilities = torch.softmax(budget_logits, -1)
+            choices = [weights.new_full(weights.shape, 1 / self.slots)]
+            for count in range(1, self.slots + 1):
+                active = []
+                for row in weights:
+                    mask = torch.zeros_like(row)
+                    mask[row.topk(count).indices] = 1
+                    active.append(row * mask / row.mul(mask).sum().clamp_min(1e-8))
+                choices.append(torch.stack(active))
+            weights = torch.stack(choices, 1)
+            weights = torch.einsum("bc,bcs->bs", probabilities, weights)
+        context = torch.einsum("bs,bsd->bd", weights, notes)
+        return context, weights, budget_logits
+
+    fn compress(self, evidence, query=None, notes=None, *, hard=False, valid=None):
+        if query is None:
+            query = evidence.mean(1) if valid is None else (evidence * valid[..., None]).sum(1) / valid.sum(1)[:, None].clamp_min(1)
+        notes, write = self.write(evidence, notes, valid=valid)
+        context, weights, budget_logits = self.read(notes, query, hard=hard)
+        return {"notes": notes, "context": context, "weights": weights,
+                "budget_logits": budget_logits, "write": write}

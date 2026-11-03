@@ -52,10 +52,16 @@ uv export --locked --no-hashes --no-emit-project --emit-index-url --output-file 
 
 ## 实验资料与结论
 
-权重、数据集、运行日志、原始结果、编译产物和缓存放在仓库外；不要用
+完整 WeightLang 模型和迁移验证报告放在项目 `weights/<model>/`（已忽略），大型临时构建用 `.cache/weightlang/`。
+其他权重、数据集、运行日志、原始结果、编译产物和缓存放在仓库外；不要用
 `git add -f` 绕过忽略规则。外部资料说明见 [ARTIFACTS](archive/legacy/docs/ARTIFACTS.md)。
 保留协议、源码来源和上游许可；来源未核实前不要自行添加项目许可证。
 
 修改机制时运行对应行为测试。修改研究结论时提供冻结输入、预算、对照和验收证据；
 区分单元测试、已有实验重放、新实验和模型晋升。历史报告保留当时的失败和限制，
 新增结果另写文档，不覆盖旧记录或改写冻结哈希。
+
+## WGT 架构
+
+修改网络请编辑 `lightnest/architecture/wgt/`；Python 同名类是公共接口占位，导入时由 WGT 定义替换。
+使用本地 `../WeightLang/WeightLang` 的 `torch-dynamic` 扩展。详见 [迁移说明](docs/weightlang.md)。

@@ -4,6 +4,7 @@ version = "0.0.0"
 description = "RGB recurrent binary understanding, editing and complete ELF generation research"
 requires-python = ">=3.13,<3.14"
 dependencies = [
+  "weightlang",
   "torch==2.13.0",
   "numpy==2.3.5",
   "iced-x86==1.21.0",
@@ -12,9 +13,10 @@ dependencies = [
 ]
 
 [tool.uv]
-package = false
+package = true
 
 [tool.uv.sources]
+weightlang = { path = "../WeightLang/WeightLang", editable = true }
 torch = { index = "pytorch-cpu" }
 
 [[tool.uv.index]]
@@ -26,3 +28,13 @@ explicit = true
 dev = [
     "pyinstaller>=6.22.3",
 ]
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["lightnest*"]
+
+[tool.setuptools.package-data]
+"lightnest.architecture" = ["wgt/*.wgt", "wgt/*.json"]

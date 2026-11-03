@@ -1,0 +1,63 @@
+wgt 0.3
+backend torch-dynamic
+host lightnest.architecture.observe
+extern CompressRouteAttention, Observation, OrderedDict, nn, torch
+
+# 模型参数与前向运算由此文件定义；字节预处理和运行环境通过 extern 显式连接。
+# 本源码仅定义初始化；训练状态以保存制品及其训练记录为准。
+
+module GreenObserver(Module):
+    setup(self, width=96, chunk_size=64, heads=4, landmarks=8, top_k=16):
+        super().__init__()
+        self.width, self.chunk_size = width, chunk_size
+        self.byte = embedding(257, 8, padding_idx=0)
+        self.encode_chunk = sequential(linear(chunk_size * 8, width), gelu(), layernorm(width))
+        self.kind = embedding(32, width)
+        self.position = linear(8, width, bias=False)
+        self.memory = CompressRouteAttention(width, heads, landmarks, top_k)
+        self.encoded_chunks = 0
+        self._content_cache = OrderedDict()
+
+    fn train(self, mode=True):
+        self._content_cache.clear()
+        return super().train(mode)
+
+    fn _load_from_state_dict(self, *args, **kwargs):
+        self._content_cache.clear()
+        return super()._load_from_state_dict(*args, **kwargs)
+
+    fn encode(self, observation: Observation, device=None):
+        device = device or self.byte.weight.device
+        if any(len(p) > self.chunk_size for p in observation.payloads):
+            raise ValueError("store/encoder chunk sizes differ")
+        raw = torch.zeros(len(observation.payloads), self.chunk_size, dtype=torch.long, device=device)
+        for i, payload in enumerate(observation.payloads):
+            if payload:
+                raw[i, :len(payload)] = torch.tensor(list(payload), device=device) + 1
+        cacheable = not self.training and not torch.is_grad_enabled()
+        keys = [(payload, str(device), str(self.byte.weight.dtype)) for payload in observation.payloads]
+        missing = [i for i, key in enumerate(keys) if not cacheable or key not in self._content_cache]
+        encoded = self.encode_chunk(self.byte(raw[missing]).flatten(1)) if missing else None
+        features = {}
+        for j, i in enumerate(missing):
+            features[i] = encoded[j]
+            if cacheable:
+                self._content_cache[keys[i]] = encoded[j]
+        local = torch.stack([features[i] if i in features else self._content_cache[key] for i, key in enumerate(keys)])
+        while len(self._content_cache) > 8192:
+            self._content_cache.popitem(last=False)
+        index = torch.tensor(observation.unique_ids, dtype=torch.long, device=device)
+        positions = torch.tensor(observation.addresses, dtype=local.dtype, device=device)
+        scales = torch.tensor((1., 64., 4096., 262144.), device=device)
+        angle = positions[:, None] / scales
+        address = torch.cat((angle.sin(), angle.cos()), -1)
+        kinds = torch.tensor(observation.kinds, dtype=torch.long, device=device)
+        result = local[index] + self.position(address) + self.kind(kinds)
+        self.encoded_chunks += len(missing)
+        return result[None], raw
+
+    fn build(self, observation, condition):
+        features, raw = self.encode(observation)
+        valid = torch.ones(features.shape[:2], dtype=torch.bool, device=features.device)
+        bank = self.memory.build(features, valid, condition)
+        return features, raw, bank

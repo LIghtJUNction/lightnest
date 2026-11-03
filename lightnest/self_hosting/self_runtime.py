@@ -5,6 +5,7 @@ passes those observations to the embedded language model.  No sentence is
 assembled from a Python template at runtime.
 """
 from __future__ import annotations
+from lightnest.architecture.weightlang_io import load_any2any, checkpoint_digest
 
 import hashlib
 import json
@@ -86,13 +87,7 @@ def _sample(raw, limit):
 
 @torch.inference_mode()
 def _neural_observation(raw, checkpoint):
-    payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
-    config = dict(payload["config"])
-    config.setdefault("request_encoding", "mean")
-    if "sequence_limit" not in config: config["sequence_limit"] = payload["state_dict"]["position.weight"].shape[0]
-    if "note_slots" not in config: config["note_slots"] = 32
-    model = ArtifactCore(**config)
-    model.load_state_dict(payload["state_dict"], strict=False); model.eval()
+    model, _ = load_any2any(checkpoint)
     window = _sample(raw, model.max_bytes)
     encoded = model.encode_chunks(window, ArtifactRequest("elf", "understand", "self"), max_chunks=32)
     encoded, context = model.contextualize(encoded)
@@ -104,7 +99,7 @@ def _neural_observation(raw, checkpoint):
             "compute_budget_depth": budget["depth"],
             "context_budget_index": int(context["budget_logits"].argmax(-1)[0]),
             "context_slots": int((context["weights"][0] > 0).sum()),
-            "sampled_bytes": len(window), "weights_sha256": hashlib.sha256(checkpoint.read_bytes()).hexdigest()}
+            "sampled_bytes": len(window), "weights_sha256": checkpoint_digest(checkpoint)}
 
 
 def _free_port():

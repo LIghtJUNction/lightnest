@@ -10,76 +10,10 @@ from lightnest.architecture.x86_internal import EXITED, UNSUPPORTED, X86Internal
 
 
 class X86World(nn.Module):
-    """Propose full ELF bytes, load, execute and refine within one model call.
+    """Architecture compiled from wgt/x86_world.wgt."""
 
-    This is a research prototype using a learned proposal head, deterministic
-    bounded x86 transitions, optional learned OS outcomes and PTX primitives.
-    It does not parse source, simulate a full OS/GPU, or prove correctness.
-    """
 
-    def __init__(self, condition_width: int = 4, candidates: int = 2, image_capacity: int = 768,
-                 memory_size: int = 4096, output_size: int = 64, environment: nn.Module | None = None):
-        super().__init__()
-        if not 1 <= condition_width <= 32 or not 1 <= candidates <= 4 or not 64 <= image_capacity <= 1024:
-            raise ValueError('invalid world dimensions')
-        self.condition_width, self.candidates, self.image_capacity = condition_width, candidates, image_capacity
-        self.output_size = output_size
-        self.proposal = nn.Linear(condition_width, candidates * image_capacity * 256)
-        self.length = nn.Linear(condition_width, candidates * image_capacity)
-        self.refine = nn.Linear(condition_width + 4, condition_width)
-        self.loader = ELFTensorLoader(memory_size=memory_size)
-        self.x86 = X86Internal(memory_size=memory_size, output_size=output_size, environment=environment)
-        self.ptx = PTXIntegerOps()
-        self.register_buffer('output_offsets', torch.arange(output_size, dtype=torch.long), persistent=False)
-
-    def forward(self, condition: torch.Tensor, expected_stdout: torch.Tensor,
-                stdout_length: torch.Tensor, expected_exit: torch.Tensor, *, steps: int, rounds: int = 1):
-        if condition.ndim != 2 or condition.shape[1] != self.condition_width:
-            raise ValueError('condition shape mismatch')
-        batch = condition.shape[0]
-        if expected_stdout.shape != (batch, self.output_size) or stdout_length.shape != (batch,) or expected_exit.shape != (batch,):
-            raise ValueError('expected behavior shape mismatch')
-        if not 1 <= rounds <= 8:
-            raise ValueError('rounds must be in 1..8')
-        thought = condition
-        best_valid = torch.zeros(batch, dtype=torch.bool, device=condition.device)
-        best_image = torch.zeros((batch, self.image_capacity), dtype=torch.long, device=condition.device)
-        best_length = torch.zeros(batch, dtype=torch.long, device=condition.device)
-        best_round = torch.zeros(batch, dtype=torch.long, device=condition.device)
-        scores, logits_history, length_history = [], [], []
-        for round_index in range(rounds):
-            logits = self.proposal(thought).reshape(batch, self.candidates, self.image_capacity, 256)
-            length_logits = self.length(thought).reshape(batch, self.candidates, self.image_capacity)
-            lengths = length_logits.argmax(-1) + 1
-            images = logits.argmax(-1)
-            loaded = self.loader(images.reshape(-1, self.image_capacity), lengths.reshape(-1))
-            result = self.x86(loaded['memory'], loaded['readable'], loaded['executable'], loaded['entry'], steps=steps)
-            loader_ok = loaded['valid'].reshape(batch, self.candidates)
-            status = result['status'].reshape(batch, self.candidates)
-            actual_exit = result['exit_code'].reshape(batch, self.candidates)
-            output = result['output'].reshape(batch, self.candidates, 2, self.output_size)
-            out_len = result['output_lengths'].reshape(batch, self.candidates, 2)
-            mask = self.output_offsets[None, None, :] < stdout_length[:, None, None]
-            output_ok = ((output[:, :, 0] == expected_stdout[:, None]) | ~mask).all(dim=-1)
-            passed = (loader_ok & status.eq(EXITED) & actual_exit.eq(expected_exit[:, None]) & output_ok
-                      & out_len[:, :, 0].eq(stdout_length[:, None]) & out_len[:, :, 1].eq(0)
-                      & (stdout_length[:, None] >= 0) & (stdout_length[:, None] <= self.output_size))
-            picked = passed.long().argmax(dim=1)
-            any_pass = passed.any(dim=1)
-            selected = images.gather(1, picked[:, None, None].expand(-1, 1, self.image_capacity)).squeeze(1)
-            selected_length = lengths.gather(1, picked[:, None]).squeeze(1)
-            improve = any_pass & ~best_valid
-            best_image = torch.where(improve[:, None], selected, best_image)
-            best_length = torch.where(improve, selected_length, best_length)
-            best_round = torch.where(improve, round_index, best_round)
-            best_valid = best_valid | any_pass
-            summary = torch.stack((loader_ok.float().mean(dim=1), status.eq(EXITED).float().mean(dim=1),
-                                   status.eq(UNSUPPORTED).float().mean(dim=1), 1 - passed.float().mean(dim=1)), dim=1)
-            next_thought = thought + self.refine(torch.cat((condition, summary), dim=1)).tanh()
-            thought = torch.where(best_valid[:, None], thought, next_thought)
-            scores.append(passed)
-            logits_history.append(logits)
-            length_history.append(length_logits)
-        return {'accepted': best_valid, 'image': best_image, 'length': best_length, 'selected_round': best_round,
-                'round_passed': torch.stack(scores, dim=1), 'byte_logits': torch.stack(logits_history, dim=1),
-                'length_logits': torch.stack(length_history, dim=1)}
+# WGT is the architecture source; host code above handles preprocessing and scheduling.
+from pathlib import Path as _WgtPath
+from weightlang.tensor_program import bind_tensor_program as _bind_wgt
+globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "x86_world.wgt", globals()))

@@ -36,159 +36,11 @@ class RGBConfig:
 
 
 class ByteHead(nn.Module):
-    def __init__(self, width, hidden, chunk_size):
-        super().__init__()
-        self.slot = nn.Embedding(chunk_size, 8)
-        self.decode = nn.Sequential(nn.Linear(width + 8, hidden), nn.GELU(), nn.LayerNorm(hidden))
-        self.edit = nn.Linear(hidden, 1)
-        self.value = nn.Linear(hidden, 8)
-
-    def forward(self, hidden, byte_embeddings, length):
-        n, chunk, _ = byte_embeddings.shape
-        slots = self.slot(torch.arange(chunk, device=hidden.device))
-        h = hidden[0, :n, None].expand(-1, chunk, -1)
-        value = self.decode(torch.cat((h, byte_embeddings + slots), -1))
-        return self.edit(value).flatten()[:length], self.value(value).reshape(-1, 8)[:length]
+    """Architecture compiled from wgt/model.wgt."""
 
 
 class RGBPolicy(nn.Module):
-    architecture = ARCHITECTURE
-
-    def __init__(self, config=RGBConfig()):
-        super().__init__()
-        self.config = config; d = config.width
-        self.green = GreenObserver(d, config.chunk_size, config.heads, config.landmarks, config.detail_k)
-        self.store = ObservationStore(config.chunk_size, max_instances=1 << 20)
-        self.command = nn.Embedding(257, d, padding_idx=0)
-        self.initial = nn.LayerNorm(d)
-        self.message = nn.Linear(3 * d, d)
-        self.thought = nn.GRUCell(d, d)
-        self.thought_norm = nn.LayerNorm(d)
-        self.depth = nn.Embedding(65, d)
-        self.blue = ByteHead(d, d // 2, config.chunk_size)
-        self.red = ByteHead(d, d, config.chunk_size)
-        self.red_to_blue = nn.Linear(d, d)
-        self.red_abstraction = nn.Sequential(nn.Linear(d, 4 * d), nn.GELU(), nn.LayerNorm(4 * d))
-        self.abstract_to_blue = nn.Linear(4 * d, d)
-        self.blue_language = nn.Linear(d, 257)
-        # The budget is a learned categorical decision.  Its input is the
-        # shared state after blue has observed the artifact and all current
-        # feedback frames, so compute allocation is trained from task utility
-        # instead of a hand-written complexity rule.
-        self.budget = nn.Sequential(
-            nn.Linear(2 * d, d), nn.GELU(), nn.LayerNorm(d),
-            nn.Linear(d, len(config.red_depths) + 1),
-        )
-        self.notebook = NeuralNotebook(d, config.note_slots)
-        nn.init.zeros_(self.red_to_blue.weight); nn.init.zeros_(self.red_to_blue.bias)
-        nn.init.zeros_(self.abstract_to_blue.weight); nn.init.zeros_(self.abstract_to_blue.bias)
-        nn.init.zeros_(self.blue_language.weight); nn.init.zeros_(self.blue_language.bias)
-        self.risk = nn.Sequential(nn.Linear(2 * d + 3, d // 2), nn.Tanh(), nn.Linear(d // 2, 1))
-        self.recurrent_steps = 0
-
-    def begin(self, image, command, frames=()):
-        if not isinstance(command, str) or not 1 <= len(command.encode()) <= 384:
-            raise ValueError("invalid command")
-        observation = self.store.collect(image, frames)
-        tokens = torch.tensor(list(command.encode()), device=self.command.weight.device) + 1
-        condition = self.command(tokens).mean(0)[None]
-        features, raw, bank = self.green.build(observation, condition)
-        notebook = self.notebook.compress(features, condition.squeeze(1), hard=not self.training)
-        hidden = self.initial(features + condition[:, None])
-        n = (len(image) + self.config.chunk_size - 1) // self.config.chunk_size
-        unique = torch.tensor(observation.unique_ids[:n], device=raw.device)
-        byte_embeddings = self.green.byte(raw[unique])
-        return {"observation": observation, "condition": condition, "features": features,
-                "bank": bank, "hidden": hidden, "byte_embeddings": byte_embeddings,
-                "length": len(image), "depth": 0, "notes": notebook["notes"],
-                "context": notebook["context"], "context_budget_logits": notebook["budget_logits"]}
-
-    def advance(self, state, depth, mode="routed"):
-        if type(depth) is not int or not state["depth"] < depth <= self.config.red_depths[-1]:
-            raise ValueError("thinking depth must advance within the shared budget")
-        for step in range(state["depth"] + 1, depth + 1):
-            memory = self.green.memory.read(state["hidden"], state["bank"], mode=mode)
-            repeated = state["condition"][:, None].expand_as(state["hidden"])
-            notebook = self.notebook.compress(state["features"], state["hidden"].mean(1), state["notes"], hard=not self.training)
-            state["notes"], state["context"], state["context_budget_logits"] = notebook["notes"], notebook["context"], notebook["budget_logits"]
-            context = state["context"][:, None].expand_as(state["hidden"])
-            message = self.message(torch.cat((state["features"], memory + context, repeated), -1)) + self.depth.weight[step]
-            shape = state["hidden"].shape
-            state["hidden"] = self.thought_norm(self.thought(message.flatten(0, 1), state["hidden"].flatten(0, 1)).reshape(shape))
-            abstract = self.red_abstraction(state["hidden"].mean(1, keepdim=True))
-            state["abstract"] = abstract
-            state["guidance"] = self.red_to_blue(state["hidden"].mean(1, keepdim=True)) + self.abstract_to_blue(abstract)
-            self.recurrent_steps += 1
-        state["depth"] = depth
-
-    def readout(self, state, *, blue=False):
-        hidden = state["hidden"]
-        if blue and "guidance" in state:
-            hidden = hidden + state["guidance"]
-        logits, values = (self.blue if blue else self.red)(hidden, state["byte_embeddings"], state["length"])
-        probabilities = logits.sigmoid()
-        top = probabilities.topk(min(2, len(probabilities))).values
-        statistics = torch.stack((top[0], top[0] - top[-1], probabilities.mean()))[None]
-        pooled = state["hidden"].mean(1)
-        risk = self.risk(torch.cat((pooled.detach(), state["condition"].detach(), statistics.detach()), -1)).squeeze()
-        language = self.blue_language(hidden.mean(1)) if blue else None
-        budget_logits = self.budget(torch.cat((pooled, state["condition"].squeeze(1)), -1))
-        return {"logits": logits, "bits": values, "risk_logit": risk, "language_logits": language,
-                "budget_logits": budget_logits, "context_budget_logits": state["context_budget_logits"],
-                "depth": state["depth"],
-                "origin": "blue" if blue else "red"}
-
-    def select_budget(self, output):
-        """Decode the learned stop/depth choice from a blue readout.
-
-        Index zero means blue is sufficient; subsequent indices map to the
-        configured red depth schedule.  This function intentionally contains
-        no artifact-size or byte-pattern policy.
-        """
-        logits = output["budget_logits"]
-        index = int(logits.argmax(-1).item())
-        return {"index": index, "depth": None if index == 0 else self.config.red_depths[index - 1]}
-
-    def blue_language_tokens(self, state, limit=32):
-        """Return byte-level language tokens from the blue guided state."""
-        if "guidance" not in state: raise ValueError("red guidance is required before language output")
-        logits = self.blue_language((state["hidden"] + state["guidance"]).mean(1))[0]
-        return logits[:256].topk(min(limit, 256)).indices.tolist()
-
-    def forward(self, image, command, frames=(), *, depth=None, mode="routed"):
-        state = self.begin(image, command, frames)
-        self.advance(state, self.config.blue_depth, mode)
-        blue = self.readout(state, blue=True)
-        self.advance(state, depth or self.config.red_depths[-1], mode)
-        red = self.readout(state)
-        return blue, red, state
-
-    @torch.inference_mode()
-    def thoughts(self, image, command, frames=(), *, mode="routed", fixed_depth=None, budgeted=False):
-        if self.training:
-            raise RuntimeError("eval() required")
-        state = self.begin(image, command, frames)
-        if fixed_depth is None:
-            self.advance(state, self.config.blue_depth, mode)
-            blue = self.readout(state, blue=True)
-            yield blue, state
-            if budgeted:
-                selected = self.select_budget(blue)["depth"]
-                depths = () if selected is None else (selected,)
-            else:
-                depths = self.config.red_depths
-        else:
-            depths = (fixed_depth,)
-        for depth in depths:
-            self.advance(state, depth, mode)
-            state["guided_blue"] = self.readout(state, blue=True)
-            yield self.readout(state), state
-
-    async def async_thoughts(self, image, command, frames=(), *, mode="routed", fixed_depth=None, budgeted=False):
-        """Yield decisions cooperatively so execution and I/O can run beside thought steps."""
-        for output, state in self.thoughts(image, command, frames, mode=mode, fixed_depth=fixed_depth, budgeted=budgeted):
-            yield output, state
-            await asyncio.sleep(0)
+    """Architecture compiled from wgt/model.wgt."""
 
 
 def patch_loss(output, image: bytes, target: bytes):
@@ -241,3 +93,9 @@ def budget_target(outputs, image: bytes, target: bytes):
         if legal:
             return index
     return len(outputs) - 1
+
+
+# WGT is the architecture source; host code above handles preprocessing and scheduling.
+from pathlib import Path as _WgtPath
+from weightlang.tensor_program import bind_tensor_program as _bind_wgt
+globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "model.wgt", globals()))

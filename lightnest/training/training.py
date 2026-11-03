@@ -11,6 +11,7 @@ import time
 import torch
 from torch.nn import functional as F
 
+from lightnest.architecture.weightlang_io import save_model, load_model
 from lightnest.runtime.artifact import digest, inspect_elf
 from lightnest.training.corpus import ROOT, damaged_image, external, rows, sha, write
 from lightnest.runtime.execute import Case, ExecutableRunner
@@ -32,12 +33,17 @@ _PRE_PACKAGE_MATH_SOURCES = {
 def math_sources(kind):
     names = ("lightnest/architecture/generate.py",) if kind == "generator" else (
         "lightnest/architecture/attention.py", "lightnest/architecture/observe.py", "lightnest/architecture/model.py")
+    names = (*names, *sorted(str(p.relative_to(ROOT)) for p in (ROOT / "lightnest/architecture/wgt").glob("*.wgt")))
     return {name: sha(ROOT / name) for name in names}
 
 
 def _source_matches(metadata, kind):
     recorded = metadata["math_sources"]
-    return recorded in (math_sources(kind), _PRE_PACKAGE_MATH_SOURCES[kind])
+    baseline = json.loads((ROOT / "lightnest/architecture/wgt/baseline.json").read_text())["sha256"]
+    before = {name: value for name, value in baseline.items() if name in (
+        ("lightnest/architecture/generate.py",) if kind == "generator" else
+        ("lightnest/architecture/attention.py", "lightnest/architecture/observe.py", "lightnest/architecture/model.py"))}
+    return recorded in (math_sources(kind), _PRE_PACKAGE_MATH_SOURCES[kind], before)
 
 
 def verify_corpus(out):
@@ -54,6 +60,9 @@ def verify_corpus(out):
 
 
 def save_policy(path, model, metadata):
+    path = Path(path)
+    if not path.suffix:
+        return save_model(model, path, metadata=metadata)
     if Path(path).exists():
         raise FileExistsError(path)
     torch.save({"architecture": ARCHITECTURE, "kind": "policy", "config": asdict(model.config),
@@ -61,6 +70,11 @@ def save_policy(path, model, metadata):
 
 
 def load_policy(path, *, check_source=True):
+    if Path(path).is_dir():
+        model, metadata = load_model(path)
+        if type(model).__name__ != "RGBPolicy":
+            raise ValueError("wrong WGT model kind")
+        return model, metadata
     payload = torch.load(path, map_location="cpu", weights_only=True)
     if payload["architecture"] != ARCHITECTURE or payload["kind"] != "policy":
         raise ValueError("checkpoint is not an RGB ELF policy")
@@ -79,6 +93,9 @@ def load_policy(path, *, check_source=True):
 
 
 def save_generator(path, model, metadata):
+    path = Path(path)
+    if not path.suffix:
+        return save_model(model, path, metadata=metadata)
     if Path(path).exists():
         raise FileExistsError(path)
     torch.save({"architecture": ARCHITECTURE, "kind": "generator", "config": {"width": model.width, "capacity": model.capacity},
@@ -86,6 +103,11 @@ def save_generator(path, model, metadata):
 
 
 def load_generator(path, *, check_source=True):
+    if Path(path).is_dir():
+        model, metadata = load_model(path)
+        if type(model).__name__ != "ELFGenerator":
+            raise ValueError("wrong WGT model kind")
+        return model, metadata
     payload = torch.load(path, map_location="cpu", weights_only=True)
     if payload["architecture"] != ARCHITECTURE or payload["kind"] != "generator":
         raise ValueError("checkpoint is not an RGB full-image generator")
@@ -297,5 +319,6 @@ def train_generator(out, seed=104729, *, steps=1536, width=128, device="cpu"):
                        "validation_probes": probes, "parameters": sum(p.numel() for p in model.parameters()),
                        "wall_seconds": time.perf_counter() - started, "status": "research_candidate"}
     path = out / "weights" / f"generator-{seed}.pt"; save_generator(path, model, metadata)
+    save_model(model, path.with_suffix(""), metadata=metadata, training={"method": "AdamW", "steps": steps})
     write(folder / "complete.json", metadata | {"checkpoint_sha256": sha(path)})
     print("GENERATOR_TRAINED", seed, sha(path), flush=True)

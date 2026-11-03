@@ -33,11 +33,7 @@ def external_sources(limit=512):
  return out
 
 class StructureNet(nn.Module):
- def __init__(self,width=48):
-  super().__init__();self.byte=nn.Embedding(257,width);self.conv=nn.Sequential(nn.Conv1d(width,width,5,padding=2),nn.GELU(),nn.Conv1d(width,width,5,padding=2),nn.GELU());self.head=nn.Sequential(nn.Linear(width,width),nn.GELU(),nn.Linear(width,6))
- def forward(self,raw):
-  values=list(raw[:4096]) or [0]
-  values += [0] * max(0,5-len(values)); x=torch.tensor(values,dtype=torch.long)[None];h=self.byte(x).transpose(1,2);h=self.conv(h).sum(-1) / 64.;return self.head(h)
+    """Architecture compiled from wgt/structure.wgt."""
 
 def lex_tokens(raw):
  text=raw.decode('utf-8','ignore'); tokens=re.findall(r'[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[^\sA-Za-z_0-9]',text)[:4096]
@@ -49,24 +45,10 @@ def ast_tokens(raw):
  return [int.from_bytes(hashlib.sha256(n.encode()).digest()[:2],'little')%512 for n in names] or [0]
 
 class TokenStructureNet(nn.Module):
- def __init__(self,width=64):
-  super().__init__();self.token=nn.Embedding(512,width);self.gru=nn.GRU(width,width,2,batch_first=True);self.head=nn.Sequential(nn.Linear(width,width),nn.GELU(),nn.Linear(width,6))
- def forward(self,raw):
-  ids=lex_tokens(raw); states=[]
-  for start in range(0,len(ids),256):
-   x=torch.tensor(ids[start:start+256],dtype=torch.long)[None]
-   def run(tokens): return self.gru(self.token(tokens))[1]
-   h=checkpoint(run,x,use_reentrant=False);states.append(h[-1])
-  return self.head(torch.stack(states).mean(0))
+    """Architecture compiled from wgt/structure.wgt."""
 
 class ASTStructureNet(TokenStructureNet):
- def __init__(self,width=32):
-  super().__init__(width);self.gru=nn.GRU(width,width,1,batch_first=True);self.head=nn.Sequential(nn.Linear(width,width),nn.GELU(),nn.Linear(width,6))
- def forward(self,raw):
-  ids=ast_tokens(raw); states=[]
-  for start in range(0,len(ids),256):
-   x=torch.tensor(ids[start:start+256],dtype=torch.long)[None];_,h=self.gru(self.token(x));states.append(h[-1])
-  return self.head(torch.stack(states).mean(0))
+    """Architecture compiled from wgt/structure.wgt."""
 
 def train_ast(out,steps=512,seed=104755):
  out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed)+external_sources();model=ASTStructureNet();opt=torch.optim.AdamW(model.parameters(),lr=1e-3);rng=random.Random(seed);losses=[]
@@ -74,7 +56,7 @@ def train_ast(out,steps=512,seed=104755):
   for step in range(steps):
    raw=rng.choice(samples);target=torch.tensor([facts(raw)]);loss=F.mse_loss(model(raw),target);opt.zero_grad();loss.backward();opt.step();losses.append(float(loss.detach()))
    if (step+1)%64==0:log.write(json.dumps({'step':step+1,'loss':sum(losses)/len(losses)})+'\n');log.flush();losses=[]
- torch.save({'state_dict':model.state_dict(),'seed':seed,'steps':steps},out/f'ast-{seed}.pt')
+ _save_checkpoint({'state_dict':model.state_dict(),'seed':seed,'steps':steps},out/f'ast-{seed}.pt')
 
 def train_ast_synthetic(out,steps=1024,seed=104758):
  out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed,512);model=ASTStructureNet();opt=torch.optim.AdamW(model.parameters(),lr=1e-3);rng=random.Random(seed);losses=[]
@@ -82,7 +64,7 @@ def train_ast_synthetic(out,steps=1024,seed=104758):
   for step in range(steps):
    raw=rng.choice(samples);target=torch.tensor([facts(raw)]);loss=F.mse_loss(model(raw),target);opt.zero_grad();loss.backward();opt.step();losses.append(float(loss.detach()))
    if (step+1)%64==0:log.write(json.dumps({'step':step+1,'loss':sum(losses)/len(losses)})+'\n');log.flush();losses=[]
- torch.save({'state_dict':model.state_dict(),'seed':seed,'steps':steps},out/f'ast-{seed}.pt')
+ _save_checkpoint({'state_dict':model.state_dict(),'seed':seed,'steps':steps},out/f'ast-{seed}.pt')
 
 def train(out,steps=1024,seed=104748,resume=None):
  out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed)+external_sources()
@@ -95,8 +77,8 @@ def train(out,steps=1024,seed=104748,resume=None):
    raw=rng.choice(samples);target=torch.tensor([facts(raw)]);loss=F.mse_loss(model(raw[:8192]),target);opt.zero_grad();loss.backward();opt.step();losses.append(float(loss.detach()))
    if (step+1)%64==0:
     log.write(json.dumps({'step':step+1,'loss':sum(losses)/len(losses)})+'\n');log.flush();losses=[]
-    torch.save({'state_dict':model.state_dict(),'step':step+1},out/f'step-{step+1}.pt')
- torch.save({'state_dict':model.state_dict(),'seed':seed,'steps':start+steps},out/f'structure-{seed}.pt')
+    _save_checkpoint({'state_dict':model.state_dict(),'step':step+1},out/f'step-{step+1}.pt')
+ _save_checkpoint({'state_dict':model.state_dict(),'seed':seed,'steps':start+steps},out/f'structure-{seed}.pt')
 
 def train_tokens(out,steps=1024,seed=104750,resume=None):
  out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed)+external_sources();model=TokenStructureNet();opt=torch.optim.AdamW(model.parameters(),lr=1e-3);start=0
@@ -107,5 +89,29 @@ def train_tokens(out,steps=1024,seed=104750,resume=None):
   for step in range(start,start+steps):
    raw=rng.choice(samples);target=torch.tensor([facts(raw)]);loss=F.mse_loss(model(raw),target);opt.zero_grad();loss.backward();opt.step();losses.append(float(loss.detach()))
    if (step+1)%64==0:
-    log.write(json.dumps({'step':step+1,'loss':sum(losses)/len(losses)})+'\n');log.flush();losses=[];torch.save({'state_dict':model.state_dict(),'step':step+1},out/f'step-{step+1}.pt')
- torch.save({'state_dict':model.state_dict(),'seed':seed,'steps':start+steps},out/f'tokens-{seed}.pt')
+    log.write(json.dumps({'step':step+1,'loss':sum(losses)/len(losses)})+'\n');log.flush();losses=[];_save_checkpoint({'state_dict':model.state_dict(),'step':step+1},out/f'step-{step+1}.pt')
+ _save_checkpoint({'state_dict':model.state_dict(),'seed':seed,'steps':start+steps},out/f'tokens-{seed}.pt')
+
+
+# WGT is the architecture source; host code above handles preprocessing and scheduling.
+from pathlib import Path as _WgtPath
+from weightlang.tensor_program import bind_tensor_program as _bind_wgt
+globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "structure.wgt", globals()))
+
+
+def _save_checkpoint(payload, path):
+    from lightnest.architecture.weightlang_io import save_model
+    torch.save(payload, path)
+    name = Path(path).name
+    model_class = ASTStructureNet if name.startswith("ast-") else TokenStructureNet if name.startswith("tokens-") else StructureNet
+    width = payload["state_dict"].get("token.weight", payload["state_dict"].get("byte.weight")).shape[1]
+    # Intermediate token checkpoints use the same explicit tensor namespace.
+    if "gru.weight_ih_l1" in payload["state_dict"]:
+        model_class = TokenStructureNet
+    with torch.random.fork_rng(devices=[]):
+        model = model_class(width=width)
+        model.load_state_dict(payload["state_dict"], strict=True)
+    steps = payload.get("step", payload.get("steps"))
+    save_model(model, Path(path).with_suffix(""), kwargs={"width": width},
+               metadata={k:v for k,v in payload.items() if k != "state_dict"},
+               training={"method": "AdamW", "steps": steps})
