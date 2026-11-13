@@ -33,7 +33,7 @@ _PRE_PACKAGE_MATH_SOURCES = {
 def math_sources(kind):
     names = ("lightnest/architecture/generate.py",) if kind == "generator" else (
         "lightnest/architecture/attention.py", "lightnest/architecture/observe.py", "lightnest/architecture/model.py")
-    names = (*names, *sorted(str(p.relative_to(ROOT)) for p in (ROOT / "lightnest/architecture/wgt").glob("*.wgt")))
+    names = (*names, *sorted(str(p.relative_to(ROOT)) for p in (ROOT / "lightnest/architecture/wgt").glob("*/model.wgt")))
     return {name: sha(ROOT / name) for name in names}
 
 
@@ -46,7 +46,10 @@ def _source_matches(metadata, kind):
     legacy = json.loads((ROOT / "lightnest/architecture/wgt/legacy-source-hashes.json").read_text())["sha256"]
     previous = {name: digest for name, digest in legacy.items()
                 if name.endswith(".wgt") or name in before}
-    return recorded in (math_sources(kind), _PRE_PACKAGE_MATH_SOURCES[kind], before, previous)
+    layout = json.loads((ROOT / "lightnest/architecture/wgt/previous-layout-source-hashes.json").read_text())["sha256"]
+    old_names = ("lightnest/architecture/generate.py",) if kind == "generator" else ("lightnest/architecture/attention.py", "lightnest/architecture/observe.py", "lightnest/architecture/model.py")
+    layout_previous = {name: digest for name, digest in layout.items() if name.endswith(".wgt") or name in old_names}
+    return recorded in (math_sources(kind), _PRE_PACKAGE_MATH_SOURCES[kind], before, previous, layout_previous)
 
 
 def verify_corpus(out):

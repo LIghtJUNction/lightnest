@@ -6,10 +6,10 @@ from torch import nn
 
 
 class LearnedOpenat(nn.Module):
-    """Architecture compiled from wgt/linux_environment.wgt."""
+    """Architecture compiled from wgt/linux_environment/model.wgt."""
 
 
 # WGT is the architecture source; host code above handles preprocessing and scheduling.
 from pathlib import Path as _WgtPath
 from weightlang.modules import bind_models as _bind_wgt
-globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "linux_environment.wgt", globals()))
+globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "linux_environment" / "model.wgt", globals(), backend="torch"))

@@ -193,7 +193,7 @@ dependencies = [
     { name = "tokenizers" },
     { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
     { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
-    { name = "weightlang" },
+    { name = "weightlang", extra = ["torch"] },
 ]
 
 [package.dev-dependencies]
@@ -208,7 +208,7 @@ requires-dist = [
     { name = "pyelftools", specifier = "==0.32" },
     { name = "tokenizers", specifier = "==0.23.3" },
     { name = "torch", specifier = "==2.13.0", index = "https://download.pytorch.org/whl/cpu" },
-    { name = "weightlang", editable = "../WeightLang/WeightLang/python" },
+    { name = "weightlang", extras = ["torch"], editable = "../WeightLang/WeightLang/python" },
 ]
 
 [package.metadata.requires-dev]
@@ -546,7 +546,9 @@ wheels = [
 name = "weightlang"
 version = "0.5.4"
 source = { editable = "../WeightLang/WeightLang/python" }
-dependencies = [
+
+[package.optional-dependencies]
+torch = [
     { name = "safetensors" },
     { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
     { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
@@ -557,8 +559,10 @@ requires-dist = [
     { name = "graphviz", marker = "extra == 'visualize'", specifier = ">=0.20" },
     { name = "numpy", marker = "extra == 'visualize'", specifier = ">=1.23" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8" },
-    { name = "safetensors", specifier = ">=0.4.3" },
-    { name = "torch", specifier = ">=2.5" },
+    { name = "safetensors", marker = "extra == 'torch'", specifier = ">=0.4.3" },
+    { name = "safetensors", marker = "extra == 'visualize'", specifier = ">=0.4.3" },
+    { name = "torch", marker = "extra == 'torch'", specifier = ">=2.5" },
+    { name = "torch", marker = "extra == 'visualize'", specifier = ">=2.5" },
     { name = "torchinfo", marker = "extra == 'visualize'", specifier = ">=1.8" },
 ]
-provides-extras = ["visualize", "test"]
+provides-extras = ["torch", "visualize", "test"]

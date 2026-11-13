@@ -13,7 +13,7 @@ from lightnest.self_hosting.unified import RGBArtifactAgent
 
 class WeightLangTests(unittest.TestCase):
     def test_public_generator_roundtrip_and_source_authority(self):
-        from weightlang import compile_source
+        from weightlang.torch_api import compile_source
         from weightlang.modules import classes_from_ir
         import lightnest.architecture.generate as host
         model=ELFGenerator(width=8,capacity=16).eval()
@@ -87,6 +87,22 @@ class WeightLangTests(unittest.TestCase):
             save_generator(rejected, model, {"math_sources": recorded})
             with self.assertRaisesRegex(ValueError, "source changed"):
                 load_generator(rejected)
+
+    def test_flat_layout_checkpoint_source_pins_remain_loadable(self):
+        import json
+        from lightnest.training.training import ROOT, save_generator
+        pins=json.loads((ROOT / "lightnest/architecture/wgt/previous-layout-source-hashes.json").read_text())["sha256"]
+        recorded={name:digest for name,digest in pins.items() if name.endswith(".wgt") or name=="lightnest/architecture/generate.py"}
+        model=ELFGenerator(width=8,capacity=16)
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/"previous.pt"
+            save_generator(path,model,{"math_sources":recorded})
+            loaded,_=load_generator(path)
+            for name,value in model.state_dict().items():
+                torch.testing.assert_close(value,loaded.state_dict()[name],atol=0,rtol=0)
+            recorded["lightnest/architecture/wgt/generate.wgt"]="unknown-source"
+            bad=Path(tmp)/"unknown.pt";save_generator(bad,model,{"math_sources":recorded})
+            with self.assertRaisesRegex(ValueError,"source changed"):load_generator(bad)
 
 
 if __name__=='__main__': unittest.main()

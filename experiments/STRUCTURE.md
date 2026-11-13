@@ -3,7 +3,7 @@
 ```text
 lightnest/
   architecture/          application configuration, adapters and runtime kernels
-    wgt/*.wgt            flat application model definitions
+    wgt/*/model.wgt      application model entrypoints
   training/              application training and data preparation
   runtime/               ELF inspection and isolated execution
   rl/                    feedback and learning loops

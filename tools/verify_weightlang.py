@@ -96,7 +96,7 @@ def main():
         package=Path(tmp)/'_lightnest_baseline'; architecture=package/'architecture'; architecture.mkdir(parents=True)
         (package/'__init__.py').write_text(''); (architecture/'__init__.py').write_text('')
         for path in (ROOT/'lightnest/architecture').glob('*.py'):
-            if path.name=='weightlang_io.py': continue
+            if path.name in {'weightlang_io.py', 'native.py'}: continue
             relative=str(path.relative_to(ROOT))
             source=subprocess.check_output(['git','show',f"{baseline['commit']}:{relative}"],cwd=ROOT,text=True)
             if relative in baseline['sha256']:
@@ -152,7 +152,7 @@ def main():
         case('openat','linux_environment','LearnedOpenat',{'path_size':8,'width':8},lambda m:m(torch.tensor([[47,97,0,3,0,0,0,0]]),torch.tensor([2])))
     report={'toolkit_version':weightlang.__version__,'language_version':'0.5','target':'torch',
             'architecture_sha256':{str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest()
-                                   for path in sorted((ROOT/'lightnest/architecture/wgt').glob('*.wgt'))},
+                                   for path in sorted((ROOT/'lightnest/architecture/wgt').glob('*/model.wgt'))},
             'baseline_commit':baseline['commit'],'device':'cpu','dtype':'float32','atol':1e-6,'rtol':1e-5,'cases':reports}
     (args.output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({'cases':len(reports),'max_abs':max(r['eval_max_abs'] for r in reports),'report':str(args.output/'report.json')}))

@@ -1,0 +1,30 @@
+{
+  "sha256": {
+    "lightnest/architecture/any2any.py": "d427f62e84dbbde63638b20d7315a5e166c3a4c6876be4786a7850752d2438e0",
+    "lightnest/architecture/attention.py": "5605d0127463edceb8c49625c9344b403a22cb162471eb678b9b134e01d5edbf",
+    "lightnest/architecture/byte_tokenizer.py": "142b91e64bad4be7f0a4d87080eec4b15f84e0528c0e0d7724928a020cda0320",
+    "lightnest/architecture/context.py": "42d7515a5533d43f598f0bfd38a3579aa5edd044aeb864cd2f3dac6a51e03e6c",
+    "lightnest/architecture/generate.py": "6abfc12b6eb3397f58adf3b9ac66af4367a766936806579a08d3d8fc0a535d39",
+    "lightnest/architecture/hnet.py": "7e772eb7e8dec8c259c54a284ca1e04253f9da68827321296b211c96f221cd9a",
+    "lightnest/architecture/model.py": "d0e38a19080e7dacda66841a432651b500afa38d31c8e69bc50e97678048fa85",
+    "lightnest/architecture/observe.py": "3d0c885434c51b11460ac5d9b5b365f86421018f59b120b51cf11d407ae61a18",
+    "lightnest/architecture/structure.py": "544737b5d471f2f4d85aee17fda17e2da471fedd47bc4a74ed2b45cebb06597d",
+    "lightnest/architecture/__init__.py": "cf66d31fc7f3ad36a244dcf9b6b98b37da0f217dfd74668aa2decaedf2dc025f",
+    "lightnest/architecture/x86_internal.py": "e00932789021fba29d332d2a1fea22d298115a0b61289d27c43a573db1055469",
+    "lightnest/architecture/ptx_internal.py": "e3298768ba22742aeec10a5d492ef60f671955625afd96f9f26e30ea177f43be",
+    "lightnest/architecture/linux_environment.py": "96d246836bd64eb119748d8b4001c3082f4cf8a043c86ce2ad6b1ca8a86929bf",
+    "lightnest/architecture/elf_tensor_loader.py": "371a75931fe6a473d4faf7502a50a21af74500f46a7956d5a461fb2ce4a06291",
+    "lightnest/architecture/x86_world.py": "8ea148f653a4e6fddc0dd67c87be3656485f83f2d8b463ce2fb57ced77c3aa48",
+    "lightnest/architecture/weightlang_io.py": "eccf7401693419162b6c67c2babb22b9342a9b18f2c605f01115239c569fb91e",
+    "lightnest/architecture/wgt/any2any.wgt": "cb92691fac7b0e0481b7d2f000f734a5346b2553a828e0439dd83ef878fb02c3",
+    "lightnest/architecture/wgt/attention.wgt": "763bb456fa4ab89aa77bde73f4074da7c9cf90eca8c5af5a979af51aee25c671",
+    "lightnest/architecture/wgt/context.wgt": "46e09be054644e0dd3fe5b2a86d114cdf09c0637fa7c9416841e6949fe48438d",
+    "lightnest/architecture/wgt/generate.wgt": "960220166ada9464b8e4ffc743a95d4ef2786d9b8c0c651053ae5b9d8ecaa86c",
+    "lightnest/architecture/wgt/hnet.wgt": "de6611fdabd49d46ac0b2096c6445265f1b9afb744ade09f2504169f089e6d3f",
+    "lightnest/architecture/wgt/linux_environment.wgt": "b1d7fd81d3c53f9703a2c5bf5053171faee9c9e93319a25ecc426538e626d794",
+    "lightnest/architecture/wgt/observe.wgt": "7864032f748b246791ce242b33a2c5a62ce692ed0e8ce74409ad1a9394a62e96",
+    "lightnest/architecture/wgt/policy.wgt": "28994e1495549022a9f59e6cc090ec8b99ef12bf3e6692ea05c9ead4b1ce3d29",
+    "lightnest/architecture/wgt/structure.wgt": "87ec662f0579f8d1931c0b76f804a84b7df663a4c549f86f94b0063a910ecaca",
+    "lightnest/architecture/wgt/x86_world.wgt": "6ef82c04a2a689a739338404efaa418001c4d32209ec3f95e5fc0100733666f1"
+  }
+}

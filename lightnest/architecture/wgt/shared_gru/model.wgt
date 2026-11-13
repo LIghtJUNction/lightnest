@@ -1,0 +1,26 @@
+wgt 0.5
+dim I
+dim H
+import recurrent from "std/recurrent"
+model SharedGRU
+# I is one input feature vector; H is one explicitly carried hidden vector.
+# Gate projections own independent weights. All start at zero, untrained;
+# restore/map trained PyTorch GRU weights explicitly rather than implying training.
+parameter xr_weight:f32[H,I]=zeros()
+parameter xz_weight:f32[H,I]=zeros()
+parameter xn_weight:f32[H,I]=zeros()
+parameter hr_weight:f32[H,H]=zeros()
+parameter hz_weight:f32[H,H]=zeros()
+parameter hn_weight:f32[H,H]=zeros()
+parameter xr_bias:f32[H]=zeros()
+parameter xz_bias:f32[H]=zeros()
+parameter xn_bias:f32[H]=zeros()
+parameter hr_bias:f32[H]=zeros()
+parameter hz_bias:f32[H]=zeros()
+parameter hn_bias:f32[H]=zeros()
+# Tuple return opts into pure differentiable Forward, including rank-one ports.
+# Reset gates the complete hidden candidate projection, matching PyTorch GRUCell.
+# Hidden is an output, not implicit persistent state; calls share these parameters.
+fn forward(x:f32[I],hidden:f32[H])->(f32[H],){
+    return (recurrent.gru_cell(linear(x,xr_weight,xr_bias),linear(x,xz_weight,xz_bias),linear(x,xn_weight,xn_bias),linear(hidden,hr_weight,hr_bias),linear(hidden,hz_weight,hz_bias),linear(hidden,hn_weight,hn_bias),hidden),);
+}

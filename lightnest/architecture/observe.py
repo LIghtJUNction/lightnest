@@ -67,10 +67,10 @@ class ObservationStore:
 
 
 class GreenObserver(nn.Module):
-    """Architecture compiled from wgt/observe.wgt."""
+    """Architecture compiled from wgt/observe/model.wgt."""
 
 
 # WGT is the architecture source; host code above handles preprocessing and scheduling.
 from pathlib import Path as _WgtPath
 from weightlang.modules import bind_models as _bind_wgt
-globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "observe.wgt", globals()))
+globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "observe" / "model.wgt", globals(), backend="torch"))

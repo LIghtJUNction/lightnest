@@ -33,7 +33,7 @@ def external_sources(limit=512):
  return out
 
 class StructureNet(nn.Module):
-    """Architecture compiled from wgt/structure.wgt."""
+    """Architecture compiled from wgt/structure/model.wgt."""
 
 def lex_tokens(raw):
  text=raw.decode('utf-8','ignore'); tokens=re.findall(r'[A-Za-z_][A-Za-z_0-9]*|[0-9]+|[^\sA-Za-z_0-9]',text)[:4096]
@@ -45,10 +45,10 @@ def ast_tokens(raw):
  return [int.from_bytes(hashlib.sha256(n.encode()).digest()[:2],'little')%512 for n in names] or [0]
 
 class TokenStructureNet(nn.Module):
-    """Architecture compiled from wgt/structure.wgt."""
+    """Architecture compiled from wgt/structure/model.wgt."""
 
 class ASTStructureNet(TokenStructureNet):
-    """Architecture compiled from wgt/structure.wgt."""
+    """Architecture compiled from wgt/structure/model.wgt."""
 
 def train_ast(out,steps=512,seed=104755):
  out=Path(out);out.mkdir(parents=True,exist_ok=False);torch.manual_seed(seed);torch.set_num_threads(1);samples=synthetic(seed)+external_sources();model=ASTStructureNet();opt=torch.optim.AdamW(model.parameters(),lr=1e-3);rng=random.Random(seed);losses=[]
@@ -96,7 +96,7 @@ def train_tokens(out,steps=1024,seed=104750,resume=None):
 # WGT is the architecture source; host code above handles preprocessing and scheduling.
 from pathlib import Path as _WgtPath
 from weightlang.modules import bind_models as _bind_wgt
-globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "structure.wgt", globals()))
+globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "structure" / "model.wgt", globals(), backend="torch"))
 
 
 def _save_checkpoint(payload, path):

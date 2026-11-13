@@ -4,7 +4,7 @@ version = "0.0.0"
 description = "RGB recurrent binary understanding, editing and complete ELF generation research"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-  "weightlang==0.5.4",
+  "weightlang[torch]==0.5.4",
   "torch==2.13.0",
   "numpy==2.3.5",
   "iced-x86==1.21.0",
@@ -40,6 +40,6 @@ include-package-data = false
 include = ["lightnest*", "experiments", "experiments.active*"]
 
 [tool.setuptools.package-data]
-"lightnest.architecture" = ["wgt/*.wgt", "wgt/*.json"]
+"lightnest.architecture" = ["wgt/*/model.wgt", "wgt/*.json"]
 
 "experiments.active.elf_generation" = ["*.wgt"]

@@ -63,7 +63,7 @@ class ArtifactRequest:
 
 
 class ArtifactCore(nn.Module):
-    """Architecture compiled from wgt/any2any.wgt."""
+    """Architecture compiled from wgt/any2any/model.wgt."""
 
 
 def semantic_similarity(left, right):
@@ -102,4 +102,4 @@ def artifact_budget_target(candidates, target, kind_target=None, summary_target=
 # WGT is the architecture source; host code above handles preprocessing and scheduling.
 from pathlib import Path as _WgtPath
 from weightlang.modules import bind_models as _bind_wgt
-globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "any2any.wgt", globals()))
+globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "any2any" / "model.wgt", globals(), backend="torch"))

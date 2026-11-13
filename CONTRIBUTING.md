@@ -64,6 +64,6 @@ uv export --locked --no-hashes --no-emit-project --emit-index-url --output-file 
 ## WGT 架构
 
 修改网络请编辑 `lightnest/architecture/wgt/`；Python 同名类是公共接口占位，导入时由 WGT 定义替换。
-使用本地 `../WeightLang/WeightLang/python` SDK 与共享 Rust 前端的 `target torch` 扩展，应用模型平铺在 `lightnest/architecture/wgt/<组件>.wgt`。详见 [迁移说明](docs/weightlang.md)。
+使用本地 `../WeightLang/WeightLang/python` SDK 与共享 Rust 前端的 `target torch` 扩展，应用模型入口为 `lightnest/architecture/wgt/<组件>/model.wgt`。详见 [迁移说明](docs/weightlang.md)。
 
 架构实验统一放在 `experiments/`，遵循[实验目录约定](experiments/README.md)。当前状态只更新 `experiments/STATUS.json`，完成的轮次保留精简报告与源码快照并归档。

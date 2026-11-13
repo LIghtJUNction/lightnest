@@ -1,6 +1,6 @@
 # WeightLang 迁移
 
-模型架构使用 `wgt 0.5`，入口为 `lightnest/architecture/wgt/<组件>.wgt`。
+模型架构使用 `wgt 0.5`，入口为 `lightnest/architecture/wgt/<组件>/model.wgt`。
 `RGBPolicy`、`ELFGenerator`、`HNetELFGenerator`、`ArtifactCore`、结构学习器、
 `LearnedOpenat` 和 `X86World` 的公共 Python 入口直接加载这些定义。
 Python 文件保留配置、数据预处理、任务损失和应用调度。
@@ -8,7 +8,7 @@ Python 文件保留配置、数据预处理、任务损失和应用调度。
 ## 版本与编译
 
 项目依赖当前本地 WeightLang 0.5.4 SDK，路径为 `../WeightLang/WeightLang/python`。
-本次增加的 `target torch` 动态模型扩展尚未发布，需要同时保留两个仓库的修改。
+本文使用当前 WeightLang checkout 的原生模型对象 API；仅版本号 0.5.4 不足以确认具备此接口，需使用包含该接口的源码。
 包版本和语言版本分别为 `0.5.4` 与 `wgt 0.5`。
 
 共享 Rust 前端解析 `model ... extends ... {}`、`init(...) {}` 和 `fn ... {}`，
@@ -28,9 +28,9 @@ cargo build --locked --manifest-path ../WeightLang/WeightLang/Cargo.toml \
 uv sync --locked
 export WGT_COMPILER="$PWD/../WeightLang/WeightLang/target/debug/wgt"
 ../WeightLang/WeightLang/target/debug/wgt check \
-  lightnest/architecture/wgt/generate.wgt
+  lightnest/architecture/wgt/generate/model.wgt
 ../WeightLang/WeightLang/target/debug/wgt compile \
-  lightnest/architecture/wgt/generate.wgt --target torch
+  lightnest/architecture/wgt/generate/model.wgt --target torch
 ```
 
 本地验证显式使用同一 checkout 下的 `target/debug/wgt`，避免 SDK 默认查找方式变化后使用了其他编译器。
@@ -111,3 +111,27 @@ uv run --locked python tools/check.py
 
 本次结果见 [验证快照](weightlang-0.5.4-verification.json)，完整模型和逐张量映射保存在
 `weights/migration-wgt-0.5.4-final/`。
+
+
+## 原生 WGT 对象与后端选择
+
+当前 Python 通用 `weightlang.load/loads/from_ir` 默认返回 `wgt.Model`，执行后端为 Rust/wgtime；不会在原生不支持时自动换成 PyTorch。CPU/f32 输入为列表，参数由服务持有，`train_step` / `train_recurrent` 调用原生优化器。可以继承 `Model` 自定义宿主输入、验证和输出处理。原生导入本身不要求安装 PyTorch。
+
+应用现有十个复杂模型入口全部采用 `<组件>/model.wgt`，并明确 `bind_models(..., backend="torch")`。生成对象同时是 `wgt.Model` 和 `nn.Module`，保留原来的参数名、训练与制品格式；它们仍依赖 mask、top-k、模块继承等 Torch 专用能力，不能称为完整 Rust 模型。历史 archive 是冻结的研究材料，未改写其中的旧源码和入口。
+
+`lightnest.architecture.native.load_recurrent(input_size, hidden_size, *, backend="native", **options)` 直接加载 `wgt/shared_gru/model.wgt`，默认创建真实 Rust 服务实例。这个 GRU 是共享的普通 WGT 定义：输入与 hidden 分别具名，tuple 返回下一 hidden，reset-after-projection 公式使用 std/recurrent。参数按六个门投影和六个 bias 独立声明，当前零初始化、未经训练；不自动加载或假定已有权重。也可以明确 backend="torch" 使用同一源码参与宿主 autograd。
+
+```python
+from lightnest.architecture.native import load_recurrent
+
+# 先运行同版本 wgtime，或通过 endpoint= / WGTIME_ENDPOINT 指定已有服务。
+with load_recurrent(3, 2, optimizer="adam") as model:
+    hidden, = model([0.2, -0.3, 0.1], [0.0, 0.0])
+    loss = model.train_step([[0.2, -0.3, 0.1, 0.0, 0.0]], [[0.0, 0.0]], rate=0.001)
+```
+
+`tests/architecture/test_native_model.py` 将 PyTorch GRUCell 的 reset/update/new 权重及 bias 显式分拆给共享定义，对照两步 hidden、全部门参数梯度和一次原生 SGD/BPTT 更新。完整 LightNest 应用仍在显式 Torch 后端上验证。当前 Python 原生对象没有统一训练检查点保存接口，不能用参数快照冒充优化器检查点。
+
+入口移动前的源码摘要保存在 `previous-layout-source-hashes.json`，只用来识别已有检查点的精确来源；未知摘要仍拒绝。wheel 包含各目录的 model.wgt，包括共享 GRU。项目继续显式依赖 weightlang[torch]，而不是依赖默认原生 SDK 间接拉入 PyTorch。
+
+本次接口验收对应 WeightLang 源码提交 `0d0bdb9`，需配套构建该版本编译器及 wgtime；已发布包的版本号 0.5.4 本身不保证包含这些源码接口。

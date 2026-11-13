@@ -216,7 +216,7 @@ def main():
     restored=load_module(durable/'model',trusted=True).module.eval()
     with torch.inference_mode():
         torch.testing.assert_close(retained(packed['validation'][0][:2]),restored(packed['validation'][0][:2]),atol=0,rtol=0)
-    write(durable/'config.json',dict(variant=winner,width=args.width,capacity=capacity,transfer=args.transfer,seed=selected['seed'],source=str(archive/'models.wgt')))
+    write(durable/'config.json',dict(variant=winner,width=args.width,capacity=capacity,transfer=args.transfer,seed=selected['seed'],source=str(archive/'model.wgt')))
     results=dict(winner_by_validation=winner,selected_run=selected['run'],runs=trained)
     write(archive/'results.json',results)
     lines=['# '+args.round+' — complete ELF generation','',

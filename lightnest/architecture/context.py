@@ -9,7 +9,7 @@ from torch.nn import functional as F
 
 
 class NeuralNotebook(nn.Module):
-    """Architecture compiled from wgt/context.wgt."""
+    """Architecture compiled from wgt/context/model.wgt."""
 
 
 def notebook_budget_loss(output, target):
@@ -22,4 +22,4 @@ def notebook_budget_loss(output, target):
 # WGT is the architecture source; host code above handles preprocessing and scheduling.
 from pathlib import Path as _WgtPath
 from weightlang.modules import bind_models as _bind_wgt
-globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "context.wgt", globals()))
+globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "context" / "model.wgt", globals(), backend="torch"))
