@@ -135,3 +135,7 @@ with load_recurrent(3, 2, optimizer="adam") as model:
 入口移动前的源码摘要保存在 `previous-layout-source-hashes.json`，只用来识别已有检查点的精确来源；未知摘要仍拒绝。wheel 包含各目录的 model.wgt，包括共享 GRU。项目继续显式依赖 weightlang[torch]，而不是依赖默认原生 SDK 间接拉入 PyTorch。
 
 本次接口验收对应 WeightLang 源码提交 `0d0bdb9`，需配套构建该版本编译器及 wgtime；已发布包的版本号 0.5.4 本身不保证包含这些源码接口。
+
+## 复杂网络原生入口
+
+`lightnest.architecture.native` 现在提供默认 Rust/wgtime 的 `load_generator`、`load_hnet_generator`、`load_notebook`、`load_attention` 和 `load_hierarchical_recurrent`，完整说明见 [原生复杂模型](native-complex-models.md)。这些入口执行真实原生模型，显式 `backend="torch"` 保留原始 Torch 宿主；原有训练脚本和应用类的兼容入口仍为显式 Torch。不能把新增原生网络入口当作整个 RGBPolicy/Any2Any/X86World 应用已整体迁移完成。

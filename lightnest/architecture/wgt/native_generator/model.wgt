@@ -1,0 +1,91 @@
+wgt 0.5
+dim H
+dim H2
+dim C
+import recurrent from "std/recurrent"
+model NativeELFGenerator
+# One autoregressive position: all computation is native, with two independent
+# decoder GRUs and a shared red cell. H2=2*H; C=capacity+1 are host-validated.
+# Parameters start UNTRAINED at zero; restore explicitly to reproduce a checkpoint.
+# Requested byte bits are host-prepared data [9,8], least-significant bit first.
+parameter byte_weight:f32[257,H]=zeros()
+parameter position_weight:f32[C,H]=zeros()
+parameter mode_weight:f32[3,H]=zeros()
+parameter condition_weight:f32[H,72]=zeros()
+parameter condition_bias:f32[H]=zeros()
+parameter decode0_xr_weight:f32[H,H2]=zeros()
+parameter decode0_xr_bias:f32[H]=zeros()
+parameter decode0_xz_weight:f32[H,H2]=zeros()
+parameter decode0_xz_bias:f32[H]=zeros()
+parameter decode0_xn_weight:f32[H,H2]=zeros()
+parameter decode0_xn_bias:f32[H]=zeros()
+parameter decode0_hr_weight:f32[H,H]=zeros()
+parameter decode0_hr_bias:f32[H]=zeros()
+parameter decode0_hz_weight:f32[H,H]=zeros()
+parameter decode0_hz_bias:f32[H]=zeros()
+parameter decode0_hn_weight:f32[H,H]=zeros()
+parameter decode0_hn_bias:f32[H]=zeros()
+parameter decode1_xr_weight:f32[H,H]=zeros()
+parameter decode1_xr_bias:f32[H]=zeros()
+parameter decode1_xz_weight:f32[H,H]=zeros()
+parameter decode1_xz_bias:f32[H]=zeros()
+parameter decode1_xn_weight:f32[H,H]=zeros()
+parameter decode1_xn_bias:f32[H]=zeros()
+parameter decode1_hr_weight:f32[H,H]=zeros()
+parameter decode1_hr_bias:f32[H]=zeros()
+parameter decode1_hz_weight:f32[H,H]=zeros()
+parameter decode1_hz_bias:f32[H]=zeros()
+parameter decode1_hn_weight:f32[H,H]=zeros()
+parameter decode1_hn_bias:f32[H]=zeros()
+parameter red_xr_weight:f32[H,H2]=zeros()
+parameter red_xr_bias:f32[H]=zeros()
+parameter red_xz_weight:f32[H,H2]=zeros()
+parameter red_xz_bias:f32[H]=zeros()
+parameter red_xn_weight:f32[H,H2]=zeros()
+parameter red_xn_bias:f32[H]=zeros()
+parameter red_hr_weight:f32[H,H]=zeros()
+parameter red_hr_bias:f32[H]=zeros()
+parameter red_hz_weight:f32[H,H]=zeros()
+parameter red_hz_bias:f32[H]=zeros()
+parameter red_hn_weight:f32[H,H]=zeros()
+parameter red_hn_bias:f32[H]=zeros()
+parameter blue_bits_weight:f32[8,H]=zeros()
+parameter blue_bits_bias:f32[8]=zeros()
+parameter red_bits_weight:f32[8,H]=zeros()
+parameter red_bits_bias:f32[8]=zeros()
+parameter stop_weight:f32[1,H]=zeros()
+parameter stop_bias:f32[1]=zeros()
+parameter copy_query_weight:f32[H,H]=zeros()
+parameter copy_gate_weight:f32[1,H]=zeros()
+parameter copy_gate_bias:f32[1]=zeros()
+parameter norm_weight:f32[H]=ones()
+parameter norm_bias:f32[H]=zeros()
+parameter copy_keys_weight:f32[9,H]=zeros()
+# scaling is explicit input data (1/sqrt(H)); validates in the host constructor.
+# active has sixteen 0/1 entries, selecting red depth 0..16 without STE or a
+# learn-domain parameter. Each candidate shares red parameters; zero gate keeps
+# the previous thought and contributes zero derivative through that candidate.
+fn red_step(red_input,hidden,red_xr_weight,red_xr_bias,red_xz_weight,red_xz_bias,red_xn_weight,red_xn_bias,red_hr_weight,red_hr_bias,red_hz_weight,red_hz_bias,red_hn_weight,red_hn_bias,norm_weight,norm_bias) {
+ let candidate=recurrent.gru_cell(((((red_xr_weight as [H,H2]) @ (red_input as [H2,1])) as [H])+red_xr_bias),((((red_xz_weight as [H,H2]) @ (red_input as [H2,1])) as [H])+red_xz_bias),((((red_xn_weight as [H,H2]) @ (red_input as [H2,1])) as [H])+red_xn_bias),((((red_hr_weight as [H,H]) @ (hidden as [H,1])) as [H])+red_hr_bias),((((red_hz_weight as [H,H]) @ (hidden as [H,1])) as [H])+red_hz_bias),((((red_hn_weight as [H,H]) @ (hidden as [H,1])) as [H])+red_hn_bias),hidden);
+ return layer_norm(candidate,norm_weight,norm_bias,0,0.00001);
+}
+fn forward(previous:f32[1],position:f32[1],mode:f32[1],requested:f32[9,8],h0:f32[H],h1:f32[H],active:f32[16],attention_scale:f32[1])->(f32[8],f32[8],f32[1],f32[H],f32[H]){
+ let token=embedding(byte_weight as [257,H],previous) as [H];
+ let pos=embedding(position_weight as [C,H],position) as [H];
+ let kind=embedding(mode_weight as [3,H],mode) as [H];
+ let context=linear(requested as [72],condition_weight,condition_bias)+kind;
+ let inputs=concat(token+pos,context,0);
+ let next0=recurrent.gru_cell(linear(inputs,decode0_xr_weight,decode0_xr_bias),linear(inputs,decode0_xz_weight,decode0_xz_bias),linear(inputs,decode0_xn_weight,decode0_xn_bias),linear(h0,decode0_hr_weight,decode0_hr_bias),linear(h0,decode0_hz_weight,decode0_hz_bias),linear(h0,decode0_hn_weight,decode0_hn_bias),h0);
+ let base=recurrent.gru_cell(linear(next0,decode1_xr_weight,decode1_xr_bias),linear(next0,decode1_xz_weight,decode1_xz_bias),linear(next0,decode1_xn_weight,decode1_xn_bias),linear(h1,decode1_hr_weight,decode1_hr_bias),linear(h1,decode1_hz_weight,decode1_hz_bias),linear(h1,decode1_hn_weight,decode1_hn_bias),h1);
+ let red_input=concat(base,context,0);
+ let thought=repeat 16 indexed i carrying hidden=base { route(active[i],red_step(red_input,hidden,red_xr_weight as [H,H2],red_xr_bias,red_xz_weight as [H,H2],red_xz_bias,red_xn_weight as [H,H2],red_xn_bias,red_hr_weight as [H,H],red_hr_bias,red_hz_weight as [H,H],red_hz_bias,red_hn_weight as [H,H],red_hn_bias,norm_weight,norm_bias),hidden) };
+ # attention is over exactly nine requested bytes; no padding or causal mask.
+ let copy_q=linear(thought,copy_query_weight) as [1,H];
+ let scores=scale((copy_q @ (copy_keys_weight as [9,H]).T) as [9],attention_scale);
+ let copied=((softmax(scores) as [1,9]) @ requested) as [8];
+ let gate=sigmoid(linear(thought,copy_gate_weight,copy_gate_bias));
+ let red_logits=linear(thought,red_bits_weight,red_bits_bias);
+ let copied_logits=scale(copied,24)-[12,12,12,12,12,12,12,12];
+ let bits=route(gate,copied_logits,red_logits);
+ return (bits,linear(base,blue_bits_weight,blue_bits_bias),linear(thought,stop_weight,stop_bias),next0,base);
+}

@@ -1,0 +1,77 @@
+wgt 0.5
+dim I
+dim H
+import recurrent from "std/recurrent"
+model NativeHierarchicalGRU
+# One causal position; all five H-wide states are explicit. GRU layers own
+# independent parameters; repeated calls reuse exactly those same weights.
+# Native evaluation computes candidate main states even on unselected positions,
+# then hard-selects old state; no claim of reduced work on skipped positions.
+parameter encoder_xr_weight:f32[H,I]=zeros()
+parameter encoder_xr_bias:f32[H]=zeros()
+parameter encoder_xz_weight:f32[H,I]=zeros()
+parameter encoder_xz_bias:f32[H]=zeros()
+parameter encoder_xn_weight:f32[H,I]=zeros()
+parameter encoder_xn_bias:f32[H]=zeros()
+parameter encoder_hr_weight:f32[H,H]=zeros()
+parameter encoder_hr_bias:f32[H]=zeros()
+parameter encoder_hz_weight:f32[H,H]=zeros()
+parameter encoder_hz_bias:f32[H]=zeros()
+parameter encoder_hn_weight:f32[H,H]=zeros()
+parameter encoder_hn_bias:f32[H]=zeros()
+parameter main_xr_weight:f32[H,H]=zeros()
+parameter main_xr_bias:f32[H]=zeros()
+parameter main_xz_weight:f32[H,H]=zeros()
+parameter main_xz_bias:f32[H]=zeros()
+parameter main_xn_weight:f32[H,H]=zeros()
+parameter main_xn_bias:f32[H]=zeros()
+parameter main_hr_weight:f32[H,H]=zeros()
+parameter main_hr_bias:f32[H]=zeros()
+parameter main_hz_weight:f32[H,H]=zeros()
+parameter main_hz_bias:f32[H]=zeros()
+parameter main_hn_weight:f32[H,H]=zeros()
+parameter main_hn_bias:f32[H]=zeros()
+parameter decoder_xr_weight:f32[H,H]=zeros()
+parameter decoder_xr_bias:f32[H]=zeros()
+parameter decoder_xz_weight:f32[H,H]=zeros()
+parameter decoder_xz_bias:f32[H]=zeros()
+parameter decoder_xn_weight:f32[H,H]=zeros()
+parameter decoder_xn_bias:f32[H]=zeros()
+parameter decoder_hr_weight:f32[H,H]=zeros()
+parameter decoder_hr_bias:f32[H]=zeros()
+parameter decoder_hz_weight:f32[H,H]=zeros()
+parameter decoder_hz_bias:f32[H]=zeros()
+parameter decoder_hn_weight:f32[H,H]=zeros()
+parameter decoder_hn_bias:f32[H]=zeros()
+parameter query_weight:f32[H,H]=zeros()
+parameter key_weight:f32[H,H]=zeros()
+parameter skip_weight:f32[H,H]=zeros()
+parameter encoder_norm_weight:f32[H]=ones()
+parameter encoder_norm_bias:f32[H]=zeros()
+parameter main_norm_weight:f32[H]=ones()
+parameter main_norm_bias:f32[H]=zeros()
+parameter output_norm_weight:f32[H]=ones()
+parameter output_norm_bias:f32[H]=zeros()
+fn normalize(value) { return scale(value,[1]/clip(sqrt(sum(value*value)),0.000001,1.0e30)); }
+fn forward(x:f32[I],encoder:f32[H],main:f32[H],decoder:f32[H],key:f32[H],smooth:f32[H],first:f32[1],fixed:f32[1],mode:f32[3])->(f32[H],f32[H],f32[H],f32[H],f32[H],f32[H],f32[1],f32[1]){
+ let next_encoder=recurrent.gru_cell(linear(x,encoder_xr_weight,encoder_xr_bias),linear(x,encoder_xz_weight,encoder_xz_bias),linear(x,encoder_xn_weight,encoder_xn_bias),linear(encoder,encoder_hr_weight,encoder_hr_bias),linear(encoder,encoder_hz_weight,encoder_hz_bias),linear(encoder,encoder_hn_weight,encoder_hn_bias),encoder);
+ let encoded=layer_norm(next_encoder,encoder_norm_weight,encoder_norm_bias,0,0.00001);
+ let next_key=normalize(linear(encoded,key_weight));
+ let q=normalize(linear(encoded,query_weight));
+ let predicted=route(first,[1],clip(scale([1]-sum(q*key),0.5),0,1));
+ let probability=route(mode[0],predicted,route(mode[1],fixed,[1]));
+ let hard=topk_mask(concat(probability,[1]-probability,0),[1]);
+ let boundary=hard[0];
+ let candidate=recurrent.gru_cell(linear(encoded,main_xr_weight,main_xr_bias),linear(encoded,main_xz_weight,main_xz_bias),linear(encoded,main_xn_weight,main_xn_bias),linear(main,main_hr_weight,main_hr_bias),linear(main,main_hz_weight,main_hz_bias),linear(main,main_hn_weight,main_hn_bias),main);
+ let next_main=route(boundary,candidate,main);
+ let main_value=layer_norm(candidate,main_norm_weight,main_norm_bias,0,0.00001);
+ let candidate_smooth=scale(main_value,probability)+scale(smooth,[1]-probability);
+ let next_smooth=route(boundary,candidate_smooth,smooth);
+ # Preserve the original confidence STE only for dynamic mode; state carries
+ # the actual EMA, not the auxiliary straight-through confidence multiplier.
+ let confidence=route(boundary,probability,[1]-probability);
+ let expanded=scale(next_smooth,route(mode[0],[1]+confidence-detach(confidence),[1]));
+ let combined=linear(encoded,skip_weight)+expanded;
+ let next_decoder=recurrent.gru_cell(linear(combined,decoder_xr_weight,decoder_xr_bias),linear(combined,decoder_xz_weight,decoder_xz_bias),linear(combined,decoder_xn_weight,decoder_xn_bias),linear(decoder,decoder_hr_weight,decoder_hr_bias),linear(decoder,decoder_hz_weight,decoder_hz_bias),linear(decoder,decoder_hn_weight,decoder_hn_bias),decoder);
+ return (layer_norm(next_decoder,output_norm_weight,output_norm_bias,0,0.00001),next_encoder,next_main,next_decoder,next_key,next_smooth,probability,boundary);
+}

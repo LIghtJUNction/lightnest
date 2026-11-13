@@ -1,0 +1,37 @@
+{
+  "scope": "source-checkout native complex models; not a package release or complete application migration",
+  "sources_sha256": {
+    "native_generator": "9143a4f7917d9b66abb60a435b10b70f98e2501b66ee41456f17f8c9c4e04788",
+    "native_notebook": "6e95b716541cc08da131ccee7c2b74fa239ad982c28e6a1f8f1b1eeb438a04b3",
+    "native_attention": "74c34836a19393d3678de07899de9be54ef2ef0362e251196bc52790aa9d4bbb",
+    "native_hierarchical_gru": "9c9b24495b6aab5f2d1a23dac7854278c1363e434c7bd6171e5374c5c1224910",
+    "native_hnet_generator": "cc78754b25602e3b793c4b6d589b64e9e75b09b51bea7a38aeaaccd564d83120"
+  },
+  "execution": "Rust/wgtime native CPU, no Python model-compute callbacks",
+  "tests": {
+    "lightnest": {
+      "run": 140,
+      "skipped": 3
+    },
+    "sdk": {
+      "passed": 373,
+      "skipped": 3
+    },
+    "native_complex_behavior": "10 real-service tests; full restored networks, all-parameter SGD/BPTT, nontrivial N=7 top-k routing plus N<L empty pools",
+    "generation": "ELF and HNet autoregressive byte generation and stop match Torch",
+    "default_geometry": "width=128, capacity=2048 service admission and forward",
+    "shared_wgt_source": "All five definitions run through explicit Torch from_ir with identical parameter values and logical outputs"
+  },
+  "tolerance": {
+    "atol": 4e-06,
+    "rtol": 4e-05
+  },
+  "limitations": [
+    "single sequence; construction-time item/query geometry",
+    "attention uses N-slot selection masks, not compact K detail storage",
+    "HNet evaluates unselected main candidates",
+    "existing RGBPolicy/Any2Any/GreenObserver/structure/X86World whole application paths still use explicit Torch",
+    "native unified optimizer checkpoint persistence not implemented"
+  ],
+  "compiler_commit": "b2da135ca782b3cb2c533c11b6d9167c95722bb4"
+}

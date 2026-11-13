@@ -1,0 +1,59 @@
+wgt 0.5
+dim H
+dim A
+dim D
+dim N
+dim Q
+dim L
+dim K
+dim LN
+dim AL
+dim AQ
+dim J
+model NativeCompressRouteAttention
+# Single evidence/query batch: N evidence positions, Q queries, A heads with D
+# channels each (H=A*D), L landmarks, K=min(top_k,N). Every projection is shared
+# between bank construction and query reading, with independent projection weights.
+# Explicit host-prepared pooling rows encode non-learnable validity/window data.
+# All parameter recipes are UNTRAINED; bind actual checkpoint values explicitly.
+parameter query_weight:f32[H,H]=zeros()
+parameter key_weight:f32[H,H]=zeros()
+parameter value_weight:f32[H,H]=zeros()
+parameter condition_weight:f32[H,H]=zeros()
+parameter landmark_bias:f32[A,L,D]=zeros()
+parameter output_weight:f32[H,H]=zeros()
+fn forward(observations:f32[N,H],valid:f32[N],condition:f32[H],queries:f32[Q,H],pooling:f32[L,N],mode:f32[3],attention_scale:f32[1])->(f32[Q,H],f32[A,L,D],f32[A,L,D],f32[A,L,N]){
+ let keys=permute((observations @ (key_weight as [H,H]).T) as [N,A,D],[1,0,2]);
+ let values=permute((observations @ (value_weight as [H,H]).T) as [N,A,D],[1,0,2]);
+ let ones_l=exp(scale((pooling as [LN])[0:L],0)) as [L,1];
+ let pools=pooling @ observations;
+ let projected=pools @ (query_weight as [H,H]).T + ones_l @ (linear(condition,condition_weight) as [1,H]);
+ let landmarks=permute(projected as [L,A,D],[1,0,2])+(landmark_bias as [A,L,D]);
+ let logits=scale(batch_matmul(landmarks,permute(keys,[0,2,1])),attention_scale);
+ let bank_ones=exp(scale(logits,0));
+ # Build a validity broadcast using matrix products; this carries no mask AD.
+ let row_ones=exp(scale(scale(logits as [AL,N],0) @ (valid as [N,1]),0));
+ let valid_bank=(row_ones @ (valid as [1,N])) as [A,L,N];
+ let summaries=batch_matmul(masked_softmax(logits,valid_bank,2),values);
+ # Keep selection masks rather than Python-sized index lists. The selected set
+ # is identical to top-k gather (lower-index deterministic ties); unselected
+ # detail positions receive exactly zero probability and derivative below.
+ let ranked=route(valid_bank,logits,scale(bank_ones,-3.402823e38));
+ let selected=topk_mask(ranked,K);
+ let q=permute((queries @ (query_weight as [H,H]).T) as [Q,A,D],[1,0,2]);
+ let shared_scores=scale(batch_matmul(q,permute(landmarks,[0,2,1])),attention_scale);
+ let detail_scores=scale(batch_matmul(q,permute(keys,[0,2,1])),attention_scale);
+ let routing=topk_mask(shared_scores,[1]);
+ let detail_valid=batch_matmul(routing,selected);
+ let query_ones=exp(scale(scale(detail_scores as [AQ,N],0) @ (valid as [N,1]),0));
+ let query_valid=(query_ones @ (valid as [1,N])) as [A,Q,N];
+ let routed_valid=detail_valid*query_valid;
+ let joint_scores=concat(shared_scores,detail_scores,2);
+ let joint_valid=concat(exp(scale(shared_scores,0)),routed_valid,2);
+ let joint_values=concat(summaries,values,1);
+ let routed=batch_matmul(masked_softmax(joint_scores,joint_valid,2),joint_values);
+ let compressed=batch_matmul(softmax(shared_scores,2),summaries);
+ let dense=batch_matmul(masked_softmax(detail_scores,query_valid,2),values);
+ let result=route(mode[1],compressed,route(mode[2],dense,routed));
+ return ((permute(result,[1,0,2]) as [Q,H]) @ (output_weight as [H,H]).T,landmarks,summaries,selected);
+}

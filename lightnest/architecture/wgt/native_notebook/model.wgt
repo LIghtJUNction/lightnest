@@ -1,0 +1,61 @@
+wgt 0.5
+dim H
+dim H2
+dim N
+dim S
+dim SP
+dim NH
+dim SH
+model NativeNeuralNotebook
+# One evidence sequence [N,H], persistent explicit notes [S,H]. Calls share
+# all weights. Host batches remain separate service models, not silently summed.
+# Zero recipes describe untrained storage, never a fitted checkpoint.
+parameter slot_keys:f32[S,H]=zeros()
+parameter key_weight:f32[H,H]=zeros()
+parameter query_weight:f32[H,H]=zeros()
+parameter value0_weight:f32[H,H]=zeros()
+parameter value0_bias:f32[H]=zeros()
+parameter write_gate0_weight:f32[H,H2]=zeros()
+parameter write_gate0_bias:f32[H]=zeros()
+parameter write_gate2_weight:f32[1,H]=zeros()
+parameter write_gate2_bias:f32[1]=zeros()
+parameter budget0_weight:f32[H,H2]=zeros()
+parameter budget0_bias:f32[H]=zeros()
+parameter budget3_weight:f32[SP,H]=zeros()
+parameter budget3_bias:f32[SP]=zeros()
+parameter value2_weight:f32[H]=ones()
+parameter value2_bias:f32[H]=zeros()
+parameter budget2_weight:f32[H]=ones()
+parameter budget2_bias:f32[H]=zeros()
+# Selection is nondifferentiable; value and categorical budget paths retain AD.
+# At count zero use a uniform average. Positive counts renormalize selected mass.
+fn choice(weights,count) {
+ let selected=weights*topk_mask(weights,count);
+ return scale(selected,[1]/clip(sum(selected),0.00000001,1.0e30));
+}
+fn forward(evidence:f32[N,H],notes:f32[S,H],query:f32[H],valid:f32[N],hard:f32[1],query_given:f32[1],attention_scale:f32[1])->(f32[S,H],f32[H],f32[S],f32[SP],f32[N,S],f32[S,1]){
+ let ones_n=exp(scale((evidence as [NH])[0:N],0)) as [N,1];
+ let ones_s=exp(scale((notes as [SH])[0:S],0)) as [S,1];
+ let ones_h=exp(scale(query,0)) as [1,H];
+ let address=softmax(scale((evidence @ (key_weight as [H,H]).T) @ (slot_keys as [S,H]).T,attention_scale),1);
+ let value0=evidence @ (value0_weight as [H,H]).T + ones_n @ (value0_bias as [1,H]);
+ let values=layer_norm(gelu(value0),value2_weight,value2_bias,1,0.00001);
+ let candidate=address.T @ (values*((valid as [N,1]) @ ones_h));
+ let gate0=concat(notes,candidate,1) @ (write_gate0_weight as [H,H2]).T + ones_s @ (write_gate0_bias as [1,H]);
+ let gate=sigmoid(gelu(gate0) @ (write_gate2_weight as [1,H]).T + ones_s @ (write_gate2_bias as [1,1]));
+ let written=notes+(gate @ ones_h)*(candidate-notes);
+ # Masked data mean is model computation, including denominator clamping.
+ let averaged=scale(((valid as [1,N]) @ evidence) as [H],[1]/clip(sum(valid),1,1.0e30));
+ let q=route(query_given,query,averaged);
+ let weights=softmax(scale(((linear(q,query_weight) as [1,H]) @ (slot_keys as [S,H]).T) as [S],attention_scale));
+ let mean_notes=scale((ones_s.T @ written) as [H],[1]/sum(ones_s as [S]));
+ let budget0=gelu(linear(concat(q,mean_notes,0),budget0_weight,budget0_bias));
+ let budget_hidden=layer_norm(budget0,budget2_weight,budget2_bias,0,0.00001);
+ let budget_logits=linear(budget_hidden,budget3_weight,budget3_bias);
+ let probabilities=route(hard,topk_mask(budget_logits,[1]),softmax(budget_logits));
+ let uniform=scale(exp(scale(weights,0)),[1]/sum(ones_s as [S]));
+ let positive_probs=probabilities[1:SP];
+ let active=repeat S indexed i carrying acc=scale(uniform,probabilities[0]) { acc+scale(choice(weights,i+1),positive_probs[i]) };
+ let context=((active as [1,S]) @ written) as [H];
+ return (written,context,active,budget_logits,address,gate);
+}
