@@ -5,33 +5,46 @@
     "native_notebook": "6e95b716541cc08da131ccee7c2b74fa239ad982c28e6a1f8f1b1eeb438a04b3",
     "native_attention": "74c34836a19393d3678de07899de9be54ef2ef0362e251196bc52790aa9d4bbb",
     "native_hierarchical_gru": "9c9b24495b6aab5f2d1a23dac7854278c1363e434c7bd6171e5374c5c1224910",
-    "native_hnet_generator": "cc78754b25602e3b793c4b6d589b64e9e75b09b51bea7a38aeaaccd564d83120"
+    "native_hnet_generator": "cc78754b25602e3b793c4b6d589b64e9e75b09b51bea7a38aeaaccd564d83120",
+    "native_rgb_policy": "5fb567ac606a742b91fb49bb863584a926c9e167c5c71df1209a50efc13c58f6"
   },
   "execution": "Rust/wgtime native CPU, no Python model-compute callbacks",
   "tests": {
     "lightnest": {
-      "run": 140,
+      "run": 142,
       "skipped": 3
     },
     "sdk": {
-      "passed": 373,
+      "passed": 374,
       "skipped": 3
     },
-    "native_complex_behavior": "10 real-service tests; full restored networks, all-parameter SGD/BPTT, nontrivial N=7 top-k routing plus N<L empty pools",
+    "native_complex_behavior": "12 real-service tests; six full restored networks; SGD/BPTT and RGB Adam; three attention modes, notebook soft/hard choices, risk detach",
     "generation": "ELF and HNet autoregressive byte generation and stop match Torch",
-    "default_geometry": "width=128, capacity=2048 service admission and forward",
-    "shared_wgt_source": "All five definitions run through explicit Torch from_ir with identical parameter values and logical outputs"
+    "default_geometry": "width128/capacity2048 generators; RGB width64/depth16 forward and two Adam steps, geometry/depth8 roundtrip",
+    "shared_wgt_source": "All six definitions run through explicit Torch from_ir with identical parameters and logical outputs",
+    "original_migration": "21 cases, max_abs=0.0; retained report weights/native-rgb-validation-20261114/report.json",
+    "wheel": "18 packaged model.wgt files; native RGB source/host byte-identical to checkout",
+    "service": 19,
+    "wgtime": 20
   },
   "tolerance": {
     "atol": 4e-06,
-    "rtol": 4e-05
+    "rtol": 4e-05,
+    "rgb_forward": {
+      "atol": 5e-06,
+      "rtol": 5e-05
+    },
+    "rgb_default": {
+      "atol": 1e-05,
+      "rtol": 0.0001
+    }
   },
   "limitations": [
     "single sequence; construction-time item/query geometry",
     "attention uses N-slot selection masks, not compact K detail storage",
     "HNet evaluates unselected main candidates",
-    "existing RGBPolicy/Any2Any/GreenObserver/structure/X86World whole application paths still use explicit Torch",
+    "Any2Any/standalone GreenObserver/structure/X86World application hosts remain explicit Torch; RGB streaming begin/advance/thoughts/state return not ported",
     "native unified optimizer checkpoint persistence not implemented"
   ],
-  "compiler_commit": "b2da135ca782b3cb2c533c11b6d9167c95722bb4"
+  "compiler_commit": "36bf63736719bbffc3330dc308ce36bd12e8076e"
 }

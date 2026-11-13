@@ -1,0 +1,372 @@
+wgt 0.5
+dim H
+dim HB
+dim H2
+dim H3
+dim H4
+dim H8
+dim H2P3
+dim C
+dim C8
+dim U
+dim UC
+dim N
+dim NH
+dim S
+dim SP
+dim SH
+dim NSH
+dim SW
+dim A
+dim D
+dim L
+dim K
+dim LN
+dim AL
+dim AQ
+dim Q
+dim J
+dim IMG_CHUNKS
+dim TC
+dim TC8
+dim LEN
+dim LEN8
+dim CMD
+dim BLUE
+dim RED
+dim B
+dim STATK
+import recurrent from "std/recurrent"
+model NativeRGBPolicy
+# One complete RGB observation and both readouts share ONE parameter namespace
+# and ONE differentiable graph. N counts occurrences, U counts unique chunks;
+# repeated bytes gather the same learned content storage and scatter-add VJP.
+# H is feature width; C bytes/chunk, C8 is its flattened bit embedding.
+# A heads each use D=H/A channels; L landmark pools route K selected occurrences.
+# S notes persist inside the thought loop. LEN image bytes expand to LEN8 bit logits.
+# U content rows are encoded once and gathered at N distinct address/kind locations.
+# Notes and hidden stay internal across all thinking steps, never round-trip
+# through Python. Blue is captured before continuing the shared red loop.
+# Recipes are zero/one UNTRAINED storage; explicitly import an existing policy.
+parameter green_byte_weight:f32[257,8]=zeros()
+parameter green_encode_weight:f32[H,C8]=zeros()
+parameter green_encode_bias:f32[H]=zeros()
+parameter green_encode_norm_weight:f32[H]=ones()
+parameter green_encode_norm_bias:f32[H]=zeros()
+parameter green_kind_weight:f32[32,H]=zeros()
+parameter green_position_weight:f32[H,8]=zeros()
+parameter nb_slot_keys:f32[S,H]=zeros()
+parameter nb_key_weight:f32[H,H]=zeros()
+parameter nb_query_weight:f32[H,H]=zeros()
+parameter nb_value0_weight:f32[H,H]=zeros()
+parameter nb_value0_bias:f32[H]=zeros()
+parameter nb_write_gate0_weight:f32[H,H2]=zeros()
+parameter nb_write_gate0_bias:f32[H]=zeros()
+parameter nb_write_gate2_weight:f32[1,H]=zeros()
+parameter nb_write_gate2_bias:f32[1]=zeros()
+parameter nb_budget0_weight:f32[H,H2]=zeros()
+parameter nb_budget0_bias:f32[H]=zeros()
+parameter nb_budget3_weight:f32[SP,H]=zeros()
+parameter nb_budget3_bias:f32[SP]=zeros()
+parameter nb_value2_weight:f32[H]=ones()
+parameter nb_value2_bias:f32[H]=zeros()
+parameter nb_budget2_weight:f32[H]=ones()
+parameter nb_budget2_bias:f32[H]=zeros()
+parameter mem_query_weight:f32[H,H]=zeros()
+parameter mem_key_weight:f32[H,H]=zeros()
+parameter mem_value_weight:f32[H,H]=zeros()
+parameter mem_condition_weight:f32[H,H]=zeros()
+parameter mem_landmark_bias:f32[A,L,D]=zeros()
+parameter mem_output_weight:f32[H,H]=zeros()
+parameter command_weight:f32[257,H]=zeros()
+parameter initial_weight:f32[H]=ones()
+parameter initial_bias:f32[H]=zeros()
+parameter message_weight:f32[H,H3]=zeros()
+parameter message_bias:f32[H]=zeros()
+parameter depth_weight:f32[65,H]=zeros()
+parameter thought_xr_weight:f32[H,H]=zeros()
+parameter thought_xr_bias:f32[H]=zeros()
+parameter thought_xz_weight:f32[H,H]=zeros()
+parameter thought_xz_bias:f32[H]=zeros()
+parameter thought_xn_weight:f32[H,H]=zeros()
+parameter thought_xn_bias:f32[H]=zeros()
+parameter thought_hr_weight:f32[H,H]=zeros()
+parameter thought_hr_bias:f32[H]=zeros()
+parameter thought_hz_weight:f32[H,H]=zeros()
+parameter thought_hz_bias:f32[H]=zeros()
+parameter thought_hn_weight:f32[H,H]=zeros()
+parameter thought_hn_bias:f32[H]=zeros()
+parameter thought_norm_weight:f32[H]=ones()
+parameter thought_norm_bias:f32[H]=zeros()
+parameter blue_slot_weight:f32[C,8]=zeros()
+parameter blue_decode_weight:f32[HB,H8]=zeros()
+parameter blue_decode_bias:f32[HB]=zeros()
+parameter blue_norm_weight:f32[HB]=ones()
+parameter blue_norm_bias:f32[HB]=zeros()
+parameter blue_edit_weight:f32[1,HB]=zeros()
+parameter blue_edit_bias:f32[1]=zeros()
+parameter blue_bits_weight:f32[8,HB]=zeros()
+parameter blue_bits_bias:f32[8]=zeros()
+parameter red_slot_weight:f32[C,8]=zeros()
+parameter red_decode_weight:f32[H,H8]=zeros()
+parameter red_decode_bias:f32[H]=zeros()
+parameter red_norm_weight:f32[H]=ones()
+parameter red_norm_bias:f32[H]=zeros()
+parameter red_edit_weight:f32[1,H]=zeros()
+parameter red_edit_bias:f32[1]=zeros()
+parameter red_bits_weight:f32[8,H]=zeros()
+parameter red_bits_bias:f32[8]=zeros()
+parameter red_to_blue_weight:f32[H,H]=zeros()
+parameter red_to_blue_bias:f32[H]=zeros()
+parameter red_abstraction_weight:f32[H4,H]=zeros()
+parameter red_abstraction_bias:f32[H4]=zeros()
+parameter abstract_to_blue_weight:f32[H,H4]=zeros()
+parameter abstract_to_blue_bias:f32[H]=zeros()
+parameter blue_language_weight:f32[257,H]=zeros()
+parameter blue_language_bias:f32[257]=zeros()
+parameter budget0_weight:f32[H,H2]=zeros()
+parameter budget0_bias:f32[H]=zeros()
+parameter budget3_weight:f32[B,H]=zeros()
+parameter budget3_bias:f32[B]=zeros()
+parameter risk0_weight:f32[HB,H2P3]=zeros()
+parameter risk0_bias:f32[HB]=zeros()
+parameter risk2_weight:f32[1,HB]=zeros()
+parameter risk2_bias:f32[1]=zeros()
+parameter abstraction_norm_weight:f32[H4]=ones()
+parameter abstraction_norm_bias:f32[H4]=zeros()
+parameter budget_norm_weight:f32[H]=ones()
+parameter budget_norm_bias:f32[H]=zeros()
+fn nb_choice(weights,count) {
+ let selected=weights*topk_mask(weights,count);
+ return scale(selected,[1]/clip(sum(selected),0.00000001,1.0e30));
+}
+fn notebook(evidence,notes,query,valid,hard,query_given,attention_scale,slot_keys,key_weight,query_weight,value0_weight,value0_bias,write_gate0_weight,write_gate0_bias,write_gate2_weight,write_gate2_bias,budget0_weight,budget0_bias,budget3_weight,budget3_bias,value2_weight,value2_bias,budget2_weight,budget2_bias){
+ let ones_n=exp(scale((evidence as [NH])[0:N],0)) as [N,1];
+ let ones_s=exp(scale((notes as [SH])[0:S],0)) as [S,1];
+ let ones_h=exp(scale(query,0)) as [1,H];
+ let address=softmax(scale((evidence @ (key_weight as [H,H]).T) @ (slot_keys as [S,H]).T,attention_scale),1);
+ let value0=evidence @ (value0_weight as [H,H]).T + ones_n @ (value0_bias as [1,H]);
+ let values=layer_norm(gelu(value0),value2_weight,value2_bias,1,0.00001);
+ let candidate=address.T @ (values*((valid as [N,1]) @ ones_h));
+ let gate0=concat(notes,candidate,1) @ (write_gate0_weight as [H,H2]).T + ones_s @ (write_gate0_bias as [1,H]);
+ let gate=sigmoid(gelu(gate0) @ (write_gate2_weight as [1,H]).T + ones_s @ (write_gate2_bias as [1,1]));
+ let written=notes+(gate @ ones_h)*(candidate-notes);
+ # Masked data mean is model computation, including denominator clamping.
+ let averaged=scale(((valid as [1,N]) @ evidence) as [H],[1]/clip(sum(valid),1,1.0e30));
+ let q=route(query_given,query,averaged);
+ let weights=softmax(scale(((((query_weight @ (q as [H,1])) as [H]) as [1,H]) @ (slot_keys as [S,H]).T) as [S],attention_scale));
+ let mean_notes=scale((ones_s.T @ written) as [H],[1]/sum(ones_s as [S]));
+ let budget0=gelu(((budget0_weight @ (concat(q,mean_notes,0) as [H2,1])) as [H])+budget0_bias);
+ let budget_hidden=layer_norm(budget0,budget2_weight,budget2_bias,0,0.00001);
+ let budget_logits=((budget3_weight @ (budget_hidden as [H,1])) as [SP])+budget3_bias;
+ let probabilities=route(hard,topk_mask(budget_logits,[1]),softmax(budget_logits));
+ let uniform=scale(exp(scale(weights,0)),[1]/sum(ones_s as [S]));
+ let positive_probs=probabilities[1:SP];
+ let active=repeat S indexed i carrying acc=scale(uniform,probabilities[0]) { acc+scale(nb_choice(weights,i+1),positive_probs[i]) };
+ let context=((active as [1,S]) @ written) as [H];
+ return (written,context,budget_logits);
+}
+fn build_bank(observations,valid,condition,pooling,attention_scale,query_weight,key_weight,value_weight,condition_weight,landmark_bias,output_weight){
+ let keys=permute((observations @ (key_weight as [H,H]).T) as [N,A,D],[1,0,2]);
+ let values=permute((observations @ (value_weight as [H,H]).T) as [N,A,D],[1,0,2]);
+ let ones_l=exp(scale((pooling as [LN])[0:L],0)) as [L,1];
+ let pools=pooling @ observations;
+ let projected=pools @ (query_weight as [H,H]).T + ones_l @ (((condition_weight @ (condition as [H,1])) as [H]) as [1,H]);
+ let landmarks=permute(projected as [L,A,D],[1,0,2])+(landmark_bias as [A,L,D]);
+ let logits=scale(batch_matmul(landmarks,permute(keys,[0,2,1])),attention_scale);
+ let bank_ones=exp(scale(logits,0));
+ # Build a validity broadcast using matrix products; this carries no mask AD.
+ let row_ones=exp(scale(scale(logits as [AL,N],0) @ (valid as [N,1]),0));
+ let valid_bank=(row_ones @ (valid as [1,N])) as [A,L,N];
+ let summaries=batch_matmul(masked_softmax(logits,valid_bank,2),values);
+ # Keep selection masks rather than Python-sized index lists. The selected set
+ # is identical to top-k gather (lower-index deterministic ties); unselected
+ # detail positions receive exactly zero probability and derivative below.
+ let ranked=route(valid_bank,logits,scale(bank_ones,-3.402823e38));
+ let selected=topk_mask(ranked,K);
+ return (keys,values,landmarks,summaries,selected);
+}
+fn read_bank(queries,keys,values,landmarks,summaries,selected,valid,mode,attention_scale,query_weight,output_weight){
+ let q=permute((queries @ (query_weight as [H,H]).T) as [Q,A,D],[1,0,2]);
+ let shared_scores=scale(batch_matmul(q,permute(landmarks,[0,2,1])),attention_scale);
+ let detail_scores=scale(batch_matmul(q,permute(keys,[0,2,1])),attention_scale);
+ let routing=topk_mask(shared_scores,[1]);
+ let detail_valid=batch_matmul(routing,selected);
+ let query_ones=exp(scale(scale(detail_scores as [AQ,N],0) @ (valid as [N,1]),0));
+ let query_valid=(query_ones @ (valid as [1,N])) as [A,Q,N];
+ let routed_valid=detail_valid*query_valid;
+ let joint_scores=concat(shared_scores,detail_scores,2);
+ let joint_valid=concat(exp(scale(shared_scores,0)),routed_valid,2);
+ let joint_values=concat(summaries,values,1);
+ let routed=batch_matmul(masked_softmax(joint_scores,joint_valid,2),joint_values);
+ let compressed=batch_matmul(softmax(shared_scores,2),summaries);
+ let dense=batch_matmul(masked_softmax(detail_scores,query_valid,2),values);
+ let result=route(mode[1],compressed,route(mode[2],dense,routed));
+ return (permute(result,[1,0,2]) as [N,H]) @ output_weight.T;
+}
+fn thought_step(packed,features,condition,keys,values,landmarks,summaries,selected,valid,mode,hard,attention_scale,note_scale,index,depth_weight,message_weight,message_bias,thought_xr_weight,thought_xr_bias,thought_xz_weight,thought_xz_bias,thought_xn_weight,thought_xn_bias,thought_hr_weight,thought_hr_bias,thought_hz_weight,thought_hz_bias,thought_hn_weight,thought_hn_bias,thought_norm_weight,thought_norm_bias,nb_slot_keys,nb_key_weight,nb_query_weight,nb_value0_weight,nb_value0_bias,nb_write_gate0_weight,nb_write_gate0_bias,nb_write_gate2_weight,nb_write_gate2_bias,nb_budget0_weight,nb_budget0_bias,nb_budget3_weight,nb_budget3_bias,nb_value2_weight,nb_value2_bias,nb_budget2_weight,nb_budget2_bias,mem_query_weight,mem_output_weight){
+ let hidden=packed[0:NH] as [N,H];
+ let notes=packed[NH:NSH] as [S,H];
+ let ones=exp(scale((features as [NH])[0:N],0)) as [N,1];
+ let query=scale((ones.T @ hidden) as [H],[1]/sum(ones));
+ let memory=read_bank(hidden,keys,values,landmarks,summaries,selected,valid,mode,attention_scale,mem_query_weight,mem_output_weight);
+ let (written,context,budget_logits)=notebook(features,notes,query,valid,hard,[1],note_scale,nb_slot_keys,nb_key_weight,nb_query_weight,nb_value0_weight,nb_value0_bias,nb_write_gate0_weight,nb_write_gate0_bias,nb_write_gate2_weight,nb_write_gate2_bias,nb_budget0_weight,nb_budget0_bias,nb_budget3_weight,nb_budget3_bias,nb_value2_weight,nb_value2_bias,nb_budget2_weight,nb_budget2_bias);
+ let repeated=ones @ (condition as [1,H]);
+ let context_rows=ones @ (context as [1,H]);
+ let depth=embedding(depth_weight,index) as [H];
+ let message=concat(concat(features,memory+context_rows,1),repeated,1) @ message_weight.T + ones @ ((message_bias+depth) as [1,H]);
+ let candidate=recurrent.gru_cell((message @ thought_xr_weight.T + ones @ (thought_xr_bias as [1,H])),(message @ thought_xz_weight.T + ones @ (thought_xz_bias as [1,H])),(message @ thought_xn_weight.T + ones @ (thought_xn_bias as [1,H])),(hidden @ thought_hr_weight.T + ones @ (thought_hr_bias as [1,H])),(hidden @ thought_hz_weight.T + ones @ (thought_hz_bias as [1,H])),(hidden @ thought_hn_weight.T + ones @ (thought_hn_bias as [1,H])),hidden);
+ let next=layer_norm(candidate,thought_norm_weight,thought_norm_bias,1,0.00001);
+ return concat(concat(next as [NH],written as [SH],0),budget_logits,0);
+}
+fn byte_head(hidden,bytes,chunk_indices,slot_indices,slot_weight,decode_weight,decode_bias,norm_weight,norm_bias,edit_weight,edit_bias,bits_weight,bits_bias){
+ let h=gather(hidden,chunk_indices,0);
+ let local=bytes+embedding(slot_weight,slot_indices);
+ let ones=exp(scale(slot_indices,0)) as [TC,1];
+ let decoded=gelu(concat(h,local,1) @ decode_weight.T + ones @ decode_bias);
+ let value=layer_norm(decoded,norm_weight,norm_bias,1,0.00001);
+ let edits=(value @ edit_weight.T + ones @ (edit_bias as [1,1])) as [TC];
+ let bits=(value @ bits_weight.T + ones @ (bits_bias as [1,8])) as [TC8];
+ return (edits[0:LEN],bits[0:LEN8] as [LEN,8]);
+}
+fn guidance(hidden,ones,abstract_weight,abstract_bias,norm_weight,norm_bias,red_to_blue_weight,red_to_blue_bias,abstract_to_blue_weight,abstract_to_blue_bias){
+ let pooled=scale((ones.T @ hidden) as [H],[1]/sum(ones));
+ let abstract=layer_norm(gelu(((abstract_weight @ (pooled as [H,1])) as [H4])+abstract_bias),norm_weight,norm_bias,0,0.00001);
+ return ((red_to_blue_weight @ (pooled as [H,1])) as [H])+red_to_blue_bias+((abstract_to_blue_weight @ (abstract as [H4,1])) as [H])+abstract_to_blue_bias;
+}
+fn risk(logits,pooled,condition,risk0_weight,risk0_bias,risk2_weight,risk2_bias,single){
+ let probabilities=sigmoid(logits);
+ let first=sum(probabilities*topk_mask(probabilities,[1]));
+ let second=route(single,first,sum(probabilities*topk_mask(probabilities,STATK))-first);
+ let statistics=concat(concat(first,first-second,0),mean(probabilities),0);
+ let input=concat(concat(detach(pooled),detach(condition),0),detach(statistics),0);
+ let value=tanh(((risk0_weight @ (input as [H2P3,1])) as [HB])+risk0_bias);
+ return ((risk2_weight @ (value as [HB,1])) as [1])+risk2_bias;
+}
+fn budget(pooled,condition,w0,b0,gamma,beta,w3,b3){
+ let hidden=gelu(((w0 @ (concat(pooled,condition,0) as [H2,1])) as [H])+b0);
+ let normalized=layer_norm(hidden,gamma,beta,0,0.00001);
+ return ((w3 @ (normalized as [H,1])) as [B])+b3;
+}
+fn forward(raw:f32[U,C],occurrence_ids:f32[N],address_features:f32[N,8],kinds:f32[N],command_tokens:f32[CMD],image_ids:f32[IMG_CHUNKS],byte_chunks:f32[TC],byte_slots:f32[TC],valid:f32[N],pooling:f32[L,N],mode:f32[3],hard:f32[1],attention_scale:f32[1],note_scale:f32[1],zero_notes:f32[S,H],single:f32[1])->(f32[LEN],f32[LEN,8],f32[1],f32[257],f32[B],f32[SP],f32[LEN],f32[LEN,8],f32[1],f32[B],f32[SP]){
+ let v_green_byte_weight=green_byte_weight as [257,8];
+ let v_green_encode_weight=green_encode_weight as [H,C8];
+ let v_green_encode_bias=green_encode_bias as [H];
+ let v_green_encode_norm_weight=green_encode_norm_weight as [H];
+ let v_green_encode_norm_bias=green_encode_norm_bias as [H];
+ let v_green_kind_weight=green_kind_weight as [32,H];
+ let v_green_position_weight=green_position_weight as [H,8];
+ let v_nb_slot_keys=nb_slot_keys as [S,H];
+ let v_nb_key_weight=nb_key_weight as [H,H];
+ let v_nb_query_weight=nb_query_weight as [H,H];
+ let v_nb_value0_weight=nb_value0_weight as [H,H];
+ let v_nb_value0_bias=nb_value0_bias as [H];
+ let v_nb_write_gate0_weight=nb_write_gate0_weight as [H,H2];
+ let v_nb_write_gate0_bias=nb_write_gate0_bias as [H];
+ let v_nb_write_gate2_weight=nb_write_gate2_weight as [1,H];
+ let v_nb_write_gate2_bias=nb_write_gate2_bias as [1];
+ let v_nb_budget0_weight=nb_budget0_weight as [H,H2];
+ let v_nb_budget0_bias=nb_budget0_bias as [H];
+ let v_nb_budget3_weight=nb_budget3_weight as [SP,H];
+ let v_nb_budget3_bias=nb_budget3_bias as [SP];
+ let v_nb_value2_weight=nb_value2_weight as [H];
+ let v_nb_value2_bias=nb_value2_bias as [H];
+ let v_nb_budget2_weight=nb_budget2_weight as [H];
+ let v_nb_budget2_bias=nb_budget2_bias as [H];
+ let v_mem_query_weight=mem_query_weight as [H,H];
+ let v_mem_key_weight=mem_key_weight as [H,H];
+ let v_mem_value_weight=mem_value_weight as [H,H];
+ let v_mem_condition_weight=mem_condition_weight as [H,H];
+ let v_mem_landmark_bias=mem_landmark_bias as [A,L,D];
+ let v_mem_output_weight=mem_output_weight as [H,H];
+ let v_command_weight=command_weight as [257,H];
+ let v_initial_weight=initial_weight as [H];
+ let v_initial_bias=initial_bias as [H];
+ let v_message_weight=message_weight as [H,H3];
+ let v_message_bias=message_bias as [H];
+ let v_depth_weight=depth_weight as [65,H];
+ let v_thought_xr_weight=thought_xr_weight as [H,H];
+ let v_thought_xr_bias=thought_xr_bias as [H];
+ let v_thought_xz_weight=thought_xz_weight as [H,H];
+ let v_thought_xz_bias=thought_xz_bias as [H];
+ let v_thought_xn_weight=thought_xn_weight as [H,H];
+ let v_thought_xn_bias=thought_xn_bias as [H];
+ let v_thought_hr_weight=thought_hr_weight as [H,H];
+ let v_thought_hr_bias=thought_hr_bias as [H];
+ let v_thought_hz_weight=thought_hz_weight as [H,H];
+ let v_thought_hz_bias=thought_hz_bias as [H];
+ let v_thought_hn_weight=thought_hn_weight as [H,H];
+ let v_thought_hn_bias=thought_hn_bias as [H];
+ let v_thought_norm_weight=thought_norm_weight as [H];
+ let v_thought_norm_bias=thought_norm_bias as [H];
+ let v_blue_slot_weight=blue_slot_weight as [C,8];
+ let v_blue_decode_weight=blue_decode_weight as [HB,H8];
+ let v_blue_decode_bias=blue_decode_bias as [HB];
+ let v_blue_norm_weight=blue_norm_weight as [HB];
+ let v_blue_norm_bias=blue_norm_bias as [HB];
+ let v_blue_edit_weight=blue_edit_weight as [1,HB];
+ let v_blue_edit_bias=blue_edit_bias as [1];
+ let v_blue_bits_weight=blue_bits_weight as [8,HB];
+ let v_blue_bits_bias=blue_bits_bias as [8];
+ let v_red_slot_weight=red_slot_weight as [C,8];
+ let v_red_decode_weight=red_decode_weight as [H,H8];
+ let v_red_decode_bias=red_decode_bias as [H];
+ let v_red_norm_weight=red_norm_weight as [H];
+ let v_red_norm_bias=red_norm_bias as [H];
+ let v_red_edit_weight=red_edit_weight as [1,H];
+ let v_red_edit_bias=red_edit_bias as [1];
+ let v_red_bits_weight=red_bits_weight as [8,H];
+ let v_red_bits_bias=red_bits_bias as [8];
+ let v_red_to_blue_weight=red_to_blue_weight as [H,H];
+ let v_red_to_blue_bias=red_to_blue_bias as [H];
+ let v_red_abstraction_weight=red_abstraction_weight as [H4,H];
+ let v_red_abstraction_bias=red_abstraction_bias as [H4];
+ let v_abstract_to_blue_weight=abstract_to_blue_weight as [H,H4];
+ let v_abstract_to_blue_bias=abstract_to_blue_bias as [H];
+ let v_blue_language_weight=blue_language_weight as [257,H];
+ let v_blue_language_bias=blue_language_bias as [257];
+ let v_budget0_weight=budget0_weight as [H,H2];
+ let v_budget0_bias=budget0_bias as [H];
+ let v_budget3_weight=budget3_weight as [B,H];
+ let v_budget3_bias=budget3_bias as [B];
+ let v_risk0_weight=risk0_weight as [HB,H2P3];
+ let v_risk0_bias=risk0_bias as [HB];
+ let v_risk2_weight=risk2_weight as [1,HB];
+ let v_risk2_bias=risk2_bias as [1];
+ let v_abstraction_norm_weight=abstraction_norm_weight as [H4];
+ let v_abstraction_norm_bias=abstraction_norm_bias as [H4];
+ let v_budget_norm_weight=budget_norm_weight as [H];
+ let v_budget_norm_bias=budget_norm_bias as [H];
+ let tokens=embedding(v_green_byte_weight,raw as [UC],0) as [U,C8];
+ let ones_u=exp(scale((raw as [UC])[0:U],0)) as [U,1];
+ let content=layer_norm(gelu(tokens @ v_green_encode_weight.T+ones_u @ (v_green_encode_bias as [1,H])),v_green_encode_norm_weight,v_green_encode_norm_bias,1,0.00001);
+ let features=gather(content,occurrence_ids,0)+address_features @ v_green_position_weight.T+embedding(v_green_kind_weight,kinds);
+ let ones=exp(scale(occurrence_ids,0)) as [N,1];
+ let cmd=embedding(v_command_weight,command_tokens,0);
+ let cmd_ones=exp(scale(command_tokens,0)) as [1,CMD];
+ let condition=scale((cmd_ones @ cmd) as [H],[1]/sum(cmd_ones));
+ let (keys,values,landmarks,summaries,selected)=build_bank(features,valid,condition,pooling,attention_scale,v_mem_query_weight,v_mem_key_weight,v_mem_value_weight,v_mem_condition_weight,v_mem_landmark_bias,v_mem_output_weight);
+ let (initial_notes,initial_context,initial_budget)=notebook(features,zero_notes,condition,valid,hard,[1],note_scale,v_nb_slot_keys,v_nb_key_weight,v_nb_query_weight,v_nb_value0_weight,v_nb_value0_bias,v_nb_write_gate0_weight,v_nb_write_gate0_bias,v_nb_write_gate2_weight,v_nb_write_gate2_bias,v_nb_budget0_weight,v_nb_budget0_bias,v_nb_budget3_weight,v_nb_budget3_bias,v_nb_value2_weight,v_nb_value2_bias,v_nb_budget2_weight,v_nb_budget2_bias);
+ let hidden=layer_norm(features+ones @ (condition as [1,H]),v_initial_weight,v_initial_bias,1,0.00001);
+ let initial=concat(concat(hidden as [NH],initial_notes as [SH],0),initial_budget,0);
+ let blue_state=repeat BLUE indexed i carrying state=initial { thought_step(state,features,condition,keys,values,landmarks,summaries,selected,valid,mode,hard,attention_scale,note_scale,i+1,v_depth_weight,v_message_weight,v_message_bias,v_thought_xr_weight,v_thought_xr_bias,v_thought_xz_weight,v_thought_xz_bias,v_thought_xn_weight,v_thought_xn_bias,v_thought_hr_weight,v_thought_hr_bias,v_thought_hz_weight,v_thought_hz_bias,v_thought_hn_weight,v_thought_hn_bias,v_thought_norm_weight,v_thought_norm_bias,v_nb_slot_keys,v_nb_key_weight,v_nb_query_weight,v_nb_value0_weight,v_nb_value0_bias,v_nb_write_gate0_weight,v_nb_write_gate0_bias,v_nb_write_gate2_weight,v_nb_write_gate2_bias,v_nb_budget0_weight,v_nb_budget0_bias,v_nb_budget3_weight,v_nb_budget3_bias,v_nb_value2_weight,v_nb_value2_bias,v_nb_budget2_weight,v_nb_budget2_bias,v_mem_query_weight,v_mem_output_weight) };
+ let red_state=repeat RED indexed i carrying state=blue_state { thought_step(state,features,condition,keys,values,landmarks,summaries,selected,valid,mode,hard,attention_scale,note_scale,i+BLUE+1,v_depth_weight,v_message_weight,v_message_bias,v_thought_xr_weight,v_thought_xr_bias,v_thought_xz_weight,v_thought_xz_bias,v_thought_xn_weight,v_thought_xn_bias,v_thought_hr_weight,v_thought_hr_bias,v_thought_hz_weight,v_thought_hz_bias,v_thought_hn_weight,v_thought_hn_bias,v_thought_norm_weight,v_thought_norm_bias,v_nb_slot_keys,v_nb_key_weight,v_nb_query_weight,v_nb_value0_weight,v_nb_value0_bias,v_nb_write_gate0_weight,v_nb_write_gate0_bias,v_nb_write_gate2_weight,v_nb_write_gate2_bias,v_nb_budget0_weight,v_nb_budget0_bias,v_nb_budget3_weight,v_nb_budget3_bias,v_nb_value2_weight,v_nb_value2_bias,v_nb_budget2_weight,v_nb_budget2_bias,v_mem_query_weight,v_mem_output_weight) };
+ let blue_hidden=blue_state[0:NH] as [N,H];
+ let red_hidden=red_state[0:NH] as [N,H];
+ let blue_context=blue_state[NSH:SW];
+ let red_context=red_state[NSH:SW];
+ let guide=guidance(blue_hidden,ones,v_red_abstraction_weight,v_red_abstraction_bias,v_abstraction_norm_weight,v_abstraction_norm_bias,v_red_to_blue_weight,v_red_to_blue_bias,v_abstract_to_blue_weight,v_abstract_to_blue_bias);
+ let guided=blue_hidden+ones @ (guide as [1,H]);
+ let byte_values=gather(tokens as [U,C,8],image_ids,0) as [TC,8];
+ let (blue_logits,blue_bits)=byte_head(guided,byte_values,byte_chunks,byte_slots,v_blue_slot_weight,v_blue_decode_weight,v_blue_decode_bias as [1,HB],v_blue_norm_weight,v_blue_norm_bias,v_blue_edit_weight,v_blue_edit_bias,v_blue_bits_weight,v_blue_bits_bias);
+ let blue_pooled=scale((ones.T @ blue_hidden) as [H],[1]/sum(ones));
+ let blue_risk=risk(blue_logits,blue_pooled,condition,v_risk0_weight,v_risk0_bias,v_risk2_weight,v_risk2_bias,single);
+ let blue_budget=budget(blue_pooled,condition,v_budget0_weight,v_budget0_bias,v_budget_norm_weight,v_budget_norm_bias,v_budget3_weight,v_budget3_bias);
+ let (red_logits,red_bits)=byte_head(red_hidden,byte_values,byte_chunks,byte_slots,v_red_slot_weight,v_red_decode_weight,v_red_decode_bias as [1,H],v_red_norm_weight,v_red_norm_bias,v_red_edit_weight,v_red_edit_bias,v_red_bits_weight,v_red_bits_bias);
+ let red_pooled=scale((ones.T @ red_hidden) as [H],[1]/sum(ones));
+ let red_risk=risk(red_logits,red_pooled,condition,v_risk0_weight,v_risk0_bias,v_risk2_weight,v_risk2_bias,single);
+ let red_budget=budget(red_pooled,condition,v_budget0_weight,v_budget0_bias,v_budget_norm_weight,v_budget_norm_bias,v_budget3_weight,v_budget3_bias);
+ let blue_pooled=scale((ones.T @ guided) as [H],[1]/sum(ones));
+ let language=((v_blue_language_weight @ (blue_pooled as [H,1])) as [257])+v_blue_language_bias;
+ return (blue_logits,blue_bits,blue_risk,language,blue_budget,blue_context,red_logits,red_bits,red_risk,red_budget,red_context);
+}

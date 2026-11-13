@@ -4,6 +4,7 @@
 
 | 入口 | 原生计算 | 状态/限制 |
 | --- | --- | --- |
+| `load_rgb_policy(image,command,frames=(),config=None,depth=None,backend="native",**options)` | 完整 RGB 神经图：观察编码、三模式 attention、notebook、共享思考循环、blue/red、风险/语言/预算头 | 默认 width64、depth16；`specialize` 显式切换离散布局与深度，保留权重和 Adam |
 | `load_generator(width=128,capacity=2048,backend="native",**options)` | 完整 ELFGenerator：两层 GRU、共享 red 循环、LayerNorm、copy attention、bits/blue/stop 头 | 单序列逐位置；red_depth=0..16；两个显式 hidden 向量。 |
 | `load_hnet_generator(width=128,capacity=2048,backend="native",**options)` | 完整 HNetELFGenerator：encoder/main/decoder GRU、动态边界、EMA、confidence STE，以及全部生成头 | chunk_mode=dynamic/fixed/dense；target_ratio 默认4且至少2；五个显式 hidden 向量。 |
 | `load_notebook(width=128,slots=32,*,items,backend="native",**options)` | 完整 compress 数学：带 padding 的写入、gate、预算网络、训练时软选择及推理时硬 top-k | 单序列，items 构造时固定，notes 显式；此入口不模拟独立 write/read 服务方法。 |
@@ -31,8 +32,16 @@ with load_generator(width=128, capacity=2048) as model:
 
 验收位于 `tests/architecture/test_native_model.py`：真实 wgtime 中导入与原实现相同的权重，比较完整输出、隐藏状态、多种深度/模式和原生 SGD/BPTT 后的全部参数；notebook 覆盖 padding、显式/默认 query、软/硬预算；attention 覆盖 N<L 的空池窗口、padding 和三种读取模式。新增内核的无效 mask、count、相等值选择、工作预算和独立 Torch VJP 由 WeightLang 测试覆盖。核心验收尺寸为width=8/16、短序列，attention另覆盖N=7、L=3、K=2的非平凡路由，另验证默认width=128生成器的服务准入和执行；这些验证不是性能报告或所有真实模型规模的验收。
 
-RGBPolicy、Any2Any、GreenObserver、结构分类器及 X86World 的整个应用宿主仍未全部改成原生图。它们继续走已有显式 Torch 入口；这些新增原生网络不是对任意 target torch 源码的自动翻译。尤其 X86/ELF/PTX 模拟器和 Any2Any 的随机 dropout/多模态分支需要独立原生实现及验收。
+Any2Any、独立 GreenObserver 宿主、结构分类器及 X86World 的整个应用宿主仍未全部改成原生图。RGBPolicy 的观察编码已包含在新的完整原生 RGB 图中；原 RGB 流式应用宿主仍保留。它们继续走已有显式 Torch 入口；这些新增原生网络不是对任意 target torch 源码的自动翻译。尤其 X86/ELF/PTX 模拟器和 Any2Any 的随机 dropout/多模态分支需要独立原生实现及验收。
 
-这些新增普通 WGT 定义也可以由同一共享前端导入显式 Torch 后端，例如 `wgt.from_ir(native.definition, backend="torch", device="cpu")`。这只复用定义并按配方创建新权重，不迁移 native 的当前参数；若要相同实例数值，需要显式复制参数。测试对五个定义分别绑定相同随机权重，验证原生和显式 Torch 的全部逻辑输出；原始 target torch 模型另外作为独立语义 oracle 保留。
+这些新增普通 WGT 定义也可以由同一共享前端导入显式 Torch 后端，例如 `wgt.from_ir(native.definition, backend="torch", device="cpu")`。这只复用定义并按配方创建新权重，不迁移 native 的当前参数；若要相同实例数值，需要显式复制参数。测试对六个定义分别绑定相同随机权重，验证原生和显式 Torch 的全部逻辑输出；原始 target torch 模型另外作为独立语义 oracle 保留。
 
 配套 WeightLang 源码提交见本次验证 JSON 中的 compiler_commit 字段；所有能力均为源码状态，未重新发布 PyPI/crates.io。
+
+RGB 原生宿主只用标准库准备字节块去重、出现位置、种类、地址编码、命令与离散 pooling 布局；所有参数相关计算在一次 WGT forward 中，Python 不串接中间神经网络结果。返回 `(blue, red)` 两个普通数据字典，不提供原 Torch 宿主的第三个流式 state；begin/advance/thoughts 流式兼容尚未接入。`train()`/`eval()` 控制 notebook 软/硬选择；risk 输入显式 stop_gradient。`pack` 返回16个逻辑输入，输出11个端口按 blue 的 logits/bits/risk/language/budget/context_budget、red 的 logits/bits/risk/budget/context_budget 排列。可全部展平后交给原生 train_step；测试比较全部参数的 SGD 与风险专用目标梯度隔离。
+
+新 RGB WGT 使用零/单位参数配方，不等同于原 Torch 随机初始化。构造时 image/command/frames 只决定布局，不训练；模型仍须显式导入已有权重或训练。布局包含唯一块数、出现次数、UTF-8 命令字节数、image 字节数与 image 块数。布局变化前先调用 `model.specialize(image,command,frames,depth=...)`，然后 pack/forward；同一布局可直接替换内容。重绑定使用已固定的原始 WGT 源码和共享 Rust 前端，服务验证参数 schema 与内存准入，保留同一会话的权重、优化器与 work_limit；失败保留原模型。不是任意大小的动态输入：端口16384元素、静态绑定、服务内存与 tape 限制依然适用。
+
+RGB 默认申请256 MiB服务内存，work_limit=20,000,000；可显式覆盖这两个原生 SDK 参数。预算按指令成本计量，不能把它当毫秒或性能保证。默认尺寸验收使用短输入、真实 depth16 前向/Adam；另在同一 Adam 会话切换输入长度与 depth8 后切回，核对第二次更新。`backend="torch"` 仍显式构造原 RGBPolicy；新普通 WGT 源码另外通过 from_ir 在 Torch 执行全部11个逻辑输出。
+
+`NativeRGBConfig` 默认值为 width=64、chunk_size=64、heads=4、landmarks=4、detail_k=8、blue_depth=1、red_depths=(2,4,8,16)、note_slots=16。整数配置必须为正且不接受 bool；width 同时整除8与 heads，chunk_size 为8..256，note_slots 为2..256。red_depths 严格递增、无重复、最大64，blue_depth 小于最小 red_depth；构造/specialize 的 depth 必须大于 blue_depth 且不超过最大 red_depth。config 接受 NativeRGBConfig、同字段字典或原 RGBConfig。显式 Torch 入口返回原 RGBPolicy，depth 须在该对象的 forward 调用传入。

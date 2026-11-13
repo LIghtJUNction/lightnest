@@ -13,6 +13,31 @@ from lightnest.architecture.native import load_recurrent
 from lightnest.architecture.generate import ELFGenerator
 
 
+def _rgb_packed(blue, red):
+    parts = [
+        blue[k]
+        for k in [
+            "logits",
+            "bits",
+            "risk_logit",
+            "language_logits",
+            "budget_logits",
+            "context_budget_logits",
+        ]
+    ]
+    parts += [
+        red[k]
+        for k in [
+            "logits",
+            "bits",
+            "risk_logit",
+            "budget_logits",
+            "context_budget_logits",
+        ]
+    ]
+    return torch.cat([value.reshape(-1) for value in parts])
+
+
 class NativeModelTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -662,4 +687,229 @@ class NativeModelTests(unittest.TestCase):
                 for left, right in zip(actual, expected, strict=True):
                     torch.testing.assert_close(
                         torch.tensor(left), right.detach(), atol=4e-6, rtol=4e-5
+                    )
+
+    def test_complete_rgb_native_observation_thinking_readouts_and_training(self):
+        from lightnest.architecture.native import load_rgb_policy
+        from lightnest.architecture.native_rgb import NativeRGBConfig
+        from lightnest.architecture.model import RGBConfig, RGBPolicy
+        from lightnest.architecture.observe import Frame
+
+        torch.manual_seed(101)
+        config = NativeRGBConfig(
+            width=8,
+            chunk_size=8,
+            heads=2,
+            landmarks=2,
+            detail_k=1,
+            blue_depth=1,
+            red_depths=(2, 3),
+            note_slots=3,
+        )
+        reference = RGBPolicy(RGBConfig(**vars(config)))
+        self.assertIsInstance(
+            load_rgb_policy(b"a", "x", config=vars(config), backend="torch"), RGBPolicy
+        )
+        with self.assertRaises(TypeError):
+            load_rgb_policy(b"a", "x", config=config, backend="torch", depth=3)
+        # Exercise guidance and language gradients despite their cold-start zeros.
+        with torch.no_grad():
+            for module in [
+                reference.red_to_blue,
+                reference.abstract_to_blue,
+                reference.blue_language,
+            ]:
+                module.weight.normal_(std=0.1)
+                module.bias.normal_(std=0.1)
+        image = bytes(range(9))
+        command = "fix"
+        frames = (
+            Frame("stdout", image[:8], 128),
+            Frame("feedback", bytes([9, 10, 11]), 4096),
+            Frame("empty", b"", 7),
+        )
+
+        with load_rgb_policy(
+            image, command, frames, config=config, endpoint=self.endpoint
+        ) as native:
+            native.import_state_dict(reference.state_dict())
+            for training in [True, False]:
+                native.train(training)
+                reference.train(training)
+                for mode in ["routed", "dense", "compressed"]:
+                    blue, red, _ = reference(image, command, frames, depth=3, mode=mode)
+                    actual = wgt.Model.forward(
+                        native, *native.pack(image, command, frames, mode=mode)
+                    )
+                    want = _rgb_packed(blue, red)
+                    got = torch.cat([torch.tensor(value).flatten() for value in actual])
+                    torch.testing.assert_close(got, want.detach(), atol=5e-6, rtol=5e-5)
+            reference.train()
+            native.train()
+            reference.zero_grad()
+            blue, red, _ = reference(image, command, frames, depth=3)
+            expected = _rgb_packed(blue, red)
+            loss = expected.square().mean()
+            loss.backward()
+            ports = native.pack(image, command, frames)
+
+            def flatten(x):
+                return [
+                    v
+                    for item in x
+                    for v in (flatten(item) if isinstance(item, list) else [item])
+                ]
+
+            native.set_optimizer("sgd")
+            actual_loss = native.train_step(
+                [[v for port in ports for v in flatten(port)]],
+                [[0.0] * len(expected)],
+                rate=0.01,
+            )
+            self.assertAlmostEqual(actual_loss, float(loss.detach()), places=5)
+            torch.optim.SGD(reference.parameters(), lr=0.01).step()
+            actual = native.parameters()
+            with load_rgb_policy(
+                image, command, frames, config=config, endpoint=self.endpoint
+            ) as updated:
+                updated.import_state_dict(reference.state_dict())
+                for left, right in zip(actual, updated.parameters(), strict=True):
+                    self.assertEqual(left.name, right.name)
+                    torch.testing.assert_close(
+                        torch.tensor(left.data),
+                        torch.tensor(right.data),
+                        atol=4e-6,
+                        rtol=4e-5,
+                    )
+            # The very same ordinary WGT definition also executes in Torch.
+            portable = wgt.from_ir(native.definition, backend="torch", device="cpu")
+            raw = portable.to_torch().base
+            with torch.no_grad():
+                for p in actual:
+                    raw.get_parameter(raw.parameter_names[p.name]).copy_(
+                        torch.tensor(p.data).reshape(p.shape)
+                    )
+            native_values = wgt.Model.forward(native, *ports)
+            torch_values = portable(
+                *[torch.tensor(v, dtype=torch.float32) for v in ports]
+            )
+            for got, want in zip(native_values, torch_values, strict=True):
+                torch.testing.assert_close(
+                    torch.tensor(got), want.detach(), atol=5e-6, rtol=5e-5
+                )
+
+            # Risk targets must not train the byte/guidance/observer pathways.
+            before = native.parameters()
+            reference.zero_grad()
+            blue, red, _ = reference(image, command, frames, depth=3)
+            loss = (
+                blue["risk_logit"].square().sum() + red["risk_logit"].square().sum()
+            ) / len(expected)
+            loss.backward()
+            target = flatten(wgt.Model.forward(native, *ports))
+            first = 9 * len(image)
+            second = (
+                first
+                + 1
+                + 257
+                + len(config.red_depths)
+                + 1
+                + config.note_slots
+                + 1
+                + 9 * len(image)
+            )
+            target[first] = target[second] = 0.0
+            native.train_step([flatten(ports)], [target], rate=0.01)
+            torch.optim.SGD(reference.parameters(), lr=0.01).step()
+            after = native.parameters()
+            for old, new in zip(before, after, strict=True):
+                if not new.name.startswith("risk"):
+                    self.assertEqual(old.data, new.data, new.name)
+            with load_rgb_policy(
+                image, command, frames, config=config, endpoint=self.endpoint
+            ) as oracle:
+                oracle.import_state_dict(reference.state_dict())
+                for got, want in zip(after, oracle.parameters(), strict=True):
+                    torch.testing.assert_close(
+                        torch.tensor(got.data),
+                        torch.tensor(want.data),
+                        atol=4e-6,
+                        rtol=4e-5,
+                    )
+
+    def test_rgb_default_size_and_rebinding_preserve_optimizer(self):
+        from lightnest.architecture.native import load_rgb_policy
+        from lightnest.architecture.model import RGBPolicy, RGBConfig
+
+        torch.manual_seed(109)
+        reference = RGBPolicy(RGBConfig())
+        image, command = bytes(range(9)), "a"
+        with load_rgb_policy(image, command, endpoint=self.endpoint) as native:
+            native.import_state_dict(reference.state_dict())
+            for training in [False, True]:
+                reference.train(training)
+                native.train(training)
+                blue, red, _ = reference(image, command, depth=16)
+                ports = native.pack(image, command)
+                actual = wgt.Model.forward(native, *ports)
+                torch.testing.assert_close(
+                    torch.cat([torch.tensor(v).flatten() for v in actual]),
+                    _rgb_packed(blue, red).detach(),
+                    atol=1e-5,
+                    rtol=1e-4,
+                )
+
+            # Default depth=16 and width=64 must also fit a real native AD tape.
+            def flat(values):
+                return torch.cat([torch.tensor(v).flatten() for v in values]).tolist()
+
+            native.set_optimizer("adam")
+            zeros = [0.0] * _rgb_packed(blue, red).numel()
+            native.train_step([flat(ports)], [zeros], rate=0.0001)
+            optimizer = torch.optim.Adam(reference.parameters(), lr=0.0001)
+            reference.zero_grad()
+            _rgb_packed(blue, red).square().mean().backward()
+            optimizer.step()
+            # Rebinding must keep the existing Adam step/moments, not re-import weights.
+            # Check optimizer continuity with a same-session geometry roundtrip.
+            # Importing a checkpoint would be a different, unsupported contract.
+            before = native.parameters()
+            native.specialize(bytes(range(65)), "longer", depth=8)
+            self.assertEqual(native.parameters(), before)
+            changed = wgt.Model.forward(
+                native, *native.pack(bytes(range(65)), "longer")
+            )
+            self.assertEqual(len(changed[0]), 65)
+            with torch.no_grad():
+                changed_blue, changed_red, _ = reference(
+                    bytes(range(65)), "longer", depth=8
+                )
+            torch.testing.assert_close(
+                torch.tensor(flat(changed)),
+                _rgb_packed(changed_blue, changed_red),
+                atol=1e-5,
+                rtol=1e-4,
+            )
+            native.specialize(image, command, depth=16)
+            self.assertEqual(native.parameters(), before)
+            # Explicit invalid geometry leaves the last usable definition/session.
+            with self.assertRaises(ValueError):
+                native.specialize(b"", command)
+            self.assertEqual(native.parameters(), before)
+            self.assertEqual(native.work_limit, 20_000_000)
+            native.train_step([flat(ports)], [zeros], rate=0.0001)
+            reference.zero_grad()
+            blue, red, _ = reference(image, command, depth=16)
+            _rgb_packed(blue, red).square().mean().backward()
+            optimizer.step()
+            with load_rgb_policy(image, command, endpoint=self.endpoint) as oracle:
+                oracle.import_state_dict(reference.state_dict())
+                for got, want in zip(
+                    native.parameters(), oracle.parameters(), strict=True
+                ):
+                    torch.testing.assert_close(
+                        torch.tensor(got.data),
+                        torch.tensor(want.data),
+                        atol=1e-5,
+                        rtol=1e-4,
                     )

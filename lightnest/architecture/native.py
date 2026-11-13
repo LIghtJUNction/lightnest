@@ -606,3 +606,9 @@ def load_hnet_generator(width=128, capacity=2048, *, backend="native", **options
 
         return HNetELFGenerator(width, capacity, **options)
     raise ValueError("backend must be 'native' or 'torch'")
+
+
+def load_rgb_policy(image, command, frames=(), *, backend="native", **options):
+    from .native_rgb import load_rgb_policy as load
+
+    return load(image, command, frames, backend=backend, **options)
