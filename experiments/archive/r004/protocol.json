@@ -1,0 +1,43 @@
+{
+  "id": "r004",
+  "hypothesis": "Learn mode/position output biases from training to relieve fixed-byte memorization; compare width-8/16 biased MLP with width-32 copy-head controls. No headers are attached at inference.",
+  "args": {
+    "round": "r004",
+    "transfer": false,
+    "variable_weight": 128.0,
+    "hypothesis": "Learn mode/position output biases from training to relieve fixed-byte memorization; compare width-8/16 biased MLP with width-32 copy-head controls. No headers are attached at inference.",
+    "steps": 1200,
+    "seeds": [
+      11,
+      23,
+      37
+    ],
+    "data_seed": 401,
+    "width": 32,
+    "batch_size": 8,
+    "threads": 2,
+    "variants": [
+      "mlp_copy",
+      "conv_copy",
+      "mlp_copy_bias_small",
+      "mlp_copy_bias_tiny"
+    ]
+  },
+  "selection": "best validation macro exact, variable-byte accuracy, parameter count, then loss; aggregate seeds",
+  "budget": "same minibatch indices and steps; not FLOP, parameter or wall-time matched",
+  "primary": "macro family full-file exact match including EOS",
+  "limits": "two fixed assembler layouts; no arbitrary program, inspect or edit claim; test never selects winner",
+  "runtime": {
+    "torch": "2.13.0+cpu",
+    "device": "cpu",
+    "threads": 2
+  },
+  "source_hashes": {
+    "experiments/active/elf_generation/PROTOCOL.md": "741aba3b1af96acd45df068db49e0457c7f482ca30776281f0b3c9d7e3c2c3eb",
+    "experiments/active/elf_generation/__init__.py": "2d6164677eddae66733f23e47f0c39ba1d0b222b3424fb78eb904c6f279e8ece",
+    "experiments/active/elf_generation/models.py": "a27af6a34f955de86488780b372cb1cad9efc4ae620452da5fb2653b2aeaaeb1",
+    "experiments/active/elf_generation/models.wgt": "4853ebe169e98e0428095bf7ba4d701e08f71398239fdb04e850b4a2bd306858",
+    "experiments/active/elf_generation/run.py": "34d746ff4211ee9f17ceb36cd0282f8920485da23191a6fc61194b82c3b0f002",
+    "experiments/active/elf_generation/tasks.py": "0bd21c27db2d7d93d13d8ca19dd7e85760515261e540976ddabb506f5f76e733"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "updated_utc": "2026-11-13T14:10:09.412217+00:00",
+  "phase": "benchmark_complete",
+  "round": "r007",
+  "incumbent": {
+    "variant": "mlp_copy_mode_small",
+    "effective_width": 16,
+    "parameters": 13786,
+    "run": "mlp_copy_mode_small-s37",
+    "implementation": "experiments/active/elf_generation/models.wgt",
+    "weights": "weights/experiments/r007/model",
+    "validation_macro_exact": 1.0,
+    "audit_exact": 480,
+    "audit_count": 480,
+    "seeds": 3,
+    "request_bit_margin_check": "passed",
+    "report": "experiments/archive/r007/REPORT.md",
+    "application_promoted": false
+  },
+  "verification": "experiments/VALIDATION.md",
+  "next_action": "扩展到不同 ELF 布局及独立理解、编辑题；冻结新协议后继续比较。当前结论仅覆盖两类固定布局。"
+}

@@ -9,7 +9,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE_DIRS = ("lightnest", "archive", "tools", "tests")
+SOURCE_DIRS = ("lightnest", "experiments", "archive", "tools", "tests")
 
 
 def main() -> int:
@@ -23,6 +23,9 @@ def main() -> int:
 
     env = os.environ.copy()
     env["PYTHONDONTWRITEBYTECODE"] = "1"
+    local_compiler = ROOT.parent / "WeightLang/WeightLang/target/debug/wgt"
+    if local_compiler.is_file():
+        env.setdefault("WGT_COMPILER", str(local_compiler))
     commands = [
         ["tools/check_source_tree.py"],
         ["-m", "unittest", "discover", "-s", "tests", "-t", ".", "-v"],

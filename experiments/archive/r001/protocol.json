@@ -1,0 +1,40 @@
+{
+  "id": "r001",
+  "hypothesis": "Compare parallel complete-file decoders without target bytes as inputs.",
+  "args": {
+    "round": "r001",
+    "steps": 240,
+    "seeds": [
+      11,
+      23,
+      37
+    ],
+    "data_seed": 101,
+    "width": 32,
+    "batch_size": 8,
+    "threads": 2,
+    "variants": [
+      "mlp",
+      "gru",
+      "conv",
+      "transformer"
+    ]
+  },
+  "selection": "best validation macro exact, variable-byte accuracy, then loss; aggregate seeds",
+  "budget": "same minibatch indices and steps; not FLOP, parameter or wall-time matched",
+  "primary": "macro family full-file exact match including EOS",
+  "limits": "two fixed assembler layouts; no arbitrary program, inspect or edit claim; test never selects winner",
+  "runtime": {
+    "torch": "2.13.0+cpu",
+    "device": "cpu",
+    "threads": 2
+  },
+  "source_hashes": {
+    "experiments/active/elf_generation/__init__.py": "2d6164677eddae66733f23e47f0c39ba1d0b222b3424fb78eb904c6f279e8ece",
+    "experiments/active/elf_generation/models.py": "a27af6a34f955de86488780b372cb1cad9efc4ae620452da5fb2653b2aeaaeb1",
+    "experiments/active/elf_generation/models.wgt": "c237207748d8e1674fc2873a50988e6390a3a7fc1f052ab57d9ec1241e9b3373",
+    "experiments/active/elf_generation/run.py": "ec9976ffa09d8c558d4dcc5ba2b7721a44e23f394405e2a765df8c2fc9def70b",
+    "lightnest/training/hnet_experiment.py": "b39a55f64c8b050f7b0518c88de8f52d3ed7c7fc8a514a7c88bc25bc3414029b",
+    "lightnest/architecture/generate.py": "d759925fa02b13d419426cd0c98e09154b933e13bb8cbb7352ab0b09a6abe624"
+  }
+}

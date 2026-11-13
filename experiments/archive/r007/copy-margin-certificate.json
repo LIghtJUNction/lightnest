@@ -1,0 +1,37 @@
+{
+  "applicable": true,
+  "passed": true,
+  "tolerance": 0.001,
+  "scope": "all request-bit combinations under the train-inferred two-layout contract; not arbitrary program correctness",
+  "families": {
+    "exit": {
+      "passed": true,
+      "target_bytes": 648,
+      "minimum_bit_margin": 3.9575347900390625,
+      "stop_margin": 4.355037212371826,
+      "uncertain_byte_positions": [],
+      "stop_payload_invariant": true,
+      "learned_request_mapping": {
+        "289": 1
+      }
+    },
+    "stdout": {
+      "passed": true,
+      "target_bytes": 752,
+      "minimum_bit_margin": 1.9768157005310059,
+      "stop_margin": 3.9350292682647705,
+      "uncertain_byte_positions": [],
+      "stop_payload_invariant": true,
+      "learned_request_mapping": {
+        "321": 2,
+        "322": 3,
+        "323": 4,
+        "324": 5,
+        "325": 6,
+        "326": 7,
+        "327": 8,
+        "328": 9
+      }
+    }
+  }
+}

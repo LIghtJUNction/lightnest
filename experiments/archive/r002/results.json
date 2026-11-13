@@ -1,0 +1,3126 @@
+{
+  "winner_by_validation": "conv_copy",
+  "selected_run": "conv_copy-s23",
+  "runs": [
+    {
+      "run": "mlp-s11",
+      "variant": "mlp",
+      "seed": 11,
+      "parameters": 31017,
+      "best_step": 1200,
+      "validation": {
+        "loss": 0.33476785727543756,
+        "exact": 11,
+        "count": 64,
+        "macro_exact": 0.171875,
+        "families": {
+          "exit": 0.34375,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.23958333333333334,
+        "seconds": 0.014899531030096114
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.8927623070776463,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.0,
+            "seconds": 0.021096616983413696
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.7231250889599323,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.010416666666666666,
+            "seconds": 0.018034187029115856
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.6132812611758709,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.010416666666666666,
+            "seconds": 0.014241633005440235
+          }
+        },
+        {
+          "step": 320,
+          "validation": {
+            "loss": 0.5377011382952332,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.03819444444444445,
+            "seconds": 0.015744338976219296
+          }
+        },
+        {
+          "step": 400,
+          "validation": {
+            "loss": 0.47610518895089626,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1076388888888889,
+            "seconds": 0.014942197012715042
+          }
+        },
+        {
+          "step": 480,
+          "validation": {
+            "loss": 0.4355339198373258,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.10069444444444445,
+            "seconds": 0.018759972997941077
+          }
+        },
+        {
+          "step": 560,
+          "validation": {
+            "loss": 0.41084310435689986,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1284722222222222,
+            "seconds": 0.019957788987085223
+          }
+        },
+        {
+          "step": 640,
+          "validation": {
+            "loss": 0.39533216366544366,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.13194444444444445,
+            "seconds": 0.03768146102083847
+          }
+        },
+        {
+          "step": 720,
+          "validation": {
+            "loss": 0.3674992967862636,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1423611111111111,
+            "seconds": 0.021732123044785112
+          }
+        },
+        {
+          "step": 800,
+          "validation": {
+            "loss": 0.3533793200040236,
+            "exact": 1,
+            "count": 64,
+            "macro_exact": 0.015625,
+            "families": {
+              "exit": 0.03125,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2013888888888889,
+            "seconds": 0.01905722200172022
+          }
+        },
+        {
+          "step": 880,
+          "validation": {
+            "loss": 0.35163826076313853,
+            "exact": 1,
+            "count": 64,
+            "macro_exact": 0.015625,
+            "families": {
+              "exit": 0.03125,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1736111111111111,
+            "seconds": 0.018578746006824076
+          }
+        },
+        {
+          "step": 960,
+          "validation": {
+            "loss": 0.34078315214719623,
+            "exact": 3,
+            "count": 64,
+            "macro_exact": 0.046875,
+            "families": {
+              "exit": 0.09375,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1909722222222222,
+            "seconds": 0.015392606961540878
+          }
+        },
+        {
+          "step": 1040,
+          "validation": {
+            "loss": 0.34224739333149046,
+            "exact": 6,
+            "count": 64,
+            "macro_exact": 0.09375,
+            "families": {
+              "exit": 0.1875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2152777777777778,
+            "seconds": 0.014225357968825847
+          }
+        },
+        {
+          "step": 1120,
+          "validation": {
+            "loss": 0.33376873761881143,
+            "exact": 6,
+            "count": 64,
+            "macro_exact": 0.09375,
+            "families": {
+              "exit": 0.1875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.21875,
+            "seconds": 0.016597919980995357
+          }
+        },
+        {
+          "step": 1200,
+          "validation": {
+            "loss": 0.33476785727543756,
+            "exact": 11,
+            "count": 64,
+            "macro_exact": 0.171875,
+            "families": {
+              "exit": 0.34375,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.23958333333333334,
+            "seconds": 0.014899531030096114
+          }
+        }
+      ],
+      "train_seconds": 9.143305590492673,
+      "schedule_sha256": "56f1d61d0e1a9be522bb568409723f26801ae53819ae63e88affcbc4699f30ad",
+      "test": {
+        "loss": 0.45410716622912634,
+        "exact": 13,
+        "count": 96,
+        "macro_exact": 0.203125,
+        "families": {
+          "exit": 0.40625,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.19852941176470587,
+        "seconds": 0.07479568501003087
+      }
+    },
+    {
+      "run": "conv-s11",
+      "variant": "conv",
+      "seed": 11,
+      "parameters": 37129,
+      "best_step": 1040,
+      "validation": {
+        "loss": 0.3679701884975657,
+        "exact": 28,
+        "count": 64,
+        "macro_exact": 0.4375,
+        "families": {
+          "exit": 0.875,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.2152777777777778,
+        "seconds": 0.04496045003179461
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.8068652935326099,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.0,
+            "seconds": 0.02296903496608138
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.6709720604121685,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.021010020980611444
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.6034232825040817,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.010416666666666666,
+            "seconds": 0.02582707698456943
+          }
+        },
+        {
+          "step": 320,
+          "validation": {
+            "loss": 0.5334123969078064,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.03125,
+            "seconds": 0.021604691981337965
+          }
+        },
+        {
+          "step": 400,
+          "validation": {
+            "loss": 0.47713939752429724,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.06944444444444445,
+            "seconds": 0.019643098989035934
+          }
+        },
+        {
+          "step": 480,
+          "validation": {
+            "loss": 0.4412345723249018,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.14930555555555555,
+            "seconds": 0.017639569006860256
+          }
+        },
+        {
+          "step": 560,
+          "validation": {
+            "loss": 0.4089424414560199,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.13541666666666666,
+            "seconds": 0.026676259003579617
+          }
+        },
+        {
+          "step": 640,
+          "validation": {
+            "loss": 0.4050295582273975,
+            "exact": 7,
+            "count": 64,
+            "macro_exact": 0.109375,
+            "families": {
+              "exit": 0.21875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1284722222222222,
+            "seconds": 0.017771899001672864
+          }
+        },
+        {
+          "step": 720,
+          "validation": {
+            "loss": 0.40159679658245295,
+            "exact": 10,
+            "count": 64,
+            "macro_exact": 0.15625,
+            "families": {
+              "exit": 0.3125,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1423611111111111,
+            "seconds": 0.019261926994659007
+          }
+        },
+        {
+          "step": 800,
+          "validation": {
+            "loss": 0.3870105213718489,
+            "exact": 11,
+            "count": 64,
+            "macro_exact": 0.171875,
+            "families": {
+              "exit": 0.34375,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1527777777777778,
+            "seconds": 0.03198413300560787
+          }
+        },
+        {
+          "step": 880,
+          "validation": {
+            "loss": 0.38014272681903094,
+            "exact": 22,
+            "count": 64,
+            "macro_exact": 0.34375,
+            "families": {
+              "exit": 0.6875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2152777777777778,
+            "seconds": 0.027614651946350932
+          }
+        },
+        {
+          "step": 960,
+          "validation": {
+            "loss": 0.37054993474157527,
+            "exact": 24,
+            "count": 64,
+            "macro_exact": 0.375,
+            "families": {
+              "exit": 0.75,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1909722222222222,
+            "seconds": 0.023205754987429827
+          }
+        },
+        {
+          "step": 1040,
+          "validation": {
+            "loss": 0.3679701884975657,
+            "exact": 28,
+            "count": 64,
+            "macro_exact": 0.4375,
+            "families": {
+              "exit": 0.875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2152777777777778,
+            "seconds": 0.04496045003179461
+          }
+        },
+        {
+          "step": 1120,
+          "validation": {
+            "loss": 0.3746466184966266,
+            "exact": 27,
+            "count": 64,
+            "macro_exact": 0.421875,
+            "families": {
+              "exit": 0.84375,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2013888888888889,
+            "seconds": 0.03326120198471472
+          }
+        },
+        {
+          "step": 1200,
+          "validation": {
+            "loss": 0.34972550556994975,
+            "exact": 25,
+            "count": 64,
+            "macro_exact": 0.390625,
+            "families": {
+              "exit": 0.78125,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2222222222222222,
+            "seconds": 0.026343632023781538
+          }
+        }
+      ],
+      "train_seconds": 12.386825555644464,
+      "schedule_sha256": "56f1d61d0e1a9be522bb568409723f26801ae53819ae63e88affcbc4699f30ad",
+      "test": {
+        "loss": 0.49302888836245984,
+        "exact": 25,
+        "count": 96,
+        "macro_exact": 0.390625,
+        "families": {
+          "exit": 0.78125,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.13786764705882354,
+        "seconds": 0.03219050797633827
+      }
+    },
+    {
+      "run": "mlp_copy-s11",
+      "variant": "mlp_copy",
+      "seed": 11,
+      "parameters": 32426,
+      "best_step": 1200,
+      "validation": {
+        "loss": 0.0013604980340460315,
+        "exact": 64,
+        "count": 64,
+        "macro_exact": 1.0,
+        "families": {
+          "exit": 1.0,
+          "stdout": 1.0
+        },
+        "variable_accuracy": 1.0,
+        "seconds": 0.034826310991775244
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.27952877804636955,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.8194444444444444,
+            "seconds": 0.03597647900460288
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.145592225715518,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.9722222222222222,
+            "seconds": 0.02352759998757392
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.09122646693140268,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.028849209018517286
+          }
+        },
+        {
+          "step": 320,
+          "validation": {
+            "loss": 0.05256779259070754,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.020730777003336698
+          }
+        },
+        {
+          "step": 400,
+          "validation": {
+            "loss": 0.026460977038368583,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.025028437026776373
+          }
+        },
+        {
+          "step": 480,
+          "validation": {
+            "loss": 0.014048011391423643,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.027810421015601605
+          }
+        },
+        {
+          "step": 560,
+          "validation": {
+            "loss": 0.008320499211549759,
+            "exact": 33,
+            "count": 64,
+            "macro_exact": 0.515625,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.03125
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.024041789991315454
+          }
+        },
+        {
+          "step": 640,
+          "validation": {
+            "loss": 0.00552661094116047,
+            "exact": 35,
+            "count": 64,
+            "macro_exact": 0.546875,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.09375
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.05103190499357879
+          }
+        },
+        {
+          "step": 720,
+          "validation": {
+            "loss": 0.0041997567168436944,
+            "exact": 40,
+            "count": 64,
+            "macro_exact": 0.625,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.25
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03510065999580547
+          }
+        },
+        {
+          "step": 800,
+          "validation": {
+            "loss": 0.00287958123954013,
+            "exact": 50,
+            "count": 64,
+            "macro_exact": 0.78125,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.5625
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03031965100672096
+          }
+        },
+        {
+          "step": 880,
+          "validation": {
+            "loss": 0.007025530852843076,
+            "exact": 51,
+            "count": 64,
+            "macro_exact": 0.796875,
+            "families": {
+              "exit": 0.90625,
+              "stdout": 0.6875
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.02892547199735418
+          }
+        },
+        {
+          "step": 960,
+          "validation": {
+            "loss": 0.0023656206903979182,
+            "exact": 61,
+            "count": 64,
+            "macro_exact": 0.953125,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.90625
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.023957405996043235
+          }
+        },
+        {
+          "step": 1040,
+          "validation": {
+            "loss": 0.0018583193304948509,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03677297802641988
+          }
+        },
+        {
+          "step": 1120,
+          "validation": {
+            "loss": 0.0015769341553095728,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.054982370988000184
+          }
+        },
+        {
+          "step": 1200,
+          "validation": {
+            "loss": 0.0013604980340460315,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.034826310991775244
+          }
+        }
+      ],
+      "train_seconds": 14.4605301716947,
+      "schedule_sha256": "56f1d61d0e1a9be522bb568409723f26801ae53819ae63e88affcbc4699f30ad",
+      "test": {
+        "loss": 0.0013492934425206233,
+        "exact": 95,
+        "count": 96,
+        "macro_exact": 0.9921875,
+        "families": {
+          "exit": 1.0,
+          "stdout": 0.984375
+        },
+        "variable_accuracy": 1.0,
+        "seconds": 0.051449694961775094
+      }
+    },
+    {
+      "run": "conv_copy-s11",
+      "variant": "conv_copy",
+      "seed": 11,
+      "parameters": 38538,
+      "best_step": 1200,
+      "validation": {
+        "loss": 0.001029389095492661,
+        "exact": 64,
+        "count": 64,
+        "macro_exact": 1.0,
+        "families": {
+          "exit": 1.0,
+          "stdout": 1.0
+        },
+        "variable_accuracy": 1.0,
+        "seconds": 0.0338949509896338
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.2505538035184145,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.6666666666666666,
+            "seconds": 0.039304453996010125
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.11756582092493773,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.9583333333333334,
+            "seconds": 0.029505228041671216
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.05005763145163655,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.02938830095808953
+          }
+        },
+        {
+          "step": 320,
+          "validation": {
+            "loss": 0.0203066177200526,
+            "exact": 31,
+            "count": 64,
+            "macro_exact": 0.484375,
+            "families": {
+              "exit": 0.96875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04226765100611374
+          }
+        },
+        {
+          "step": 400,
+          "validation": {
+            "loss": 0.009325081016868353,
+            "exact": 46,
+            "count": 64,
+            "macro_exact": 0.71875,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.4375
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.0938784210011363
+          }
+        },
+        {
+          "step": 480,
+          "validation": {
+            "loss": 0.0057135073584504426,
+            "exact": 63,
+            "count": 64,
+            "macro_exact": 0.984375,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.96875
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04386790900025517
+          }
+        },
+        {
+          "step": 560,
+          "validation": {
+            "loss": 0.003956081753131002,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.05489100201521069
+          }
+        },
+        {
+          "step": 640,
+          "validation": {
+            "loss": 0.0029639982676599175,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04191186302341521
+          }
+        },
+        {
+          "step": 720,
+          "validation": {
+            "loss": 0.002334917720872909,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.07418225199216977
+          }
+        },
+        {
+          "step": 800,
+          "validation": {
+            "loss": 0.005631010222714394,
+            "exact": 62,
+            "count": 64,
+            "macro_exact": 0.96875,
+            "families": {
+              "exit": 0.96875,
+              "stdout": 0.96875
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04339786100899801
+          }
+        },
+        {
+          "step": 880,
+          "validation": {
+            "loss": 0.0018399331747787073,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03450278099626303
+          }
+        },
+        {
+          "step": 960,
+          "validation": {
+            "loss": 0.0014981539861764759,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04118745500454679
+          }
+        },
+        {
+          "step": 1040,
+          "validation": {
+            "loss": 0.001292900589760393,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04913193004904315
+          }
+        },
+        {
+          "step": 1120,
+          "validation": {
+            "loss": 0.0011525726004038006,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.046436119999270886
+          }
+        },
+        {
+          "step": 1200,
+          "validation": {
+            "loss": 0.001029389095492661,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.0338949509896338
+          }
+        }
+      ],
+      "train_seconds": 17.487889401207212,
+      "schedule_sha256": "56f1d61d0e1a9be522bb568409723f26801ae53819ae63e88affcbc4699f30ad",
+      "test": {
+        "loss": 0.0010174854251090437,
+        "exact": 96,
+        "count": 96,
+        "macro_exact": 1.0,
+        "families": {
+          "exit": 1.0,
+          "stdout": 1.0
+        },
+        "variable_accuracy": 1.0,
+        "seconds": 0.06249732704600319
+      }
+    },
+    {
+      "run": "mlp-s23",
+      "variant": "mlp",
+      "seed": 23,
+      "parameters": 31017,
+      "best_step": 1200,
+      "validation": {
+        "loss": 0.32650856557302177,
+        "exact": 14,
+        "count": 64,
+        "macro_exact": 0.21875,
+        "families": {
+          "exit": 0.4375,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.2708333333333333,
+        "seconds": 0.06554419605527073
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.93466916680336,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.016126973961945623
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.6950179673731327,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.006944444444444444,
+            "seconds": 0.02001327701145783
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.5920014809817076,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.006944444444444444,
+            "seconds": 0.018004758981987834
+          }
+        },
+        {
+          "step": 320,
+          "validation": {
+            "loss": 0.5112952897325158,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.04861111111111111,
+            "seconds": 0.0198893949855119
+          }
+        },
+        {
+          "step": 400,
+          "validation": {
+            "loss": 0.45450976956635714,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.14583333333333334,
+            "seconds": 0.017789452977012843
+          }
+        },
+        {
+          "step": 480,
+          "validation": {
+            "loss": 0.4219467919319868,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1423611111111111,
+            "seconds": 0.038871479977387935
+          }
+        },
+        {
+          "step": 560,
+          "validation": {
+            "loss": 0.39783871243707836,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.14583333333333334,
+            "seconds": 0.058578192023560405
+          }
+        },
+        {
+          "step": 640,
+          "validation": {
+            "loss": 0.3862865968840197,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1701388888888889,
+            "seconds": 0.033029441023245454
+          }
+        },
+        {
+          "step": 720,
+          "validation": {
+            "loss": 0.36852145567536354,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1736111111111111,
+            "seconds": 0.08905925799626857
+          }
+        },
+        {
+          "step": 800,
+          "validation": {
+            "loss": 0.3589476941851899,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1736111111111111,
+            "seconds": 0.025511529005598277
+          }
+        },
+        {
+          "step": 880,
+          "validation": {
+            "loss": 0.3423981113592163,
+            "exact": 5,
+            "count": 64,
+            "macro_exact": 0.078125,
+            "families": {
+              "exit": 0.15625,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.22569444444444445,
+            "seconds": 0.048935172031633556
+          }
+        },
+        {
+          "step": 960,
+          "validation": {
+            "loss": 0.3471542706247419,
+            "exact": 5,
+            "count": 64,
+            "macro_exact": 0.078125,
+            "families": {
+              "exit": 0.15625,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.19791666666666666,
+            "seconds": 0.09523885400267318
+          }
+        },
+        {
+          "step": 1040,
+          "validation": {
+            "loss": 0.3378742679487914,
+            "exact": 11,
+            "count": 64,
+            "macro_exact": 0.171875,
+            "families": {
+              "exit": 0.34375,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.21180555555555555,
+            "seconds": 0.028953662025742233
+          }
+        },
+        {
+          "step": 1120,
+          "validation": {
+            "loss": 0.35580939007923007,
+            "exact": 5,
+            "count": 64,
+            "macro_exact": 0.078125,
+            "families": {
+              "exit": 0.15625,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2222222222222222,
+            "seconds": 0.024937112990301102
+          }
+        },
+        {
+          "step": 1200,
+          "validation": {
+            "loss": 0.32650856557302177,
+            "exact": 14,
+            "count": 64,
+            "macro_exact": 0.21875,
+            "families": {
+              "exit": 0.4375,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2708333333333333,
+            "seconds": 0.06554419605527073
+          }
+        }
+      ],
+      "train_seconds": 13.467712395009585,
+      "schedule_sha256": "4d6239ee703f5e70dfbd22ab79d62e96ad38e25f02f571a544d7c5b0c29887c1",
+      "test": {
+        "loss": 0.4588318723641957,
+        "exact": 10,
+        "count": 96,
+        "macro_exact": 0.15625,
+        "families": {
+          "exit": 0.3125,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.19117647058823528,
+        "seconds": 0.04253999498905614
+      }
+    },
+    {
+      "run": "conv-s23",
+      "variant": "conv",
+      "seed": 23,
+      "parameters": 37129,
+      "best_step": 1200,
+      "validation": {
+        "loss": 0.3618351357290521,
+        "exact": 21,
+        "count": 64,
+        "macro_exact": 0.328125,
+        "families": {
+          "exit": 0.65625,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.2048611111111111,
+        "seconds": 0.01961373200174421
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.8524757251143456,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.0,
+            "seconds": 0.025228729005903006
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.694313433021307,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.024331455992069095
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.5928724203258753,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.013888888888888888,
+            "seconds": 0.025730753026437014
+          }
+        },
+        {
+          "step": 320,
+          "validation": {
+            "loss": 0.5448182607069612,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.03125,
+            "seconds": 0.04316265700617805
+          }
+        },
+        {
+          "step": 400,
+          "validation": {
+            "loss": 0.4734376990236342,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.08680555555555555,
+            "seconds": 0.028593242983333766
+          }
+        },
+        {
+          "step": 480,
+          "validation": {
+            "loss": 0.441934562753886,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.10069444444444445,
+            "seconds": 0.036927326989825815
+          }
+        },
+        {
+          "step": 560,
+          "validation": {
+            "loss": 0.4118712309282273,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.12152777777777778,
+            "seconds": 0.02716842299560085
+          }
+        },
+        {
+          "step": 640,
+          "validation": {
+            "loss": 0.4216928444802761,
+            "exact": 1,
+            "count": 64,
+            "macro_exact": 0.015625,
+            "families": {
+              "exit": 0.03125,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1527777777777778,
+            "seconds": 0.03474847105098888
+          }
+        },
+        {
+          "step": 720,
+          "validation": {
+            "loss": 0.3929813565919176,
+            "exact": 2,
+            "count": 64,
+            "macro_exact": 0.03125,
+            "families": {
+              "exit": 0.0625,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.13541666666666666,
+            "seconds": 0.020679221022874117
+          }
+        },
+        {
+          "step": 800,
+          "validation": {
+            "loss": 0.39805574517231435,
+            "exact": 12,
+            "count": 64,
+            "macro_exact": 0.1875,
+            "families": {
+              "exit": 0.375,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1527777777777778,
+            "seconds": 0.0258045659866184
+          }
+        },
+        {
+          "step": 880,
+          "validation": {
+            "loss": 0.3805106380023062,
+            "exact": 15,
+            "count": 64,
+            "macro_exact": 0.234375,
+            "families": {
+              "exit": 0.46875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.17708333333333334,
+            "seconds": 0.01874500699341297
+          }
+        },
+        {
+          "step": 960,
+          "validation": {
+            "loss": 0.3859345527016558,
+            "exact": 5,
+            "count": 64,
+            "macro_exact": 0.078125,
+            "families": {
+              "exit": 0.15625,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1701388888888889,
+            "seconds": 0.031840184004977345
+          }
+        },
+        {
+          "step": 1040,
+          "validation": {
+            "loss": 0.37524070718791336,
+            "exact": 16,
+            "count": 64,
+            "macro_exact": 0.25,
+            "families": {
+              "exit": 0.5,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.18055555555555555,
+            "seconds": 0.019621399987954646
+          }
+        },
+        {
+          "step": 1120,
+          "validation": {
+            "loss": 0.37789594108471647,
+            "exact": 19,
+            "count": 64,
+            "macro_exact": 0.296875,
+            "families": {
+              "exit": 0.59375,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1736111111111111,
+            "seconds": 0.022292109031695873
+          }
+        },
+        {
+          "step": 1200,
+          "validation": {
+            "loss": 0.3618351357290521,
+            "exact": 21,
+            "count": 64,
+            "macro_exact": 0.328125,
+            "families": {
+              "exit": 0.65625,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2048611111111111,
+            "seconds": 0.01961373200174421
+          }
+        }
+      ],
+      "train_seconds": 12.832033818005584,
+      "schedule_sha256": "4d6239ee703f5e70dfbd22ab79d62e96ad38e25f02f571a544d7c5b0c29887c1",
+      "test": {
+        "loss": 0.48734603682532907,
+        "exact": 16,
+        "count": 96,
+        "macro_exact": 0.25,
+        "families": {
+          "exit": 0.5,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.17279411764705882,
+        "seconds": 0.0447868499904871
+      }
+    },
+    {
+      "run": "mlp_copy-s23",
+      "variant": "mlp_copy",
+      "seed": 23,
+      "parameters": 32426,
+      "best_step": 1200,
+      "validation": {
+        "loss": 0.0012137143785366789,
+        "exact": 64,
+        "count": 64,
+        "macro_exact": 1.0,
+        "families": {
+          "exit": 1.0,
+          "stdout": 1.0
+        },
+        "variable_accuracy": 1.0,
+        "seconds": 0.036817569052800536
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.2959008626639843,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.9305555555555556,
+            "seconds": 0.018691756995394826
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.15210295282304287,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03370402997825295
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.09507216699421406,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.034749326994642615
+          }
+        },
+        {
+          "step": 320,
+          "validation": {
+            "loss": 0.05296707432717085,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.026896547991782427
+          }
+        },
+        {
+          "step": 400,
+          "validation": {
+            "loss": 0.02571839070878923,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.020034583983942866
+          }
+        },
+        {
+          "step": 480,
+          "validation": {
+            "loss": 0.015991847729310393,
+            "exact": 28,
+            "count": 64,
+            "macro_exact": 0.4375,
+            "families": {
+              "exit": 0.875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.027083181019406766
+          }
+        },
+        {
+          "step": 560,
+          "validation": {
+            "loss": 0.0074877197039313614,
+            "exact": 35,
+            "count": 64,
+            "macro_exact": 0.546875,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.09375
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.02702409599442035
+          }
+        },
+        {
+          "step": 640,
+          "validation": {
+            "loss": 0.005094708118122071,
+            "exact": 55,
+            "count": 64,
+            "macro_exact": 0.859375,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.71875
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.024524757987819612
+          }
+        },
+        {
+          "step": 720,
+          "validation": {
+            "loss": 0.0034904076310340315,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03178797697182745
+          }
+        },
+        {
+          "step": 800,
+          "validation": {
+            "loss": 0.0027561937749851495,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04250889702234417
+          }
+        },
+        {
+          "step": 880,
+          "validation": {
+            "loss": 0.002085180254653096,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.02309818204957992
+          }
+        },
+        {
+          "step": 960,
+          "validation": {
+            "loss": 0.003401273745112121,
+            "exact": 60,
+            "count": 64,
+            "macro_exact": 0.9375,
+            "families": {
+              "exit": 0.90625,
+              "stdout": 0.96875
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.02477459900546819
+          }
+        },
+        {
+          "step": 1040,
+          "validation": {
+            "loss": 0.0017602745065232739,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.030210816010367125
+          }
+        },
+        {
+          "step": 1120,
+          "validation": {
+            "loss": 0.0014263349730754271,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03959195996867493
+          }
+        },
+        {
+          "step": 1200,
+          "validation": {
+            "loss": 0.0012137143785366789,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.036817569052800536
+          }
+        }
+      ],
+      "train_seconds": 12.511996242566966,
+      "schedule_sha256": "4d6239ee703f5e70dfbd22ab79d62e96ad38e25f02f571a544d7c5b0c29887c1",
+      "test": {
+        "loss": 0.0012193682875173788,
+        "exact": 95,
+        "count": 96,
+        "macro_exact": 0.9921875,
+        "families": {
+          "exit": 1.0,
+          "stdout": 0.984375
+        },
+        "variable_accuracy": 1.0,
+        "seconds": 0.04996610799571499
+      }
+    },
+    {
+      "run": "conv_copy-s23",
+      "variant": "conv_copy",
+      "seed": 23,
+      "parameters": 38538,
+      "best_step": 1200,
+      "validation": {
+        "loss": 0.0009824834269238636,
+        "exact": 64,
+        "count": 64,
+        "macro_exact": 1.0,
+        "families": {
+          "exit": 1.0,
+          "stdout": 1.0
+        },
+        "variable_accuracy": 1.0,
+        "seconds": 0.0461975610232912
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.29664234444499016,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.7326388888888888,
+            "seconds": 0.0594152319827117
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.11638927552849054,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03440143802436069
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.04739134106785059,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04638311098096892
+          }
+        },
+        {
+          "step": 320,
+          "validation": {
+            "loss": 0.019137138035148382,
+            "exact": 16,
+            "count": 64,
+            "macro_exact": 0.25,
+            "families": {
+              "exit": 0.5,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03095776803093031
+          }
+        },
+        {
+          "step": 400,
+          "validation": {
+            "loss": 0.009433983359485865,
+            "exact": 37,
+            "count": 64,
+            "macro_exact": 0.578125,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.15625
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03303869301453233
+          }
+        },
+        {
+          "step": 480,
+          "validation": {
+            "loss": 0.005842144717462361,
+            "exact": 49,
+            "count": 64,
+            "macro_exact": 0.765625,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.53125
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.02774883498204872
+          }
+        },
+        {
+          "step": 560,
+          "validation": {
+            "loss": 0.004466524696908891,
+            "exact": 58,
+            "count": 64,
+            "macro_exact": 0.90625,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.8125
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04221849300665781
+          }
+        },
+        {
+          "step": 640,
+          "validation": {
+            "loss": 0.003353855572640896,
+            "exact": 61,
+            "count": 64,
+            "macro_exact": 0.953125,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.90625
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.06573079701047391
+          }
+        },
+        {
+          "step": 720,
+          "validation": {
+            "loss": 0.002528881828766316,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.06167511094827205
+          }
+        },
+        {
+          "step": 800,
+          "validation": {
+            "loss": 0.002019365332671441,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.053201189963147044
+          }
+        },
+        {
+          "step": 880,
+          "validation": {
+            "loss": 0.0021779179805889726,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.09127966099185869
+          }
+        },
+        {
+          "step": 960,
+          "validation": {
+            "loss": 0.0015896187687758356,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.052254130016081035
+          }
+        },
+        {
+          "step": 1040,
+          "validation": {
+            "loss": 0.0013579661026597023,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.05608274397673085
+          }
+        },
+        {
+          "step": 1120,
+          "validation": {
+            "loss": 0.0011776400497183204,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.058142874971963465
+          }
+        },
+        {
+          "step": 1200,
+          "validation": {
+            "loss": 0.0009824834269238636,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.0461975610232912
+          }
+        }
+      ],
+      "train_seconds": 21.966275624057744,
+      "schedule_sha256": "4d6239ee703f5e70dfbd22ab79d62e96ad38e25f02f571a544d7c5b0c29887c1",
+      "test": {
+        "loss": 0.0009869130250687401,
+        "exact": 96,
+        "count": 96,
+        "macro_exact": 1.0,
+        "families": {
+          "exit": 1.0,
+          "stdout": 1.0
+        },
+        "variable_accuracy": 1.0,
+        "seconds": 0.055876478960271925
+      }
+    },
+    {
+      "run": "mlp-s37",
+      "variant": "mlp",
+      "seed": 37,
+      "parameters": 31017,
+      "best_step": 1120,
+      "validation": {
+        "loss": 0.35887544444995,
+        "exact": 28,
+        "count": 64,
+        "macro_exact": 0.4375,
+        "families": {
+          "exit": 0.875,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.25,
+        "seconds": 0.032218338979873806
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.9142504259943962,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.0,
+            "seconds": 0.023151848989073187
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.6847740672528744,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.013888888888888888,
+            "seconds": 0.03422596998279914
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.5649051573127508,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.03819444444444445,
+            "seconds": 0.03134837397374213
+          }
+        },
+        {
+          "step": 320,
+          "validation": {
+            "loss": 0.48790844809263945,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.10069444444444445,
+            "seconds": 0.02765843499219045
+          }
+        },
+        {
+          "step": 400,
+          "validation": {
+            "loss": 0.4334765733219683,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1527777777777778,
+            "seconds": 0.02234187803696841
+          }
+        },
+        {
+          "step": 480,
+          "validation": {
+            "loss": 0.4140000706538558,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.13541666666666666,
+            "seconds": 0.02154436899581924
+          }
+        },
+        {
+          "step": 560,
+          "validation": {
+            "loss": 0.3914240172598511,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.18055555555555555,
+            "seconds": 0.02162201498867944
+          }
+        },
+        {
+          "step": 640,
+          "validation": {
+            "loss": 0.37927854829467833,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1840277777777778,
+            "seconds": 0.018948009004816413
+          }
+        },
+        {
+          "step": 720,
+          "validation": {
+            "loss": 0.37733438529539853,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.16666666666666666,
+            "seconds": 0.027300536981783807
+          }
+        },
+        {
+          "step": 800,
+          "validation": {
+            "loss": 0.3457317965803668,
+            "exact": 1,
+            "count": 64,
+            "macro_exact": 0.015625,
+            "families": {
+              "exit": 0.03125,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.22916666666666666,
+            "seconds": 0.03707581397611648
+          }
+        },
+        {
+          "step": 880,
+          "validation": {
+            "loss": 0.34033088688738644,
+            "exact": 6,
+            "count": 64,
+            "macro_exact": 0.09375,
+            "families": {
+              "exit": 0.1875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.22916666666666666,
+            "seconds": 0.034528620017226785
+          }
+        },
+        {
+          "step": 960,
+          "validation": {
+            "loss": 0.36117796041071415,
+            "exact": 15,
+            "count": 64,
+            "macro_exact": 0.234375,
+            "families": {
+              "exit": 0.46875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2222222222222222,
+            "seconds": 0.021410767047200352
+          }
+        },
+        {
+          "step": 1040,
+          "validation": {
+            "loss": 0.3556100646383129,
+            "exact": 19,
+            "count": 64,
+            "macro_exact": 0.296875,
+            "families": {
+              "exit": 0.59375,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.22916666666666666,
+            "seconds": 0.031900133995804936
+          }
+        },
+        {
+          "step": 1120,
+          "validation": {
+            "loss": 0.35887544444995,
+            "exact": 28,
+            "count": 64,
+            "macro_exact": 0.4375,
+            "families": {
+              "exit": 0.875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.25,
+            "seconds": 0.032218338979873806
+          }
+        },
+        {
+          "step": 1200,
+          "validation": {
+            "loss": 0.36069501662859693,
+            "exact": 25,
+            "count": 64,
+            "macro_exact": 0.390625,
+            "families": {
+              "exit": 0.78125,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2326388888888889,
+            "seconds": 0.028773205005563796
+          }
+        }
+      ],
+      "train_seconds": 11.80213397735497,
+      "schedule_sha256": "b0678f7b438a9d56761be662a26dc8509b50803e3860bfc814997ac3e7c96254",
+      "test": {
+        "loss": 0.4495881758630276,
+        "exact": 23,
+        "count": 96,
+        "macro_exact": 0.359375,
+        "families": {
+          "exit": 0.71875,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.18382352941176472,
+        "seconds": 0.043457725958433
+      }
+    },
+    {
+      "run": "conv-s37",
+      "variant": "conv",
+      "seed": 37,
+      "parameters": 37129,
+      "best_step": 1120,
+      "validation": {
+        "loss": 0.35168064950266853,
+        "exact": 28,
+        "count": 64,
+        "macro_exact": 0.4375,
+        "families": {
+          "exit": 0.875,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.22569444444444445,
+        "seconds": 0.02979525999398902
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.8064244836568832,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.022988073993474245
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.6656815391033888,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.0,
+            "seconds": 0.025613620004151016
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.5742150228470564,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.013888888888888888,
+            "seconds": 0.027619678003247827
+          }
+        },
+        {
+          "step": 320,
+          "validation": {
+            "loss": 0.5021230950951576,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.05555555555555555,
+            "seconds": 0.04775852494640276
+          }
+        },
+        {
+          "step": 400,
+          "validation": {
+            "loss": 0.4546178765594959,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.11805555555555555,
+            "seconds": 0.03756770398467779
+          }
+        },
+        {
+          "step": 480,
+          "validation": {
+            "loss": 0.42027729633264244,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.16666666666666666,
+            "seconds": 0.029105320980306715
+          }
+        },
+        {
+          "step": 560,
+          "validation": {
+            "loss": 0.39867615094408393,
+            "exact": 3,
+            "count": 64,
+            "macro_exact": 0.046875,
+            "families": {
+              "exit": 0.09375,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1597222222222222,
+            "seconds": 0.03569141298066825
+          }
+        },
+        {
+          "step": 640,
+          "validation": {
+            "loss": 0.3861168541479856,
+            "exact": 7,
+            "count": 64,
+            "macro_exact": 0.109375,
+            "families": {
+              "exit": 0.21875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.16666666666666666,
+            "seconds": 0.031165862979833037
+          }
+        },
+        {
+          "step": 720,
+          "validation": {
+            "loss": 0.37526520155370235,
+            "exact": 20,
+            "count": 64,
+            "macro_exact": 0.3125,
+            "families": {
+              "exit": 0.625,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.18055555555555555,
+            "seconds": 0.0250537539832294
+          }
+        },
+        {
+          "step": 800,
+          "validation": {
+            "loss": 0.3722803331911564,
+            "exact": 13,
+            "count": 64,
+            "macro_exact": 0.203125,
+            "families": {
+              "exit": 0.40625,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.1840277777777778,
+            "seconds": 0.049582273000851274
+          }
+        },
+        {
+          "step": 880,
+          "validation": {
+            "loss": 0.35423692071344703,
+            "exact": 13,
+            "count": 64,
+            "macro_exact": 0.203125,
+            "families": {
+              "exit": 0.40625,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.22916666666666666,
+            "seconds": 0.028901330952066928
+          }
+        },
+        {
+          "step": 960,
+          "validation": {
+            "loss": 0.34940746444044635,
+            "exact": 18,
+            "count": 64,
+            "macro_exact": 0.28125,
+            "families": {
+              "exit": 0.5625,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2152777777777778,
+            "seconds": 0.040855055034626275
+          }
+        },
+        {
+          "step": 1040,
+          "validation": {
+            "loss": 0.35206764127360657,
+            "exact": 25,
+            "count": 64,
+            "macro_exact": 0.390625,
+            "families": {
+              "exit": 0.78125,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.22569444444444445,
+            "seconds": 0.0322027140064165
+          }
+        },
+        {
+          "step": 1120,
+          "validation": {
+            "loss": 0.35168064950266853,
+            "exact": 28,
+            "count": 64,
+            "macro_exact": 0.4375,
+            "families": {
+              "exit": 0.875,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.22569444444444445,
+            "seconds": 0.02979525999398902
+          }
+        },
+        {
+          "step": 1200,
+          "validation": {
+            "loss": 0.3686807805788703,
+            "exact": 24,
+            "count": 64,
+            "macro_exact": 0.375,
+            "families": {
+              "exit": 0.75,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.2222222222222222,
+            "seconds": 0.023631335992831737
+          }
+        }
+      ],
+      "train_seconds": 16.003842652542517,
+      "schedule_sha256": "b0678f7b438a9d56761be662a26dc8509b50803e3860bfc814997ac3e7c96254",
+      "test": {
+        "loss": 0.4623345910028244,
+        "exact": 28,
+        "count": 96,
+        "macro_exact": 0.4375,
+        "families": {
+          "exit": 0.875,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.17463235294117646,
+        "seconds": 0.042041198001243174
+      }
+    },
+    {
+      "run": "mlp_copy-s37",
+      "variant": "mlp_copy",
+      "seed": 37,
+      "parameters": 32426,
+      "best_step": 1200,
+      "validation": {
+        "loss": 0.001075119391316548,
+        "exact": 64,
+        "count": 64,
+        "macro_exact": 1.0,
+        "families": {
+          "exit": 1.0,
+          "stdout": 1.0
+        },
+        "variable_accuracy": 1.0,
+        "seconds": 0.04445599304744974
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.29021644219756126,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.9305555555555556,
+            "seconds": 0.04079392395215109
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.14861169829964638,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.9131944444444444,
+            "seconds": 0.06237073801457882
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.10102134104818106,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.05119501700391993
+          }
+        },
+        {
+          "step": 320,
+          "validation": {
+            "loss": 0.06864830385893583,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03629085799911991
+          }
+        },
+        {
+          "step": 400,
+          "validation": {
+            "loss": 0.036501378985121846,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.06095828500110656
+          }
+        },
+        {
+          "step": 480,
+          "validation": {
+            "loss": 0.016699446132406592,
+            "exact": 18,
+            "count": 64,
+            "macro_exact": 0.28125,
+            "families": {
+              "exit": 0.5625,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04823917703470215
+          }
+        },
+        {
+          "step": 560,
+          "validation": {
+            "loss": 0.008706729975529015,
+            "exact": 35,
+            "count": 64,
+            "macro_exact": 0.546875,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.09375
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.032829149975441396
+          }
+        },
+        {
+          "step": 640,
+          "validation": {
+            "loss": 0.005431788100395352,
+            "exact": 49,
+            "count": 64,
+            "macro_exact": 0.765625,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.53125
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.049964581965468824
+          }
+        },
+        {
+          "step": 720,
+          "validation": {
+            "loss": 0.003560877521522343,
+            "exact": 63,
+            "count": 64,
+            "macro_exact": 0.984375,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.96875
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03357239696197212
+          }
+        },
+        {
+          "step": 800,
+          "validation": {
+            "loss": 0.0032078597287181765,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03417316800914705
+          }
+        },
+        {
+          "step": 880,
+          "validation": {
+            "loss": 0.0022194319462869316,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.029042892972938716
+          }
+        },
+        {
+          "step": 960,
+          "validation": {
+            "loss": 0.0017692508117761463,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.036585437948815525
+          }
+        },
+        {
+          "step": 1040,
+          "validation": {
+            "loss": 0.0014702698535984382,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.0255179230007343
+          }
+        },
+        {
+          "step": 1120,
+          "validation": {
+            "loss": 0.0012427159090293571,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.032527258968912065
+          }
+        },
+        {
+          "step": 1200,
+          "validation": {
+            "loss": 0.001075119391316548,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04445599304744974
+          }
+        }
+      ],
+      "train_seconds": 18.215716604492627,
+      "schedule_sha256": "b0678f7b438a9d56761be662a26dc8509b50803e3860bfc814997ac3e7c96254",
+      "test": {
+        "loss": 0.0011285266664344817,
+        "exact": 96,
+        "count": 96,
+        "macro_exact": 1.0,
+        "families": {
+          "exit": 1.0,
+          "stdout": 1.0
+        },
+        "variable_accuracy": 1.0,
+        "seconds": 0.05188527004793286
+      }
+    },
+    {
+      "run": "conv_copy-s37",
+      "variant": "conv_copy",
+      "seed": 37,
+      "parameters": 38538,
+      "best_step": 1120,
+      "validation": {
+        "loss": 0.0011382686789147556,
+        "exact": 64,
+        "count": 64,
+        "macro_exact": 1.0,
+        "families": {
+          "exit": 1.0,
+          "stdout": 1.0
+        },
+        "variable_accuracy": 1.0,
+        "seconds": 0.03671313601080328
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.2732815146446228,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.6666666666666666,
+            "seconds": 0.05484521301696077
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.10879072733223438,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.054479745973367244
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.04570712801069021,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.05464826099341735
+          }
+        },
+        {
+          "step": 320,
+          "validation": {
+            "loss": 0.019301721127703786,
+            "exact": 11,
+            "count": 64,
+            "macro_exact": 0.171875,
+            "families": {
+              "exit": 0.34375,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.05101732996990904
+          }
+        },
+        {
+          "step": 400,
+          "validation": {
+            "loss": 0.009871237562038004,
+            "exact": 40,
+            "count": 64,
+            "macro_exact": 0.625,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.25
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04780294396914542
+          }
+        },
+        {
+          "step": 480,
+          "validation": {
+            "loss": 0.00624423852423206,
+            "exact": 58,
+            "count": 64,
+            "macro_exact": 0.90625,
+            "families": {
+              "exit": 1.0,
+              "stdout": 0.8125
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.06062986503820866
+          }
+        },
+        {
+          "step": 560,
+          "validation": {
+            "loss": 0.004418703960254788,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.037233941024169326
+          }
+        },
+        {
+          "step": 640,
+          "validation": {
+            "loss": 0.0033681129571050406,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04283720999956131
+          }
+        },
+        {
+          "step": 720,
+          "validation": {
+            "loss": 0.002722827106481418,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03843011800199747
+          }
+        },
+        {
+          "step": 800,
+          "validation": {
+            "loss": 0.002236196043668315,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03936055500525981
+          }
+        },
+        {
+          "step": 880,
+          "validation": {
+            "loss": 0.0019060062622884288,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.04270490602357313
+          }
+        },
+        {
+          "step": 960,
+          "validation": {
+            "loss": 0.0016257636016234756,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.049584755033720285
+          }
+        },
+        {
+          "step": 1040,
+          "validation": {
+            "loss": 0.0015410938794957474,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.02921516099013388
+          }
+        },
+        {
+          "step": 1120,
+          "validation": {
+            "loss": 0.0011382686789147556,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03671313601080328
+          }
+        },
+        {
+          "step": 1200,
+          "validation": {
+            "loss": 0.0013269418996060267,
+            "exact": 64,
+            "count": 64,
+            "macro_exact": 1.0,
+            "families": {
+              "exit": 1.0,
+              "stdout": 1.0
+            },
+            "variable_accuracy": 1.0,
+            "seconds": 0.03417328302748501
+          }
+        }
+      ],
+      "train_seconds": 18.586431883682963,
+      "schedule_sha256": "b0678f7b438a9d56761be662a26dc8509b50803e3860bfc814997ac3e7c96254",
+      "test": {
+        "loss": 0.0012175041774753481,
+        "exact": 95,
+        "count": 96,
+        "macro_exact": 0.9921875,
+        "families": {
+          "exit": 1.0,
+          "stdout": 0.984375
+        },
+        "variable_accuracy": 1.0,
+        "seconds": 0.0522019820054993
+      }
+    }
+  ]
+}

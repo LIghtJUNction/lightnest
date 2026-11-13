@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import fields, is_dataclass
 import importlib
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -11,8 +12,9 @@ import sys
 import tempfile
 
 import torch
+import weightlang
 from lightnest.architecture.weightlang_io import save_model
-from weightlang.tensor_program import load_tensor_artifact
+from weightlang.modules import load_module
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -74,7 +76,7 @@ def check_case(name, old, new, call, kwargs, output):
     new.eval()
     artifact = save_model(new, output/name, kwargs=kwargs,
                           training={"method":"AdamW", "steps":1, "dataset":"synthetic migration verification"})
-    loaded = load_tensor_artifact(artifact.path, trusted=True, warn_untrained=False)
+    loaded = load_module(artifact.path, trusted=True)
     with torch.no_grad():
         reload_error, _ = compare(call(new), call(loaded.module))
     return {"name":name,"mapped_tensors":len(source),"output_tensors":count,"eval_max_abs":error,
@@ -97,7 +99,6 @@ def main():
             if path.name=='weightlang_io.py': continue
             relative=str(path.relative_to(ROOT))
             source=subprocess.check_output(['git','show',f"{baseline['commit']}:{relative}"],cwd=ROOT,text=True)
-            import hashlib
             if relative in baseline['sha256']:
                 assert hashlib.sha256(source.encode()).hexdigest()==baseline['sha256'][relative]
             (architecture/path.name).write_text(source.replace('lightnest.architecture','_lightnest_baseline.architecture'))
@@ -149,7 +150,10 @@ def main():
         for name in ('StructureNet','TokenStructureNet','ASTStructureNet'):
             case(name,'structure',name,{'width':16},lambda m:m(b'def hello(x): return x+1\n'))
         case('openat','linux_environment','LearnedOpenat',{'path_size':8,'width':8},lambda m:m(torch.tensor([[47,97,0,3,0,0,0,0]]),torch.tensor([2])))
-    report={'baseline_commit':baseline['commit'],'device':'cpu','dtype':'float32','atol':1e-6,'rtol':1e-5,'cases':reports}
+    report={'toolkit_version':weightlang.__version__,'language_version':'0.5','target':'torch',
+            'architecture_sha256':{str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest()
+                                   for path in sorted((ROOT/'lightnest/architecture/wgt').glob('*.wgt'))},
+            'baseline_commit':baseline['commit'],'device':'cpu','dtype':'float32','atol':1e-6,'rtol':1e-5,'cases':reports}
     (args.output/'report.json').write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({'cases':len(reports),'max_abs':max(r['eval_max_abs'] for r in reports),'report':str(args.output/'report.json')}))
 

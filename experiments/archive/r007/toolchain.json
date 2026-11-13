@@ -1,0 +1,8 @@
+{
+  "compiler_path": "../WeightLang/WeightLang/target/debug/wgt",
+  "compiler_sha256": "53d98cedc764f6287726da00b0966e6ae866e114f01d64392dded053695ab115",
+  "compiler_matches_earlier_record": true,
+  "sdk_has_local_changes": true,
+  "sdk_changed_during_session": true,
+  "provenance_limit": "Later-round SDK source was not fully snapshotted at process start; complete selected artifact preserves compiled definitions and weights."
+}

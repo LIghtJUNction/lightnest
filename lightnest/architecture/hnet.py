@@ -52,5 +52,5 @@ class HNetELFGenerator(ELFGenerator):
 
 # WGT is the architecture source; host code above handles preprocessing and scheduling.
 from pathlib import Path as _WgtPath
-from weightlang.tensor_program import bind_tensor_program as _bind_wgt
+from weightlang.modules import bind_models as _bind_wgt
 globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "hnet.wgt", globals()))

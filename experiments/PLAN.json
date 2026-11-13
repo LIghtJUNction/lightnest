@@ -1,0 +1,122 @@
+{
+  "rounds": [
+    {
+      "id": "r001",
+      "args": [
+        "--steps",
+        "240"
+      ],
+      "hypothesis": "Compare four parallel decoder families at a small common update budget."
+    },
+    {
+      "id": "r002",
+      "args": [
+        "--steps",
+        "1200",
+        "--data-seed",
+        "201",
+        "--variable-weight",
+        "128",
+        "--variants",
+        "mlp",
+        "conv",
+        "mlp_copy",
+        "conv_copy"
+      ],
+      "hypothesis": "Paired copy-head ablation after increasing request-byte weight and budget; shared examples and schedules within round."
+    },
+    {
+      "id": "r003",
+      "args": [
+        "--steps",
+        "1200",
+        "--data-seed",
+        "301",
+        "--variable-weight",
+        "128",
+        "--variants",
+        "mlp_copy_small",
+        "mlp_copy",
+        "conv_copy_small",
+        "conv_copy"
+      ],
+      "hypothesis": "Paired width-16 versus width-32 comparison with learned request-slot copying; prefer fewer parameters only after validation exact and variable accuracy tie."
+    },
+    {
+      "id": "r004",
+      "args": [
+        "--steps",
+        "1200",
+        "--data-seed",
+        "401",
+        "--variable-weight",
+        "128",
+        "--variants",
+        "mlp_copy",
+        "conv_copy",
+        "mlp_copy_bias_small",
+        "mlp_copy_bias_tiny"
+      ],
+      "hypothesis": "Learn mode/position output biases from training to relieve fixed-byte memorization; compare width-8/16 biased MLP with width-32 copy-head controls. No headers are attached at inference."
+    },
+    {
+      "id": "r005",
+      "args": [
+        "--steps",
+        "2400",
+        "--data-seed",
+        "501",
+        "--variable-weight",
+        "128",
+        "--variants",
+        "conv_copy_small",
+        "mlp_copy_bias_small",
+        "mlp_copy",
+        "conv_copy"
+      ],
+      "hypothesis": "Paired doubled-update-budget test: can narrower models recover full-file quality? All four controls receive 2400 updates; fresh stdout questions and validation-first efficiency ranking."
+    },
+    {
+      "id": "r006",
+      "args": [
+        "--steps",
+        "2400",
+        "--data-seed",
+        "601",
+        "--variable-weight",
+        "128",
+        "--stdout-validation",
+        "128",
+        "--stdout-test",
+        "128",
+        "--variants",
+        "conv_copy_small",
+        "mlp_copy_bias_small",
+        "conv_copy"
+      ],
+      "hypothesis": "Independent confirmation with 4x more stdout validation questions: distinguish smaller-model rare failures before efficiency tie-breaking. Three seeds; identical within-round training examples and 2400 updates."
+    },
+    {
+      "id": "r007",
+      "args": [
+        "--steps",
+        "2400",
+        "--data-seed",
+        "701",
+        "--variable-weight",
+        "128",
+        "--stdout-validation",
+        "128",
+        "--stdout-test",
+        "128",
+        "--variants",
+        "conv_copy_small",
+        "conv_copy_mode_small",
+        "mlp_copy_mode_small"
+      ],
+      "hypothesis": "Separate request payload from fixed-byte computation: mode/position-only backbone plus learned request-copy branch. Compare with original narrow conv on identical data and budget; test conditional-affine invariants."
+    }
+  ],
+  "extension_rule": "Inspect validation failures, state a new hypothesis and budget, add a new ID, then run the loop. Never overwrite an archived round or select on test results.",
+  "next_hypothesis": "Test unseen ELF layouts and independent inspection/edit tasks before promoting a whole-application architecture; freeze input/output contracts and splits first."
+}

@@ -1,0 +1,844 @@
+{
+  "winner": "mlp",
+  "selected_run": "mlp-s11",
+  "validation": {
+    "mlp": {
+      "macro_exact": 0.0,
+      "variable_accuracy": 0.013888888888888888,
+      "loss": 0.12070370030899842
+    },
+    "gru": {
+      "macro_exact": 0.0,
+      "variable_accuracy": 0.006944444444444444,
+      "loss": 0.1743055833503604
+    },
+    "conv": {
+      "macro_exact": 0.0,
+      "variable_accuracy": 0.01273148148148148,
+      "loss": 0.14190834310526648
+    },
+    "transformer": {
+      "macro_exact": 0.0,
+      "variable_accuracy": 0.005787037037037037,
+      "loss": 0.19121529255062342
+    }
+  },
+  "training": [
+    {
+      "run": "mlp-s11",
+      "variant": "mlp",
+      "seed": 11,
+      "parameters": 31017,
+      "best_step": 240,
+      "validation": {
+        "loss": 0.12081546057015657,
+        "exact": 0,
+        "count": 64,
+        "macro_exact": 0.0,
+        "families": {
+          "exit": 0.0,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.017361111111111112,
+        "seconds": 0.011640561977401376
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.30736055597662926,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.017211864003911614
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.19407936744391918,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.0,
+            "seconds": 0.015779613982886076
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.12081546057015657,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.017361111111111112,
+            "seconds": 0.011640561977401376
+          }
+        }
+      ],
+      "train_seconds": 1.314356621238403,
+      "schedule_sha256": "dacb0000da7a2dc5b851ff2ff930ecddb2a2486d829f957de1cd60add99ec541"
+    },
+    {
+      "run": "gru-s11",
+      "variant": "gru",
+      "seed": 11,
+      "parameters": 39497,
+      "best_step": 160,
+      "validation": {
+        "loss": 0.2350817322731018,
+        "exact": 0,
+        "count": 64,
+        "macro_exact": 0.0,
+        "families": {
+          "exit": 0.0,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.006944444444444444,
+        "seconds": 0.16577883600257337
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.31235215440392494,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.1613003010279499
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.2350817322731018,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.006944444444444444,
+            "seconds": 0.16577883600257337
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.15083171427249908,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.0,
+            "seconds": 0.3319026529788971
+          }
+        }
+      ],
+      "train_seconds": 47.397695683990605,
+      "schedule_sha256": "dacb0000da7a2dc5b851ff2ff930ecddb2a2486d829f957de1cd60add99ec541"
+    },
+    {
+      "run": "conv-s11",
+      "variant": "conv",
+      "seed": 11,
+      "parameters": 37129,
+      "best_step": 160,
+      "validation": {
+        "loss": 0.16533645894378424,
+        "exact": 0,
+        "count": 64,
+        "macro_exact": 0.0,
+        "families": {
+          "exit": 0.0,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.013888888888888888,
+        "seconds": 0.06030344299506396
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.29233589209616184,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.04529057099716738
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.16533645894378424,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.013888888888888888,
+            "seconds": 0.06030344299506396
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.09418754884973168,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.010416666666666666,
+            "seconds": 0.031449525034986436
+          }
+        }
+      ],
+      "train_seconds": 3.912064078496769,
+      "schedule_sha256": "dacb0000da7a2dc5b851ff2ff930ecddb2a2486d829f957de1cd60add99ec541"
+    },
+    {
+      "run": "transformer-s11",
+      "variant": "transformer",
+      "seed": 11,
+      "parameters": 43913,
+      "best_step": 240,
+      "validation": {
+        "loss": 0.1370189944282174,
+        "exact": 0,
+        "count": 64,
+        "macro_exact": 0.0,
+        "families": {
+          "exit": 0.0,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.003472222222222222,
+        "seconds": 0.801126979989931
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.30728719756007195,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.7051967469742522
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.21951133385300636,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.0,
+            "seconds": 0.6364931520074606
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.1370189944282174,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.801126979989931
+          }
+        }
+      ],
+      "train_seconds": 29.337011168769095,
+      "schedule_sha256": "dacb0000da7a2dc5b851ff2ff930ecddb2a2486d829f957de1cd60add99ec541"
+    },
+    {
+      "run": "mlp-s23",
+      "variant": "mlp",
+      "seed": 23,
+      "parameters": 31017,
+      "best_step": 240,
+      "validation": {
+        "loss": 0.1272004833444953,
+        "exact": 0,
+        "count": 64,
+        "macro_exact": 0.0,
+        "families": {
+          "exit": 0.0,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.010416666666666666,
+        "seconds": 0.021690051013138145
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.3061210736632347,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.055289894982706755
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.1955575793981552,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.006944444444444444,
+            "seconds": 0.024794135009869933
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.1272004833444953,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.010416666666666666,
+            "seconds": 0.021690051013138145
+          }
+        }
+      ],
+      "train_seconds": 2.416084605443757,
+      "schedule_sha256": "95b0090a80d69803766f2395a6a1ddb9a1403cad8a8118065d0c2b3beccd4a64"
+    },
+    {
+      "run": "gru-s23",
+      "variant": "gru",
+      "seed": 23,
+      "parameters": 39497,
+      "best_step": 240,
+      "validation": {
+        "loss": 0.1450460972264409,
+        "exact": 0,
+        "count": 64,
+        "macro_exact": 0.0,
+        "families": {
+          "exit": 0.0,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.006944444444444444,
+        "seconds": 0.3110414969851263
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.3030373938381672,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.2763055299874395
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.20853734202682972,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.0,
+            "seconds": 0.25229854200733826
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.1450460972264409,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.006944444444444444,
+            "seconds": 0.3110414969851263
+          }
+        }
+      ],
+      "train_seconds": 62.50924874289194,
+      "schedule_sha256": "95b0090a80d69803766f2395a6a1ddb9a1403cad8a8118065d0c2b3beccd4a64"
+    },
+    {
+      "run": "conv-s23",
+      "variant": "conv",
+      "seed": 23,
+      "parameters": 37129,
+      "best_step": 160,
+      "validation": {
+        "loss": 0.17724405229091644,
+        "exact": 0,
+        "count": 64,
+        "macro_exact": 0.0,
+        "families": {
+          "exit": 0.0,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.013888888888888888,
+        "seconds": 0.037730970012489706
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.31483888253569603,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.03232128103263676
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.17724405229091644,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.013888888888888888,
+            "seconds": 0.037730970012489706
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.10591546539217234,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.006944444444444444,
+            "seconds": 0.03902798402123153
+          }
+        }
+      ],
+      "train_seconds": 2.8475852693081833,
+      "schedule_sha256": "95b0090a80d69803766f2395a6a1ddb9a1403cad8a8118065d0c2b3beccd4a64"
+    },
+    {
+      "run": "transformer-s23",
+      "variant": "transformer",
+      "seed": 23,
+      "parameters": 43913,
+      "best_step": 160,
+      "validation": {
+        "loss": 0.22110043838620186,
+        "exact": 0,
+        "count": 64,
+        "macro_exact": 0.0,
+        "families": {
+          "exit": 0.0,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.006944444444444444,
+        "seconds": 0.8340597649803385
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.30961765348911285,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.7349238599999808
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.22110043838620186,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.006944444444444444,
+            "seconds": 0.8340597649803385
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.15226832032203674,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.6657771929749288
+          }
+        }
+      ],
+      "train_seconds": 31.360303921275772,
+      "schedule_sha256": "95b0090a80d69803766f2395a6a1ddb9a1403cad8a8118065d0c2b3beccd4a64"
+    },
+    {
+      "run": "mlp-s37",
+      "variant": "mlp",
+      "seed": 37,
+      "parameters": 31017,
+      "best_step": 240,
+      "validation": {
+        "loss": 0.1140951570123434,
+        "exact": 0,
+        "count": 64,
+        "macro_exact": 0.0,
+        "families": {
+          "exit": 0.0,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.013888888888888888,
+        "seconds": 0.022943564981687814
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.3029073178768158,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.01790121797239408
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.19378565438091755,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.010416666666666666,
+            "seconds": 0.021288648014888167
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.1140951570123434,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.013888888888888888,
+            "seconds": 0.022943564981687814
+          }
+        }
+      ],
+      "train_seconds": 1.4683805471286178,
+      "schedule_sha256": "ac7c88a98f9188645caeaa8de8914c9c64dc28f210fcfc7ba4244081f7c214b0"
+    },
+    {
+      "run": "gru-s37",
+      "variant": "gru",
+      "seed": 37,
+      "parameters": 39497,
+      "best_step": 240,
+      "validation": {
+        "loss": 0.14278892055153847,
+        "exact": 0,
+        "count": 64,
+        "macro_exact": 0.0,
+        "families": {
+          "exit": 0.0,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.006944444444444444,
+        "seconds": 0.27380476699909195
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.3022828996181488,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.34639581199735403
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.20141371712088585,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.0,
+            "seconds": 0.20095959602622315
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.14278892055153847,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.006944444444444444,
+            "seconds": 0.27380476699909195
+          }
+        }
+      ],
+      "train_seconds": 52.55643581593176,
+      "schedule_sha256": "ac7c88a98f9188645caeaa8de8914c9c64dc28f210fcfc7ba4244081f7c214b0"
+    },
+    {
+      "run": "conv-s37",
+      "variant": "conv",
+      "seed": 37,
+      "parameters": 37129,
+      "best_step": 240,
+      "validation": {
+        "loss": 0.0831445180810988,
+        "exact": 0,
+        "count": 64,
+        "macro_exact": 0.0,
+        "families": {
+          "exit": 0.0,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.010416666666666666,
+        "seconds": 0.022886020014993846
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.28813067451119423,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.02655620704172179
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.16432682052254677,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.026809617993421853
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.0831445180810988,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.010416666666666666,
+            "seconds": 0.022886020014993846
+          }
+        }
+      ],
+      "train_seconds": 2.0907010909868404,
+      "schedule_sha256": "ac7c88a98f9188645caeaa8de8914c9c64dc28f210fcfc7ba4244081f7c214b0"
+    },
+    {
+      "run": "transformer-s37",
+      "variant": "transformer",
+      "seed": 37,
+      "parameters": 43913,
+      "best_step": 160,
+      "validation": {
+        "loss": 0.21552644483745098,
+        "exact": 0,
+        "count": 64,
+        "macro_exact": 0.0,
+        "families": {
+          "exit": 0.0,
+          "stdout": 0.0
+        },
+        "variable_accuracy": 0.006944444444444444,
+        "seconds": 0.7203044509515166
+      },
+      "curve": [
+        {
+          "step": 80,
+          "validation": {
+            "loss": 0.3085719421505928,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.7345454000169411
+          }
+        },
+        {
+          "step": 160,
+          "validation": {
+            "loss": 0.21552644483745098,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.006944444444444444,
+            "seconds": 0.7203044509515166
+          }
+        },
+        {
+          "step": 240,
+          "validation": {
+            "loss": 0.14327701926231384,
+            "exact": 0,
+            "count": 64,
+            "macro_exact": 0.0,
+            "families": {
+              "exit": 0.0,
+              "stdout": 0.0
+            },
+            "variable_accuracy": 0.003472222222222222,
+            "seconds": 0.614335373044014
+          }
+        }
+      ],
+      "train_seconds": 30.893130665586796,
+      "schedule_sha256": "ac7c88a98f9188645caeaa8de8914c9c64dc28f210fcfc7ba4244081f7c214b0"
+    }
+  ]
+}

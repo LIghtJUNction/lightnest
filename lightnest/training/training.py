@@ -43,7 +43,10 @@ def _source_matches(metadata, kind):
     before = {name: value for name, value in baseline.items() if name in (
         ("lightnest/architecture/generate.py",) if kind == "generator" else
         ("lightnest/architecture/attention.py", "lightnest/architecture/observe.py", "lightnest/architecture/model.py"))}
-    return recorded in (math_sources(kind), _PRE_PACKAGE_MATH_SOURCES[kind], before)
+    legacy = json.loads((ROOT / "lightnest/architecture/wgt/legacy-source-hashes.json").read_text())["sha256"]
+    previous = {name: digest for name, digest in legacy.items()
+                if name.endswith(".wgt") or name in before}
+    return recorded in (math_sources(kind), _PRE_PACKAGE_MATH_SOURCES[kind], before, previous)
 
 
 def verify_corpus(out):
@@ -74,7 +77,7 @@ def load_policy(path, *, check_source=True):
         model, metadata = load_model(path)
         if type(model).__name__ != "RGBPolicy":
             raise ValueError("wrong WGT model kind")
-        return model, metadata
+        return model.eval(), metadata
     payload = torch.load(path, map_location="cpu", weights_only=True)
     if payload["architecture"] != ARCHITECTURE or payload["kind"] != "policy":
         raise ValueError("checkpoint is not an RGB ELF policy")
@@ -107,7 +110,7 @@ def load_generator(path, *, check_source=True):
         model, metadata = load_model(path)
         if type(model).__name__ != "ELFGenerator":
             raise ValueError("wrong WGT model kind")
-        return model, metadata
+        return model.eval(), metadata
     payload = torch.load(path, map_location="cpu", weights_only=True)
     if payload["architecture"] != ARCHITECTURE or payload["kind"] != "generator":
         raise ValueError("checkpoint is not an RGB full-image generator")

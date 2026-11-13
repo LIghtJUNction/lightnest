@@ -1,0 +1,44 @@
+{
+  "id": "r006",
+  "hypothesis": "Independent confirmation with 4x more stdout validation questions: distinguish smaller-model rare failures before efficiency tie-breaking. Three seeds; identical within-round training examples and 2400 updates.",
+  "args": {
+    "round": "r006",
+    "transfer": false,
+    "variable_weight": 128.0,
+    "hypothesis": "Independent confirmation with 4x more stdout validation questions: distinguish smaller-model rare failures before efficiency tie-breaking. Three seeds; identical within-round training examples and 2400 updates.",
+    "steps": 2400,
+    "seeds": [
+      11,
+      23,
+      37
+    ],
+    "data_seed": 601,
+    "stdout_validation": 128,
+    "stdout_test": 128,
+    "width": 32,
+    "batch_size": 8,
+    "threads": 2,
+    "variants": [
+      "conv_copy_small",
+      "mlp_copy_bias_small",
+      "conv_copy"
+    ]
+  },
+  "selection": "best validation macro exact, variable-byte accuracy, parameter count, then loss; aggregate seeds",
+  "budget": "same minibatch indices and steps; not FLOP, parameter or wall-time matched",
+  "primary": "macro family full-file exact match including EOS",
+  "limits": "two fixed assembler layouts; no arbitrary program, inspect or edit claim; test never selects winner",
+  "runtime": {
+    "torch": "2.13.0+cpu",
+    "device": "cpu",
+    "threads": 2
+  },
+  "source_hashes": {
+    "experiments/active/elf_generation/PROTOCOL.md": "c0a15bbeea5571ce97ab4a3019475d67ecbcef78109498ea4872d57be869860f",
+    "experiments/active/elf_generation/__init__.py": "2d6164677eddae66733f23e47f0c39ba1d0b222b3424fb78eb904c6f279e8ece",
+    "experiments/active/elf_generation/models.py": "a27af6a34f955de86488780b372cb1cad9efc4ae620452da5fb2653b2aeaaeb1",
+    "experiments/active/elf_generation/models.wgt": "4853ebe169e98e0428095bf7ba4d701e08f71398239fdb04e850b4a2bd306858",
+    "experiments/active/elf_generation/run.py": "0d53dfe8457ebe44527508fa39cc7a3247ae8a0868a2059a09ad95b45b9e0ade",
+    "experiments/active/elf_generation/tasks.py": "0bd21c27db2d7d93d13d8ca19dd7e85760515261e540976ddabb506f5f76e733"
+  }
+}

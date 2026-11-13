@@ -1,0 +1,45 @@
+{
+  "id": "r007",
+  "hypothesis": "Separate request payload from fixed-byte computation: mode/position-only backbone plus learned request-copy branch. Compare with original narrow conv on identical data and budget; test conditional-affine invariants.",
+  "args": {
+    "round": "r007",
+    "transfer": false,
+    "variable_weight": 128.0,
+    "hypothesis": "Separate request payload from fixed-byte computation: mode/position-only backbone plus learned request-copy branch. Compare with original narrow conv on identical data and budget; test conditional-affine invariants.",
+    "steps": 2400,
+    "seeds": [
+      11,
+      23,
+      37
+    ],
+    "data_seed": 701,
+    "stdout_validation": 128,
+    "stdout_test": 128,
+    "width": 32,
+    "batch_size": 8,
+    "threads": 2,
+    "variants": [
+      "conv_copy_small",
+      "conv_copy_mode_small",
+      "mlp_copy_mode_small"
+    ]
+  },
+  "selection": "best validation macro exact, variable-byte accuracy, parameter count, then loss; aggregate seeds",
+  "budget": "same minibatch indices and steps; not FLOP, parameter or wall-time matched",
+  "primary": "macro family full-file exact match including EOS",
+  "limits": "two fixed assembler layouts; no arbitrary program, inspect or edit claim; test never selects winner",
+  "runtime": {
+    "torch": "2.13.0+cpu",
+    "device": "cpu",
+    "threads": 2
+  },
+  "source_hashes": {
+    "experiments/active/elf_generation/PROTOCOL.md": "8361a7d9cf283d7a3f92c976c7dcd0b04a272baeab1c5d4f8c8283de38e397d2",
+    "experiments/active/elf_generation/__init__.py": "2d6164677eddae66733f23e47f0c39ba1d0b222b3424fb78eb904c6f279e8ece",
+    "experiments/active/elf_generation/certify.py": "cd0bafd2e67640adde34da24e4d9fd674da4f8ce3dd984b2ec8278f59de93292",
+    "experiments/active/elf_generation/models.py": "a27af6a34f955de86488780b372cb1cad9efc4ae620452da5fb2653b2aeaaeb1",
+    "experiments/active/elf_generation/models.wgt": "e14c36ae4b7ca52cc4f786657f2d29073d7d6830ca313a258e0c4f1fcb1a7ab0",
+    "experiments/active/elf_generation/run.py": "c2bbfcb3c3db7cddac053cc06c5148f18685fd4c2cd9f2b6391ea657006b65b2",
+    "experiments/active/elf_generation/tasks.py": "0bd21c27db2d7d93d13d8ca19dd7e85760515261e540976ddabb506f5f76e733"
+  }
+}

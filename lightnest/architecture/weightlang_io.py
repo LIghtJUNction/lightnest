@@ -7,7 +7,8 @@ import json
 from pathlib import Path
 
 import torch
-from weightlang.tensor_program import load_tensor_artifact, save_tensor_module
+from weightlang.modules import load_module, save_module, restore_parameters
+from safetensors.torch import load_file
 
 
 def model_kwargs(model):
@@ -35,14 +36,17 @@ def save_model(model, path, *, metadata=None, kwargs=None, origin="edited", trai
     if metadata is not None:
         # Provenance is caller reported, separate from whether training ran.
         metadata = json.loads(json.dumps(metadata, allow_nan=False))
-    artifact = save_tensor_module(model, path, kwargs=model_kwargs(model) if kwargs is None else kwargs,
+    artifact = save_module(model, path, kwargs=model_kwargs(model) if kwargs is None else kwargs,
                                   origin=origin, training=training, metadata=metadata)
     return artifact
 
 
 def load_model(path):
     # The project loader explicitly opts into its executable WGT model format.
-    artifact = load_tensor_artifact(path, trusted=True, warn_untrained=False)
+    manifest = json.loads((Path(path) / "manifest.json").read_text())
+    if manifest.get("format") == "weightlang.tensor-program":
+        return _load_legacy_model(Path(path), manifest)
+    artifact = load_module(path, trusted=True)
     metadata = artifact.manifest.get("application_metadata", {})
     return artifact.module, metadata
 
@@ -76,7 +80,7 @@ def load_any2any(path, *, strict=False):
         model, metadata = load_model(path)
         if type(model).__name__ != "ArtifactCore":
             raise ValueError("checkpoint is not an Any2Any artifact core")
-        return model, metadata
+        return model.eval(), metadata
     from lightnest.architecture.any2any import ArtifactCore
     payload = load_payload(path)
     if payload.get("architecture") != "lightnest-any2any-v1" or payload.get("kind") != "artifact-core":
@@ -91,3 +95,78 @@ def load_any2any(path, *, strict=False):
     if unexpected or set(missing) != allowed:
         raise ValueError(f"Any2Any checkpoint mismatch: {missing} {unexpected}")
     return model.eval(), payload.get("metadata", {})
+
+
+# Exact source snapshots supported by the previous LightNest migration. Legacy
+# source is checked as data, then its tensors bind to the migrated architecture.
+_LEGACY_SOURCE_HASHES = {
+    "lightnest.architecture." + Path(name).stem: digest
+    for name, digest in json.loads(
+        (Path(__file__).with_name("wgt") / "legacy-source-hashes.json").read_text()
+    )["sha256"].items()
+    if name.endswith(".wgt")
+}
+
+
+def _legacy_config(value):
+    if isinstance(value, list):
+        return [_legacy_config(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    if set(value) == {"$tuple"}:
+        return tuple(_legacy_config(item) for item in value["$tuple"])
+    if "$dataclass" in value:
+        if set(value) != {"$dataclass", "fields"} or value["$dataclass"] != "lightnest.architecture.model:RGBConfig":
+            raise ValueError("unsupported legacy model configuration")
+        from lightnest.architecture.model import RGBConfig
+        return RGBConfig(**_legacy_config(value["fields"]))
+    return {name: _legacy_config(item) for name, item in value.items()}
+
+
+def _load_legacy_model(path, manifest):
+    if manifest.get("format_version") != 1 or manifest.get("args"):
+        raise ValueError("unsupported legacy model format or positional arguments")
+    sources = manifest.get("sources", {})
+    if not sources or manifest.get("host") not in sources:
+        raise ValueError("legacy model lacks its complete source snapshots")
+    for host, source in sources.items():
+        actual = hashlib.sha256(source.encode()).hexdigest()
+        if _LEGACY_SOURCE_HASHES.get(host) != actual or manifest.get("source_hashes", {}).get(host) != actual:
+            raise ValueError(f"unrecognized legacy source snapshot: {host}")
+    host = manifest["host"]
+    if hashlib.sha256((path / "source.wgt").read_bytes()).hexdigest() != _LEGACY_SOURCE_HASHES[host]:
+        raise ValueError("legacy source digest mismatch")
+    if manifest.get("weights", {}).get("file") != "weights.safetensors":
+        raise ValueError("invalid legacy weight file")
+    weight_file = path / "weights.safetensors"
+    if hashlib.sha256(weight_file.read_bytes()).hexdigest() != manifest["weights"]["sha256"]:
+        raise ValueError("legacy weight digest mismatch")
+    import importlib
+    module = importlib.import_module(host)
+    cls = getattr(module, manifest["model"], None)
+    if cls is None or getattr(cls, "_wgt_definition", {}).get("torch_module", {}).get("host") != host:
+        raise ValueError("unsupported legacy model class")
+    values = load_file(str(weight_file))
+    specs = manifest["weights"]["tensors"]
+    if values.keys() != specs.keys():
+        raise ValueError("legacy weight keys mismatch")
+    for name, value in values.items():
+        spec = specs[name]
+        if list(value.shape) != spec["shape"] or str(value.dtype) != spec["dtype"]:
+            raise ValueError(f"legacy tensor contract mismatch: {name}")
+    kwargs = _legacy_config(manifest["kwargs"])
+    buffers = {}
+    if manifest["model"] == "X86World":
+        from lightnest.architecture.elf_tensor_loader import ELFTensorLoader
+        from lightnest.architecture.x86_internal import X86Internal
+        memory_size = kwargs.get("memory_size", 4096)
+        output_size = kwargs.get("output_size", 64)
+        buffers["output_offsets"] = torch.arange(output_size, dtype=torch.long)
+        loader = ELFTensorLoader(memory_size=memory_size)
+        machine = X86Internal(memory_size=memory_size, output_size=output_size)
+        buffers.update({"loader." + name: value for name, value in loader.named_buffers()})
+        buffers.update({"x86." + name: value for name, value in machine.named_buffers()})
+    model = restore_parameters(cls, values, kwargs=kwargs, buffers=buffers)
+    for name, parameter in model.named_parameters():
+        parameter.requires_grad_(specs[name].get("requires_grad", True))
+    return model, manifest.get("application_metadata", {})

@@ -1,6 +1,6 @@
 <div align="center">
 
-模型架构已接入仓库内的 WeightLang `.wgt`，使用本地尚未发布的 `torch-dynamic` 前端。
+模型架构使用 WeightLang `wgt 0.5`，接入本地 0.5.4 的 `target torch` 动态模型扩展。
 [安装、训练／推理、检查点迁移及验证边界](docs/weightlang.md)。
   <h1>LightNest</h1>
   <p><strong>Research on learning to inspect, edit, and generate complete executable files.</strong></p>
@@ -300,3 +300,9 @@ docs/                      design, results and reproduction protocols
 This repository republishes selected research files from owner-provided project archives whose original license status has not been fully verified. No new project-wide license is asserted. Review [NOTICE.md](NOTICE.md) and the archived provenance before redistribution.
 
 iced-x86, LLVM, PyTorch, pyelftools and other dependencies remain under their own licenses.
+
+## Architecture experiments
+
+[Current state](experiments/STATUS.json) · [Protocol and directory structure](experiments/README.md) · [Archived rounds](experiments/archive/)
+
+Application WGT definitions are flat files in `lightnest/architecture/wgt/`. Candidate architectures live in `experiments/active/`; validation selects candidates before the blind test is opened. Research winners are not automatically promoted to the application.

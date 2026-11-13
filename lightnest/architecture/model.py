@@ -36,11 +36,11 @@ class RGBConfig:
 
 
 class ByteHead(nn.Module):
-    """Architecture compiled from wgt/model.wgt."""
+    """Architecture compiled from wgt/policy.wgt."""
 
 
 class RGBPolicy(nn.Module):
-    """Architecture compiled from wgt/model.wgt."""
+    """Architecture compiled from wgt/policy.wgt."""
 
 
 def patch_loss(output, image: bytes, target: bytes):
@@ -97,5 +97,5 @@ def budget_target(outputs, image: bytes, target: bytes):
 
 # WGT is the architecture source; host code above handles preprocessing and scheduling.
 from pathlib import Path as _WgtPath
-from weightlang.tensor_program import bind_tensor_program as _bind_wgt
-globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "model.wgt", globals()))
+from weightlang.modules import bind_models as _bind_wgt
+globals().update(_bind_wgt(_WgtPath(__file__).with_name("wgt") / "policy.wgt", globals()))

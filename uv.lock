@@ -208,7 +208,7 @@ requires-dist = [
     { name = "pyelftools", specifier = "==0.32" },
     { name = "tokenizers", specifier = "==0.23.3" },
     { name = "torch", specifier = "==2.13.0", index = "https://download.pytorch.org/whl/cpu" },
-    { name = "weightlang", editable = "../WeightLang/WeightLang" },
+    { name = "weightlang", editable = "../WeightLang/WeightLang/python" },
 ]
 
 [package.metadata.requires-dev]
@@ -544,10 +544,9 @@ wheels = [
 
 [[package]]
 name = "weightlang"
-version = "0.2.0"
-source = { editable = "../WeightLang/WeightLang" }
+version = "0.5.4"
+source = { editable = "../WeightLang/WeightLang/python" }
 dependencies = [
-    { name = "numpy" },
     { name = "safetensors" },
     { name = "torch", version = "2.13.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
     { name = "torch", version = "2.13.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
@@ -555,15 +554,11 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "gguf", marker = "extra == 'formats'", specifier = ">=0.17" },
-    { name = "huggingface-hub", marker = "extra == 'transformers'", specifier = ">=1.5.0,<2.0" },
-    { name = "numpy" },
-    { name = "onnx", marker = "extra == 'formats'", specifier = ">=1.17" },
+    { name = "graphviz", marker = "extra == 'visualize'", specifier = ">=0.20" },
+    { name = "numpy", marker = "extra == 'visualize'", specifier = ">=1.23" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8" },
-    { name = "safetensors", specifier = ">=0.4" },
-    { name = "tokenizers", marker = "extra == 'transformers'", specifier = ">=0.22.0,<=0.23.0" },
-    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2" },
-    { name = "torch", specifier = ">=2.2" },
-    { name = "transformers", marker = "extra == 'transformers'", specifier = "==5.7.0" },
+    { name = "safetensors", specifier = ">=0.4.3" },
+    { name = "torch", specifier = ">=2.5" },
+    { name = "torchinfo", marker = "extra == 'visualize'", specifier = ">=1.8" },
 ]
-provides-extras = ["test", "formats", "transformers"]
+provides-extras = ["visualize", "test"]

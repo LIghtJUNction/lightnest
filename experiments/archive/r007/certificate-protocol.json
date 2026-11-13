@@ -1,0 +1,7 @@
+{
+  "created_utc": "2026-11-13T13:56:48.485801+00:00",
+  "method": "affine request-bit interval bounds with explicit 0.001 numerical margin",
+  "selection_effect": "none; diagnostic on retained model after validation selection",
+  "source_sha256": "cd0bafd2e67640adde34da24e4d9fd674da4f8ce3dd984b2ec8278f59de93292",
+  "scope": "train-inferred fixed-layout contract only"
+}

@@ -1,0 +1,99 @@
+wgt 0.5
+target torch
+host experiments.active.elf_generation.models
+extern torch, nn
+
+model Candidate extends Module {
+    init(self, variant, width, capacity, transfer=False) {
+        super().__init__();
+        if variant.endswith('_tiny') {
+            width = width // 4;
+            variant = variant.removesuffix('_tiny');
+        }
+        if variant.endswith('_small') {
+            width = width // 2;
+            variant = variant.removesuffix('_small');
+        }
+        self.mode_only = variant.endswith('_mode');
+        variant = variant.removesuffix('_mode');
+        self.position_bias = variant.endswith('_bias');
+        variant = variant.removesuffix('_bias');
+        transfer = transfer or variant.endswith('_copy');
+        variant = variant.removesuffix('_copy');
+        self.variant, self.width, self.capacity = (variant, width, capacity);
+        self.position = nn.Embedding(capacity + 1, width);
+        if self.mode_only {
+            self.request = nn.Embedding(2, width);
+        }
+        else {
+            self.request = nn.Linear(73, width);
+        }
+        self.norm = nn.LayerNorm(width);
+        if variant == 'mlp' {
+            self.core = nn.Sequential(nn.Linear(width, 2 * width), nn.GELU(), nn.Linear(2 * width, width));
+        }
+        elif variant == 'gru' {
+            self.core = nn.GRU(width, width, 2, batch_first=True);
+        }
+        elif variant == 'conv' {
+            self.core = nn.Sequential(nn.Conv1d(width, width, 5, padding=2), nn.GELU(), nn.Conv1d(width, width, 5, padding=2));
+        }
+        elif variant == 'transformer' {
+            layer = nn.TransformerEncoderLayer(width, 4, 2 * width, dropout=0., batch_first=True);
+            self.core = nn.TransformerEncoder(layer, 2, enable_nested_tensor=False);
+        }
+        else {
+            raise ValueError('unknown architecture');
+        }
+        self.output = nn.Linear(width, 9);
+        if self.position_bias {
+            self.bias = nn.Embedding(2 * (capacity + 1), 9);
+            nn.init.zeros_(self.bias.weight);
+        }
+        self.transfer = transfer;
+        if transfer {
+            self.copy_keys = nn.Embedding(9, width);
+            self.copy_query = nn.Linear(width, width, bias=False);
+            self.copy_mode = nn.Embedding(2, width);
+            self.copy_gate = nn.Linear(width, 1);
+            nn.init.constant_(self.copy_gate.bias, -2.);
+        }
+    }
+    fn forward(self, condition) {
+        values = condition[:, 1:];
+        bits = (values[..., None] >> torch.arange(8, device=values.device) & 1).float().flatten(1);
+        request = torch.cat((condition[:, :1].float(), bits), -1);
+        if self.mode_only {
+            context = self.request(condition[:, 0]);
+        }
+        else {
+            context = self.request(request);
+        }
+        x = self.position.weight[None] + context[:, None];
+        if self.variant == 'gru' {
+            y, _ = self.core(x);
+        }
+        elif self.variant == 'conv' {
+            y = self.core(x.transpose(1, 2)).transpose(1, 2);
+        }
+        else {
+            y = self.core(x);
+        }
+        features = self.norm(x + y);
+        output = self.output(features);
+        if self.position_bias {
+            locations = torch.arange(self.capacity + 1, device=condition.device)[None] + condition[:, :1] * (self.capacity + 1);
+            output = output + self.bias(locations);
+        }
+        if self.transfer {
+            query = self.position.weight[None] + self.copy_mode(condition[:, 0])[:, None];
+            attention = (self.copy_query(query) @ self.copy_keys.weight.T / self.width ** .5).softmax(-1);
+            requested = (values[..., None] >> torch.arange(8, device=values.device) & 1).float();
+            copied = attention @ requested;
+            gate = self.copy_gate(query).sigmoid();
+            output_bits = output[..., :8] * (1 - gate) + (copied * 2 - 1) * 12 * gate;
+            return torch.cat((output_bits, output[..., 8:]), -1);
+        }
+        return output;
+    }
+}

@@ -1,0 +1,11 @@
+{
+  "sdk_checkout_head": "4c9d32756b6f8468e41c3b8830af905cd8c317b0",
+  "sdk_has_local_changes": true,
+  "sha256": {
+    "python/weightlang/modules.py": "2e0e2414603ace4ef2a83f80923958fd1858c5fb240b7bd9e3203145bdb8f8e1",
+    "python/weightlang/compiler.py": "ac5345f52c30df3d3c72cdc9d40e001ba00ce83c7eb0170eab160d4eb37efd8b",
+    "crates/wgt-language/src/torch_model.rs": "090714a95211f64ec01b1c556d35b9f5b0a21f5b320152c664f003e57f8dcfdd",
+    "crates/wgt/src/torch_export.rs": "b484fe6d93b39ed35428acb0e475ed144621e37d3a723e721c1df52932d93707",
+    "target/debug/wgt": "53d98cedc764f6287726da00b0966e6ae866e114f01d64392dded053695ab115"
+  }
+}
