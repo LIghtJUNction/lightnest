@@ -1,0 +1,53 @@
+{
+  "steps": 1200,
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "arms": [
+    "next",
+    "near",
+    "powers"
+  ],
+  "batch": 32,
+  "dim": 64,
+  "threads": 2,
+  "eval_size": 256,
+  "log_every": 300,
+  "output": "results/multihorizon",
+  "torch": "2.15.0",
+  "device": "cpu",
+  "horizons": {
+    "next": [
+      1
+    ],
+    "near": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "powers": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      64
+    ]
+  },
+  "loss": "L_next + mean(L_aux), each horizon mean over valid targets",
+  "tasks": "online random 4-branch length-3 routes, and delayed copy of 8 symbols; both with fixed filler gap",
+  "training": "full sequence CE, no target-only weighting; fresh paired batches for each arm",
+  "primary_metrics": [
+    "route exact_match",
+    "route first_token_accuracy",
+    "copy exact_match"
+  ],
+  "decoding": "greedy, next-token head only, one token appended each iteration"
+}

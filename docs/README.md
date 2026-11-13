@@ -12,3 +12,5 @@
 `archive/universal_native/`：[架构](ARCHITECTURE.md) · [复现](REPRODUCE.md) · [结果](RESULTS.md)。
 
 - [WeightLang 架构、运行入口与迁移验证](weightlang.md)
+
+- [Token Lab 经验迁移：无 Q/K/V 动态分块、远期预测与缓存验收](TOKEN_LAB_LESSONS.md)

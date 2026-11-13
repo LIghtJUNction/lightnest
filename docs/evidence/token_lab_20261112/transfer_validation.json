@@ -1,0 +1,40 @@
+{
+  "date": "2026-11-13",
+  "python": "3.13.16",
+  "torch": "2.13.0+cpu",
+  "numpy": "2.3.5",
+  "historical_evidence": {
+    "sha256_files": 14,
+    "recomputed_runs": 20
+  },
+  "short_smoke": {
+    "dynamic": {
+      "arms": [
+        "dense",
+        "fixed",
+        "learned"
+      ],
+      "seeds": [
+        0
+      ],
+      "steps": 2,
+      "completed": true
+    },
+    "multihorizon": {
+      "arms": [
+        "next",
+        "near",
+        "powers"
+      ],
+      "seeds": [
+        0
+      ],
+      "steps": 2,
+      "completed": true
+    }
+  },
+  "dynamic_checkpoint_and_actual_slow_execution_verified": true,
+  "source_tree_check": "passed",
+  "relative_document_links": "passed",
+  "meaning": "Transfer compatibility smoke only; historical scores were not remeasured in this environment."
+}

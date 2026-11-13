@@ -1,0 +1,96 @@
+{
+  "experiment_date": "2026-11-12",
+  "transfer_date": "2026-11-13",
+  "origin": "local tokenization-lab synthetic experiments",
+  "status": "Historical measurements; not a LightNest ELF benchmark or a production architecture change.",
+  "checkpoints": "Not transferred; regenerate outside the source tree to rerun checkpoint verification.",
+  "files": [
+    {
+      "source": "experiments/dynamic_chunks.py",
+      "destination": "tools/research/token_lab/dynamic_chunks.py",
+      "sha256": "1d73f29420b0a8fc57aed6a45dedcd99a7586b882840b2a6efeb8c4c51adb9a2",
+      "bytes": 13016
+    },
+    {
+      "source": "experiments/multihorizon.py",
+      "destination": "tools/research/token_lab/multihorizon.py",
+      "sha256": "1fafb88bc5201a99ebd72deb4ccac5be7bce403dad78c5dc8161d12ed5ab49ab",
+      "bytes": 10471
+    },
+    {
+      "source": "experiments/verify_dynamic_chunks.py",
+      "destination": "tools/research/token_lab/verify_dynamic_chunks.py",
+      "sha256": "e2191c606446dd2d8aca62cdb005a198fabe8eef136b6e332bcca71b3dcbb34e",
+      "bytes": 1746
+    },
+    {
+      "source": "results/dynamic-chunks/config.json",
+      "destination": "docs/evidence/token_lab_20261112/dynamic-chunks/config.json",
+      "sha256": "5e76537832c4cf0452d86b9a340dfe8a0565356c2e95ccc4c36a5d741dfbe4ea",
+      "bytes": 946
+    },
+    {
+      "source": "results/dynamic-chunks/summary.json",
+      "destination": "docs/evidence/token_lab_20261112/dynamic-chunks/summary.json",
+      "sha256": "6966c83aea2bb39804295d7326fbce4178f3548806cd0df9f8a486cb6a85a8f6",
+      "bytes": 7183
+    },
+    {
+      "source": "results/dynamic-chunks/results.json",
+      "destination": "docs/evidence/token_lab_20261112/dynamic-chunks/results.json",
+      "sha256": "8b58e59b6c68c65e097fa4c58e7eafbb14176d66f39878d3a8c095209f2112a8",
+      "bytes": 165011
+    },
+    {
+      "source": "results/multihorizon/config.json",
+      "destination": "docs/evidence/token_lab_20261112/multihorizon/config.json",
+      "sha256": "452e3d77ded816371fd2a3033f7ce60f6ecb68c022b1b4e72a479d1245def032",
+      "bytes": 962
+    },
+    {
+      "source": "results/multihorizon/summary.json",
+      "destination": "docs/evidence/token_lab_20261112/multihorizon/summary.json",
+      "sha256": "b03d5205f24de4f742ceb15bc323d172f8a9463fd68b759f633536857ad37a84",
+      "bytes": 1841
+    },
+    {
+      "source": "results/multihorizon/results.json",
+      "destination": "docs/evidence/token_lab_20261112/multihorizon/results.json",
+      "sha256": "482dacf07a48eab57b127030c5ef425a36d73b5158843792ef9f5f7266e1bdb7",
+      "bytes": 31264
+    },
+    {
+      "source": "results/multihorizon-depth2/config.json",
+      "destination": "docs/evidence/token_lab_20261112/multihorizon-depth2/config.json",
+      "sha256": "69b2ffdb608cc11695cdbf53bf79b9b2fda472004f2d0a53507ca4d4e626d31c",
+      "bytes": 963
+    },
+    {
+      "source": "results/multihorizon-depth2/summary.json",
+      "destination": "docs/evidence/token_lab_20261112/multihorizon-depth2/summary.json",
+      "sha256": "066ba3b17e9c0753c8ab775ec3dd0de87b62611812952b288b8c9d7c8f8796cd",
+      "bytes": 953
+    },
+    {
+      "source": "results/multihorizon-depth2/results.json",
+      "destination": "docs/evidence/token_lab_20261112/multihorizon-depth2/results.json",
+      "sha256": "0d93b22bc61d1e4f0dc80dcfaa1cf169b64d8081efbc4a1d561fa2a701f1336f",
+      "bytes": 6995
+    },
+    {
+      "source": "results/dynamic-chunks/validation.json",
+      "destination": "docs/evidence/token_lab_20261112/dynamic-chunks/validation.json",
+      "sha256": "cf56973d3e29f332d61296d584c27f14aa26a68bf65ec7dea32c9f6105210dd5",
+      "bytes": 1398
+    },
+    {
+      "source": "results/dynamic-chunks/boundary_examples.txt",
+      "destination": "docs/evidence/token_lab_20261112/dynamic-chunks/boundary_examples.txt",
+      "sha256": "1682468b2bea7dd4a0b011cad71719e7a1162cc20c616b56520b328ad21808d8",
+      "bytes": 3362,
+      "source_sha256": "f2f3a26eb98c859fbff486b1813b4af0ac4b15ba7d815ae1428060f2018bc6d8",
+      "source_bytes": 3363,
+      "transform": "Remove trailing empty lines; preserve all boundary examples and content."
+    }
+  ]
+}

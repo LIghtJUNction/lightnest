@@ -1,0 +1,31 @@
+{
+  "steps": 800,
+  "seeds": [
+    1,
+    2,
+    3
+  ],
+  "arms": [
+    "dense",
+    "fixed",
+    "learned"
+  ],
+  "batch": 16,
+  "hidden": 48,
+  "threads": 1,
+  "eval_size": 96,
+  "period": 8,
+  "budget_weight": 0.02,
+  "log_every": 200,
+  "output": "results/dynamic-chunks",
+  "torch": "2.15.0",
+  "device": "cpu",
+  "training_noise_max": 4,
+  "ood_noise_max": 12,
+  "target_boundary_rate": 0.125,
+  "boundary": "causal hard threshold, sigmoid straight-through gradient; no boundary labels; max chunk 32",
+  "loss": "query-answer CE + budget_weight * mean((boundary_rate / target_rate - 1)^2)",
+  "initialization": "identical parameters in each arm at a given seed; identical online data stream",
+  "budget_caveat": "fixed uses nominal period; learned is encouraged, not forced, to achieve same write budget",
+  "compute_caveat": "all candidates computed for STE training; only closed chunks execute slow GRU in evaluation; no speedup claim"
+}

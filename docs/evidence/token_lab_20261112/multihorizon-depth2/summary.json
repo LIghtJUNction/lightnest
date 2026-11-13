@@ -1,0 +1,54 @@
+{
+  "next": {
+    "copy.exact_match": {
+      "mean": 1.0,
+      "min": 1.0,
+      "max": 1.0,
+      "per_seed": {
+        "4": 1.0
+      }
+    },
+    "route.first_token_accuracy": {
+      "mean": 0.02734375,
+      "min": 0.02734375,
+      "max": 0.02734375,
+      "per_seed": {
+        "4": 0.02734375
+      }
+    },
+    "route.exact_match": {
+      "mean": 0.02734375,
+      "min": 0.02734375,
+      "max": 0.02734375,
+      "per_seed": {
+        "4": 0.02734375
+      }
+    }
+  },
+  "powers": {
+    "copy.exact_match": {
+      "mean": 1.0,
+      "min": 1.0,
+      "max": 1.0,
+      "per_seed": {
+        "4": 1.0
+      }
+    },
+    "route.first_token_accuracy": {
+      "mean": 0.046875,
+      "min": 0.046875,
+      "max": 0.046875,
+      "per_seed": {
+        "4": 0.046875
+      }
+    },
+    "route.exact_match": {
+      "mean": 0.046875,
+      "min": 0.046875,
+      "max": 0.046875,
+      "per_seed": {
+        "4": 0.046875
+      }
+    }
+  }
+}
