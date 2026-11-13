@@ -4,6 +4,7 @@
 
 | 入口 | 原生计算 | 状态/限制 |
 | --- | --- | --- |
+| `load_artifact_core(raw,request,config=None,depth=None,chunk_size=256,max_chunks=16,backend="native",**options)` | Any2Any 默认字节路径：请求 GRU、四层独立 Transformer、dropout、notebook、学习预算、共享 red 与所有输出头 | 固定深度或原生学习预算；显式 specialize 保留实例/权重/优化器；语义/BPE 分支尚未接入 |
 | `load_rgb_policy(image,command,frames=(),config=None,depth=None,backend="native",**options)` | 完整 RGB 神经图：观察编码、三模式 attention、notebook、共享思考循环、blue/red、风险/语言/预算头 | 默认 width64、depth16；`specialize` 显式切换离散布局与深度，保留权重和 Adam |
 | `load_generator(width=128,capacity=2048,backend="native",**options)` | 完整 ELFGenerator：两层 GRU、共享 red 循环、LayerNorm、copy attention、bits/blue/stop 头 | 单序列逐位置；red_depth=0..16；两个显式 hidden 向量。 |
 | `load_hnet_generator(width=128,capacity=2048,backend="native",**options)` | 完整 HNetELFGenerator：encoder/main/decoder GRU、动态边界、EMA、confidence STE，以及全部生成头 | chunk_mode=dynamic/fixed/dense；target_ratio 默认4且至少2；五个显式 hidden 向量。 |
@@ -32,9 +33,9 @@ with load_generator(width=128, capacity=2048) as model:
 
 验收位于 `tests/architecture/test_native_model.py`：真实 wgtime 中导入与原实现相同的权重，比较完整输出、隐藏状态、多种深度/模式和原生 SGD/BPTT 后的全部参数；notebook 覆盖 padding、显式/默认 query、软/硬预算；attention 覆盖 N<L 的空池窗口、padding 和三种读取模式。新增内核的无效 mask、count、相等值选择、工作预算和独立 Torch VJP 由 WeightLang 测试覆盖。核心验收尺寸为width=8/16、短序列，attention另覆盖N=7、L=3、K=2的非平凡路由，另验证默认width=128生成器的服务准入和执行；这些验证不是性能报告或所有真实模型规模的验收。
 
-Any2Any、独立 GreenObserver 宿主、结构分类器及 X86World 的整个应用宿主仍未全部改成原生图。RGBPolicy 的观察编码已包含在新的完整原生 RGB 图中；原 RGB 流式应用宿主仍保留。它们继续走已有显式 Torch 入口；这些新增原生网络不是对任意 target torch 源码的自动翻译。尤其 X86/ELF/PTX 模拟器和 Any2Any 的随机 dropout/多模态分支需要独立原生实现及验收。
+Any2Any 的可选语义分支、独立 GreenObserver 宿主、结构分类器及 X86World 的整个应用宿主仍未全部改成原生图。RGBPolicy 的观察编码已包含在新的完整原生 RGB 图中；原 RGB 流式应用宿主仍保留。它们继续走已有显式 Torch 入口；这些新增原生网络不是对任意 target torch 源码的自动翻译。尤其 X86/ELF/PTX 模拟器和 Any2Any 的随机 dropout/多模态分支需要独立原生实现及验收。
 
-这些新增普通 WGT 定义也可以由同一共享前端导入显式 Torch 后端，例如 `wgt.from_ir(native.definition, backend="torch", device="cpu")`。这只复用定义并按配方创建新权重，不迁移 native 的当前参数；若要相同实例数值，需要显式复制参数。测试对六个定义分别绑定相同随机权重，验证原生和显式 Torch 的全部逻辑输出；原始 target torch 模型另外作为独立语义 oracle 保留。
+这些新增普通 WGT 定义也可以由同一共享前端导入显式 Torch 后端，例如 `wgt.from_ir(native.definition, backend="torch", device="cpu")`。这只复用定义并按配方创建新权重，不迁移 native 的当前参数；若要相同实例数值，需要显式复制参数。测试对七个定义分别绑定相同随机权重，验证原生和显式 Torch 的全部逻辑输出；原始 target torch 模型另外作为独立语义 oracle 保留。
 
 配套 WeightLang 源码提交见本次验证 JSON 中的 compiler_commit 字段；所有能力均为源码状态，未重新发布 PyPI/crates.io。
 
@@ -45,3 +46,15 @@ RGB 原生宿主只用标准库准备字节块去重、出现位置、种类、�
 RGB 默认申请256 MiB服务内存，work_limit=20,000,000；可显式覆盖这两个原生 SDK 参数。预算按指令成本计量，不能把它当毫秒或性能保证。默认尺寸验收使用短输入、真实 depth16 前向/Adam；另在同一 Adam 会话切换输入长度与 depth8 后切回，核对第二次更新。`backend="torch"` 仍显式构造原 RGBPolicy；新普通 WGT 源码另外通过 from_ir 在 Torch 执行全部11个逻辑输出。
 
 `NativeRGBConfig` 默认值为 width=64、chunk_size=64、heads=4、landmarks=4、detail_k=8、blue_depth=1、red_depths=(2,4,8,16)、note_slots=16。整数配置必须为正且不接受 bool；width 同时整除8与 heads，chunk_size 为8..256，note_slots 为2..256。red_depths 严格递增、无重复、最大64，blue_depth 小于最小 red_depth；构造/specialize 的 depth 必须大于 blue_depth 且不超过最大 red_depth。config 接受 NativeRGBConfig、同字段字典或原 RGBConfig。显式 Torch 入口返回原 RGBPolicy，depth 须在该对象的 forward 调用传入。
+
+Any2Any 原生入口位于 native_any2any.py，NativeArtifactRequest 只用标准库校验 kind/operation/specification。NativeArtifactConfig 默认 width128、heads4、max_bytes=1048576、sequence_limit4096、note_slots32、red_depths=(2,4,8,16)、request_encoding="gru"、semantic_chunk_size=0、semantic_bpe=None；当前原生入口明确拒绝 mean request、semantic chunk 和 BPE 配置，不能因普通字节内容是 image/audio 就声称实现了语义分支。width≥32且整除heads，sequence_limit和max_bytes≥256，note_slots2..256；正整数不接受bool。red_depths 必须严格递增、无重复、首项>1。kind 的内置表/未知哈希与原实现一致；请求 token 为 `(operation+"\0"+specification).encode()` 的字节值加1。
+
+chunk_size 为32..sequence_limit，max_chunks≥2；最长输入受max_bytes限制。超过max_chunks时采用原实现的等距起点采样。每个 chunk 独立执行全部四层编码器；仅把末尾 chunk 补齐到本次最长 chunk，attention 屏蔽 padding key，pooling 排除 padding query。四层使用独立参数；每层的 Q/K/V 对应原 in_proj 三段，前置 LayerNorm、默认 ReLU、四个 dropout 位置均保持。所有字节/请求 embedding、GRU、Transformer、notebook、思考和输出头在同一 WGT 图中。
+
+`depth=None` 在原生图内先执行 blue 一步，根据其 budget argmax 选择 blue-only 或 red_depths，再继续共享 red；选择不求导，budget logits 保留梯度。正整数 depth 表示固定总深度，1..max(red_depths)。`specialize(raw,request,depth=...)` 显式切换 chunk/请求几何与深度；省略depth保留当前模式，显式None切回学习预算。构造不执行 forward 或训练；新参数为未训练的零/单位配方，须显式导入已有权重或训练。
+
+`train()`/`eval()` 同时控制 dropout 与 notebook 软/硬选择。`pack(raw,request,seed=None)` / forward 同名 seed 为uint32；训练未指定时由宿主生成新seed，指定时可精确重放，eval默认seed0。每个 chunk/layer/site 取得独立 stream；不共享 PyTorch 全局 RNG 序列。原实现对照保留全部真实 PyTorch 网络与 autograd，仅在训练验收时独立按公开计数器合同构造相同 mask；eval另直接对照未补丁原实现。
+
+返回字典13项依次为 encoded（contextualized chunk特征）、abstract、guidance、blue_logits、red_logits、stop_logits、kind_logits、summary、budget_logits、copy_scores、notes、context、context_budget_logits。四个 copy-paste 指针采用原实现相同的 scores，返回一份共享值；实际复制/插入编辑、格式验证与生成调度仍由宿主负责。pack 的11个输入端口按 tokens、positions、kind、request_tokens、valid、selectors、seed、hard、zero_notes、learned、schedule 排列；train_step仍是打包向量的原生MSE，未新增统一任务损失或训练调度器。
+
+默认申请256 MiB服务内存和100,000,000工作预算；不是任意序列规模或性能承诺。原生端口总宽度16384、axis/寄存器、单帧16MiB、工作与AD tape等限制仍适用；完整256位置、多chunk训练不由短输入验收推断。默认width128/sequence_limit4096通过实际权重导入、前向和重绑定对照；训练验收使用width32、两个不等长chunk（32+3字节）、固定深度及学习预算、所有参数SGD对照。大参数由配套SDK无损紧凑f32传输，未放宽帧/内存边界。此改动没有替换全部旧 Any2Any 应用宿主。

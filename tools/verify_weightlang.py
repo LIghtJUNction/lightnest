@@ -96,7 +96,7 @@ def main():
         package=Path(tmp)/'_lightnest_baseline'; architecture=package/'architecture'; architecture.mkdir(parents=True)
         (package/'__init__.py').write_text(''); (architecture/'__init__.py').write_text('')
         for path in (ROOT/'lightnest/architecture').glob('*.py'):
-            if path.name in {'weightlang_io.py', 'native.py', 'native_rgb.py'}: continue
+            if path.name in {'weightlang_io.py', 'native.py', 'native_rgb.py', 'native_any2any.py'}: continue
             relative=str(path.relative_to(ROOT))
             source=subprocess.check_output(['git','show',f"{baseline['commit']}:{relative}"],cwd=ROOT,text=True)
             if relative in baseline['sha256']:

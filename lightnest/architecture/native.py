@@ -612,3 +612,8 @@ def load_rgb_policy(image, command, frames=(), *, backend="native", **options):
     from .native_rgb import load_rgb_policy as load
 
     return load(image, command, frames, backend=backend, **options)
+
+
+def load_artifact_core(raw, request, *, backend="native", **options):
+    from .native_any2any import load_artifact_core as load
+    return load(raw, request, backend=backend, **options)

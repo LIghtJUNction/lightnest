@@ -913,3 +913,265 @@ class NativeModelTests(unittest.TestCase):
                         atol=1e-5,
                         rtol=1e-4,
                     )
+
+    def test_complete_any2any_native_encoder_dropout_thinking_heads_and_sgd(self):
+        from contextlib import contextmanager
+        from unittest.mock import patch
+        from lightnest.architecture.native import load_artifact_core
+        from lightnest.architecture.native_any2any import NativeArtifactConfig
+        from lightnest.architecture.any2any import ArtifactCore, ArtifactRequest
+        import torch.nn.functional as F
+
+        torch.manual_seed(133)
+        config = NativeArtifactConfig(
+            width=32, heads=4, sequence_limit=256, note_slots=3, red_depths=(2, 4)
+        )
+        reference = ArtifactCore(**vars(config))
+        raw = bytes(range(35))
+        request = ArtifactRequest("json", "x", "")
+        chunks = [raw[:32], raw[32:]]
+        seed = 0x43211234
+
+        # Independently implement the public counter contract, leaving all original
+        # PyTorch Transformer/GRU/notebook/head parameters and autograd in place.
+        def apply_mask(value, site, p):
+            output = []
+            for chunk, tensor in enumerate(value):
+                values = []
+                for i in range(tensor.numel()):
+                    h = (
+                        seed
+                        ^ (((chunk * 16 + site) * 0x9E3779B9) & 0xFFFFFFFF)
+                        ^ ((i * 0x85EBCA6B) & 0xFFFFFFFF)
+                    )
+                    h ^= h >> 16
+                    h = (h * 0x7FEB352D) & 0xFFFFFFFF
+                    h ^= h >> 15
+                    h = (h * 0x846CA68B) & 0xFFFFFFFF
+                    h ^= h >> 16
+                    values.append(float((h >> 8) / 16777216 >= p))
+                output.append(
+                    tensor * torch.tensor(values).reshape(tensor.shape) / (1 - p)
+                )
+            return torch.stack(output)
+
+        @contextmanager
+        def seeded_dropout():
+            sites = [0, 0]
+
+            def sdpa(
+                q,
+                k,
+                v,
+                attn_mask=None,
+                dropout_p=0.0,
+                is_causal=False,
+                scale=None,
+                **kwargs,
+            ):
+                self.assertFalse(is_causal)
+                logits = (q @ k.transpose(-1, -2)) * (
+                    scale if scale is not None else q.shape[-1] ** -0.5
+                )
+                if attn_mask is not None:
+                    logits = logits + attn_mask
+                probability = logits.softmax(-1)
+                site = sites[0] * 4
+                sites[0] += 1
+                if dropout_p:
+                    probability = apply_mask(probability, site, dropout_p)
+                return probability @ v
+
+            def dropout(value, p=0.5, training=True, inplace=False):
+                if not training:
+                    return value
+                index = sites[1]
+                sites[1] += 1
+                return apply_mask(value, (index // 3) * 4 + index % 3 + 1, p)
+
+            with (
+                patch.object(F, "scaled_dot_product_attention", sdpa),
+                patch.object(F, "dropout", dropout),
+            ):
+                yield
+
+        def outputs(depth=2):
+            encoded, valid, _ = reference.encode_batch(chunks, [request] * len(chunks))
+            pooled = (encoded * valid[..., None]).sum(1) / valid.sum(1)[:, None]
+            contextual, notes = reference.contextualize(pooled[None])
+            if depth is None:
+                abstract, guidance, budget = reference.think_budgeted(contextual)
+                heads = reference.heads(
+                    contextual, guidance, budget_logits=budget["logits"]
+                )
+            else:
+                abstract, guidance = reference.think(contextual, depth=depth)
+                heads = reference.heads(contextual, guidance)
+            return [
+                contextual[0],
+                abstract[0],
+                guidance[0],
+                heads["blue_logits"][0],
+                heads["red_logits"][0],
+                heads["stop_logits"][0],
+                heads["kind_logits"][0],
+                heads["summary"][0],
+                heads["budget_logits"][0],
+                heads["copy_paste"]["source_start"][0],
+                notes["notes"][0],
+                notes["context"][0],
+                notes["budget_logits"][0],
+            ]
+
+        def flat(values):
+            return torch.cat([torch.as_tensor(v).flatten() for v in values])
+
+        with load_artifact_core(
+            raw, request, config=config, depth=2, chunk_size=32, endpoint=self.endpoint
+        ) as native:
+            native.import_state_dict(reference.state_dict())
+            reference.eval()
+            native.eval()
+            expected = outputs()
+            actual = wgt.Model.forward(native, *native.pack(raw, request, seed=seed))
+            torch.testing.assert_close(
+                flat(actual), flat(expected).detach(), atol=1e-5, rtol=1e-4
+            )
+            reference.train()
+            native.train()
+            with seeded_dropout():
+                expected = outputs()
+            ports = native.pack(raw, request, seed=seed)
+            actual = wgt.Model.forward(native, *ports)
+            torch.testing.assert_close(
+                flat(actual), flat(expected).detach(), atol=1e-5, rtol=1e-4
+            )
+            loss = flat(expected).square().mean()
+            loss.backward()
+            native.set_optimizer("sgd")
+            got = native.train_step(
+                [flat(ports).tolist()], [[0.0] * flat(expected).numel()], rate=0.001
+            )
+            self.assertAlmostEqual(got, float(loss.detach()), places=5)
+            torch.optim.SGD(reference.parameters(), lr=0.001).step()
+            with load_artifact_core(
+                raw,
+                request,
+                config=config,
+                depth=2,
+                chunk_size=32,
+                endpoint=self.endpoint,
+            ) as oracle:
+                oracle.import_state_dict(reference.state_dict())
+                for actual, want in zip(
+                    native.parameters(), oracle.parameters(), strict=True
+                ):
+                    self.assertEqual(actual.name, want.name)
+                    torch.testing.assert_close(
+                        torch.tensor(actual.data),
+                        torch.tensor(want.data),
+                        atol=4e-6,
+                        rtol=4e-5,
+                    )
+            # The same definition and seed execute via the explicit Torch backend.
+            portable = wgt.from_ir(native.definition, backend="torch", device="cpu")
+            base = portable.to_torch().base
+            base.max_work = 100_000_000
+            base.memory_bytes = 256 * 1024**2
+            with torch.no_grad():
+                for parameter in native.parameters():
+                    base.get_parameter(base.parameter_names[parameter.name]).copy_(
+                        torch.tensor(parameter.data).reshape(parameter.shape)
+                    )
+            actual = wgt.Model.forward(native, *ports)
+            same = portable(
+                *[torch.tensor(p, dtype=torch.float32) for p in ports],
+            )
+            torch.testing.assert_close(
+                flat(actual), flat(same).detach(), atol=1e-5, rtol=1e-4
+            )
+
+            # Learned depth 0 means blue-only; the last index continues shared red.
+            native.specialize(raw, request, depth=None)
+            for selected in [0, len(config.red_depths)]:
+                with torch.no_grad():
+                    reference.budget[-1].bias.fill_(-100.0)
+                    reference.budget[-1].bias[selected] = 100.0
+                native.import_state_dict(reference.state_dict())
+                with seeded_dropout():
+                    expected = outputs(None)
+                ports = native.pack(raw, request, seed=seed)
+                actual = wgt.Model.forward(native, *ports)
+                torch.testing.assert_close(
+                    flat(actual), flat(expected).detach(), atol=1e-5, rtol=1e-4
+                )
+            reference.zero_grad()
+            loss = flat(expected).square().mean()
+            loss.backward()
+            native.set_optimizer("sgd")
+            native.train_step(
+                [flat(ports).tolist()], [[0.0] * flat(expected).numel()], rate=0.0001
+            )
+            torch.optim.SGD(reference.parameters(), lr=0.0001).step()
+            with load_artifact_core(
+                raw,
+                request,
+                config=config,
+                depth=None,
+                chunk_size=32,
+                endpoint=self.endpoint,
+            ) as oracle:
+                oracle.import_state_dict(reference.state_dict())
+                for actual, want in zip(
+                    native.parameters(), oracle.parameters(), strict=True
+                ):
+                    torch.testing.assert_close(
+                        torch.tensor(actual.data),
+                        torch.tensor(want.data),
+                        atol=4e-6,
+                        rtol=4e-5,
+                    )
+
+    def test_any2any_default_geometry_and_live_rebinding(self):
+        from lightnest.architecture.native_any2any import (
+            NativeArtifactRequest,
+            NativeArtifactConfig,
+            load_artifact_core,
+        )
+        from lightnest.architecture.any2any import ArtifactCore
+
+        torch.manual_seed(141)
+        config = NativeArtifactConfig()
+        request = NativeArtifactRequest("image", "x")
+        raw = b"abc"
+        reference = ArtifactCore(**vars(config)).eval()
+        with load_artifact_core(raw, request, endpoint=self.endpoint) as native:
+            native.import_state_dict(reference.state_dict())
+            native.eval()
+            self.assertTrue(native._compact_parameters)
+            expected = reference.summarize(raw, request, depth=None)[1]
+            actual = native(raw, request)
+            for name in [
+                "blue_logits",
+                "red_logits",
+                "stop_logits",
+                "kind_logits",
+                "summary",
+                "budget_logits",
+            ]:
+                torch.testing.assert_close(
+                    torch.tensor(actual[name]), expected[name][0], atol=2e-5, rtol=2e-4
+                )
+            # One owner, different sequence/request length and thinking depth.
+            before = native.parameters()
+            native.specialize(b"abcdef", request, depth=2)
+            actual = native(b"abcdef", request)
+            expected = reference.summarize(b"abcdef", request, depth=2)[1]
+            torch.testing.assert_close(
+                torch.tensor(actual["blue_logits"]),
+                expected["blue_logits"][0],
+                atol=2e-5,
+                rtol=2e-4,
+            )
+            self.assertEqual(native.parameters(), before)
+            self.assertEqual(native.work_limit, 100_000_000)

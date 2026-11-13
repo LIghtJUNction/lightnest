@@ -1,0 +1,397 @@
+wgt 0.5
+dim H
+dim H2
+dim H4
+dim A
+dim D
+dim SEQ
+dim G
+dim GT
+dim GG
+dim GH
+dim RQ
+dim P
+dim S
+dim SP
+dim SH
+dim N
+dim NH
+dim DEPTH
+dim B
+import recurrent from "std/recurrent"
+model NativeArtifactCore
+# Ordinary WGT: all parameter-dependent encoder, notebook, recurrent thinking and heads stay in one graph.
+# G sampled chunks each have SEQ padded positions; attention masks keys, and means ignore padded queries.
+# A independent heads each have D=H/A channels. Four encoder layers have independent parameters.
+# Dropout takes explicit seed/training data; each chunk/layer/site gets a distinct stream.
+# Zero/one recipes are untrained storage; import original weights explicitly.
+parameter byte_weight:f32[257,H]=zeros()
+parameter kind_weight:f32[256,H]=zeros()
+parameter position_weight:f32[P,H]=zeros()
+parameter enc0_q_weight:f32[H,H]=zeros()
+parameter enc0_q_bias:f32[H]=zeros()
+parameter enc0_k_weight:f32[H,H]=zeros()
+parameter enc0_k_bias:f32[H]=zeros()
+parameter enc0_v_weight:f32[H,H]=zeros()
+parameter enc0_v_bias:f32[H]=zeros()
+parameter enc0_out_weight:f32[H,H]=zeros()
+parameter enc0_out_bias:f32[H]=zeros()
+parameter enc0_ff1_weight:f32[H4,H]=zeros()
+parameter enc0_ff1_bias:f32[H4]=zeros()
+parameter enc0_ff2_weight:f32[H,H4]=zeros()
+parameter enc0_ff2_bias:f32[H]=zeros()
+parameter enc0_n1_weight:f32[H]=ones()
+parameter enc0_n1_bias:f32[H]=zeros()
+parameter enc0_n2_weight:f32[H]=ones()
+parameter enc0_n2_bias:f32[H]=zeros()
+parameter enc1_q_weight:f32[H,H]=zeros()
+parameter enc1_q_bias:f32[H]=zeros()
+parameter enc1_k_weight:f32[H,H]=zeros()
+parameter enc1_k_bias:f32[H]=zeros()
+parameter enc1_v_weight:f32[H,H]=zeros()
+parameter enc1_v_bias:f32[H]=zeros()
+parameter enc1_out_weight:f32[H,H]=zeros()
+parameter enc1_out_bias:f32[H]=zeros()
+parameter enc1_ff1_weight:f32[H4,H]=zeros()
+parameter enc1_ff1_bias:f32[H4]=zeros()
+parameter enc1_ff2_weight:f32[H,H4]=zeros()
+parameter enc1_ff2_bias:f32[H]=zeros()
+parameter enc1_n1_weight:f32[H]=ones()
+parameter enc1_n1_bias:f32[H]=zeros()
+parameter enc1_n2_weight:f32[H]=ones()
+parameter enc1_n2_bias:f32[H]=zeros()
+parameter enc2_q_weight:f32[H,H]=zeros()
+parameter enc2_q_bias:f32[H]=zeros()
+parameter enc2_k_weight:f32[H,H]=zeros()
+parameter enc2_k_bias:f32[H]=zeros()
+parameter enc2_v_weight:f32[H,H]=zeros()
+parameter enc2_v_bias:f32[H]=zeros()
+parameter enc2_out_weight:f32[H,H]=zeros()
+parameter enc2_out_bias:f32[H]=zeros()
+parameter enc2_ff1_weight:f32[H4,H]=zeros()
+parameter enc2_ff1_bias:f32[H4]=zeros()
+parameter enc2_ff2_weight:f32[H,H4]=zeros()
+parameter enc2_ff2_bias:f32[H]=zeros()
+parameter enc2_n1_weight:f32[H]=ones()
+parameter enc2_n1_bias:f32[H]=zeros()
+parameter enc2_n2_weight:f32[H]=ones()
+parameter enc2_n2_bias:f32[H]=zeros()
+parameter enc3_q_weight:f32[H,H]=zeros()
+parameter enc3_q_bias:f32[H]=zeros()
+parameter enc3_k_weight:f32[H,H]=zeros()
+parameter enc3_k_bias:f32[H]=zeros()
+parameter enc3_v_weight:f32[H,H]=zeros()
+parameter enc3_v_bias:f32[H]=zeros()
+parameter enc3_out_weight:f32[H,H]=zeros()
+parameter enc3_out_bias:f32[H]=zeros()
+parameter enc3_ff1_weight:f32[H4,H]=zeros()
+parameter enc3_ff1_bias:f32[H4]=zeros()
+parameter enc3_ff2_weight:f32[H,H4]=zeros()
+parameter enc3_ff2_bias:f32[H]=zeros()
+parameter enc3_n1_weight:f32[H]=ones()
+parameter enc3_n1_bias:f32[H]=zeros()
+parameter enc3_n2_weight:f32[H]=ones()
+parameter enc3_n2_bias:f32[H]=zeros()
+parameter red_xr_weight:f32[H,H]=zeros()
+parameter red_xr_bias:f32[H]=zeros()
+parameter red_xz_weight:f32[H,H]=zeros()
+parameter red_xz_bias:f32[H]=zeros()
+parameter red_xn_weight:f32[H,H]=zeros()
+parameter red_xn_bias:f32[H]=zeros()
+parameter red_hr_weight:f32[H,H]=zeros()
+parameter red_hr_bias:f32[H]=zeros()
+parameter red_hz_weight:f32[H,H]=zeros()
+parameter red_hz_bias:f32[H]=zeros()
+parameter red_hn_weight:f32[H,H]=zeros()
+parameter red_hn_bias:f32[H]=zeros()
+parameter abstract_weight:f32[H4,H]=zeros()
+parameter abstract_bias:f32[H4]=zeros()
+parameter abstract_norm_weight:f32[H4]=ones()
+parameter abstract_norm_bias:f32[H4]=zeros()
+parameter to_blue_weight:f32[H,H4]=zeros()
+parameter to_blue_bias:f32[H]=zeros()
+parameter blue_byte_weight:f32[257,H]=zeros()
+parameter blue_byte_bias:f32[257]=zeros()
+parameter red_byte_weight:f32[257,H]=zeros()
+parameter red_byte_bias:f32[257]=zeros()
+parameter stop_weight:f32[1,H]=zeros()
+parameter stop_bias:f32[1]=zeros()
+parameter kind_head_weight:f32[256,H]=zeros()
+parameter kind_head_bias:f32[256]=zeros()
+parameter summary_head_weight:f32[5,H]=zeros()
+parameter summary_head_bias:f32[5]=zeros()
+parameter budget0_weight:f32[H,H2]=zeros()
+parameter budget0_bias:f32[H]=zeros()
+parameter budget_norm_weight:f32[H]=ones()
+parameter budget_norm_bias:f32[H]=zeros()
+parameter budget3_weight:f32[B,H]=zeros()
+parameter budget3_bias:f32[B]=zeros()
+parameter copy_weight:f32[H,H]=zeros()
+parameter nb_slot_keys:f32[S,H]=zeros()
+parameter nb_key_weight:f32[H,H]=zeros()
+parameter nb_query_weight:f32[H,H]=zeros()
+parameter nb_value0_weight:f32[H,H]=zeros()
+parameter nb_value0_bias:f32[H]=zeros()
+parameter nb_write_gate0_weight:f32[H,H2]=zeros()
+parameter nb_write_gate0_bias:f32[H]=zeros()
+parameter nb_write_gate2_weight:f32[1,H]=zeros()
+parameter nb_write_gate2_bias:f32[1]=zeros()
+parameter nb_budget0_weight:f32[H,H2]=zeros()
+parameter nb_budget0_bias:f32[H]=zeros()
+parameter nb_budget3_weight:f32[SP,H]=zeros()
+parameter nb_budget3_bias:f32[SP]=zeros()
+parameter nb_value2_weight:f32[H]=ones()
+parameter nb_value2_bias:f32[H]=zeros()
+parameter nb_budget2_weight:f32[H]=ones()
+parameter nb_budget2_bias:f32[H]=zeros()
+parameter request_xr_weight:f32[H,H]=zeros()
+parameter request_xr_bias:f32[H]=zeros()
+parameter request_xz_weight:f32[H,H]=zeros()
+parameter request_xz_bias:f32[H]=zeros()
+parameter request_xn_weight:f32[H,H]=zeros()
+parameter request_xn_bias:f32[H]=zeros()
+parameter request_hr_weight:f32[H,H]=zeros()
+parameter request_hr_bias:f32[H]=zeros()
+parameter request_hz_weight:f32[H,H]=zeros()
+parameter request_hz_bias:f32[H]=zeros()
+parameter request_hn_weight:f32[H,H]=zeros()
+parameter request_hn_bias:f32[H]=zeros()
+fn nb_choice(weights,count) {
+ let selected=weights*topk_mask(weights,count);
+ return scale(selected,[1]/clip(sum(selected),0.00000001,1.0e30));
+}
+fn notebook(evidence,notes,query,valid,hard,query_given,attention_scale,slot_keys,key_weight,query_weight,value0_weight,value0_bias,write_gate0_weight,write_gate0_bias,write_gate2_weight,write_gate2_bias,budget0_weight,budget0_bias,budget3_weight,budget3_bias,value2_weight,value2_bias,budget2_weight,budget2_bias){
+ let ones_n=exp(scale((evidence as [NH])[0:N],0)) as [N,1];
+ let ones_s=exp(scale((notes as [SH])[0:S],0)) as [S,1];
+ let ones_h=exp(scale(query,0)) as [1,H];
+ let address=softmax(scale((evidence @ (key_weight as [H,H]).T) @ (slot_keys as [S,H]).T,attention_scale),1);
+ let value0=evidence @ (value0_weight as [H,H]).T + ones_n @ (value0_bias as [1,H]);
+ let values=layer_norm(gelu(value0),value2_weight,value2_bias,1,0.00001);
+ let candidate=address.T @ (values*((valid as [N,1]) @ ones_h));
+ let gate0=concat(notes,candidate,1) @ (write_gate0_weight as [H,H2]).T + ones_s @ (write_gate0_bias as [1,H]);
+ let gate=sigmoid(gelu(gate0) @ (write_gate2_weight as [1,H]).T + ones_s @ (write_gate2_bias as [1,1]));
+ let written=notes+(gate @ ones_h)*(candidate-notes);
+ # Masked data mean is model computation, including denominator clamping.
+ let averaged=scale(((valid as [1,N]) @ evidence) as [H],[1]/clip(sum(valid),1,1.0e30));
+ let q=route(query_given,query,averaged);
+ let weights=softmax(scale(((((query_weight @ (q as [H,1])) as [H]) as [1,H]) @ (slot_keys as [S,H]).T) as [S],attention_scale));
+ let mean_notes=scale((ones_s.T @ written) as [H],[1]/sum(ones_s as [S]));
+ let budget0=gelu(((budget0_weight @ (concat(q,mean_notes,0) as [H2,1])) as [H])+budget0_bias);
+ let budget_hidden=layer_norm(budget0,budget2_weight,budget2_bias,0,0.00001);
+ let budget_logits=((budget3_weight @ (budget_hidden as [H,1])) as [SP])+budget3_bias;
+ let probabilities=route(hard,topk_mask(budget_logits,[1]),softmax(budget_logits));
+ let uniform=scale(exp(scale(weights,0)),[1]/sum(ones_s as [S]));
+ let positive_probs=probabilities[1:SP];
+ let active=repeat S indexed i carrying acc=scale(uniform,probabilities[0]) { acc+scale(nb_choice(weights,i+1),positive_probs[i]) };
+ let context=((active as [1,S]) @ written) as [H];
+ return (written,context,budget_logits);
+}
+
+fn encoder(x,valid,seed,stream,q_weight,q_bias,k_weight,k_bias,v_weight,v_bias,out_weight,out_bias,ff1_weight,ff1_bias,ff2_weight,ff2_bias,n1_weight,n1_bias,n2_weight,n2_bias){
+ let ones=exp(scale(valid,0)) as [SEQ,1];
+ let normalized=layer_norm(x,n1_weight,n1_bias,1,0.00001);
+ let q=permute(((normalized @ q_weight.T)+(ones @ (q_bias as [1,H]))) as [SEQ,A,D],[1,0,2]);
+ let k=permute(((normalized @ k_weight.T)+(ones @ (k_bias as [1,H]))) as [SEQ,A,D],[1,0,2]);
+ let v=permute(((normalized @ v_weight.T)+(ones @ (v_bias as [1,H]))) as [SEQ,A,D],[1,0,2]);
+ let head_ones=exp(scale(q_bias[0:A],0)) as [A,1];
+ let mask=batch_matmul((head_ones @ (ones as [1,SEQ])) as [A,SEQ,1],(head_ones @ (valid as [1,SEQ])) as [A,1,SEQ]);
+ let scores=scale(batch_matmul(q,permute(k,[0,2,1])),[1]/sqrt([D]));
+ let weights=masked_softmax(scores,mask,2);
+ let dropped=dropout(weights,concat(concat(seed[0:2],stream,0),seed[2],0),0.1);
+ let attended=permute(batch_matmul(dropped,v),[1,0,2]) as [SEQ,H];
+ let projected=attended @ out_weight.T + ones @ (out_bias as [1,H]);
+ let residual=x+dropout(projected,concat(concat(seed[0:2],stream+[1],0),seed[2],0),0.1);
+ let inner=relu(layer_norm(residual,n2_weight,n2_bias,1,0.00001) @ ff1_weight.T + ones @ (ff1_bias as [1,H4]));
+ let feed=dropout(inner,concat(concat(seed[0:2],stream+[2],0),seed[2],0),0.1) @ ff2_weight.T + ones @ (ff2_bias as [1,H]);
+ return residual+dropout(feed,concat(concat(seed[0:2],stream+[3],0),seed[2],0),0.1);
+}
+fn request_step(token,previous,table,p_request_xr_weight,p_request_xr_bias,p_request_xz_weight,p_request_xz_bias,p_request_xn_weight,p_request_xn_bias,p_request_hr_weight,p_request_hr_bias,p_request_hz_weight,p_request_hz_bias,p_request_hn_weight,p_request_hn_bias){
+ let value=embedding(table,token) as [H];
+ return recurrent.gru_cell(((p_request_xr_weight @ (value as [H,1])) as [H])+p_request_xr_bias,((p_request_xz_weight @ (value as [H,1])) as [H])+p_request_xz_bias,((p_request_xn_weight @ (value as [H,1])) as [H])+p_request_xn_bias,((p_request_hr_weight @ (previous as [H,1])) as [H])+p_request_hr_bias,((p_request_hz_weight @ (previous as [H,1])) as [H])+p_request_hz_bias,((p_request_hn_weight @ (previous as [H,1])) as [H])+p_request_hn_bias,previous);
+}
+fn encode_chunk(ids,mask,pos,ones_seq,context,table,seed,stream,p_enc0_q_weight,p_enc0_q_bias,p_enc0_k_weight,p_enc0_k_bias,p_enc0_v_weight,p_enc0_v_bias,p_enc0_out_weight,p_enc0_out_bias,p_enc0_ff1_weight,p_enc0_ff1_bias,p_enc0_ff2_weight,p_enc0_ff2_bias,p_enc0_n1_weight,p_enc0_n1_bias,p_enc0_n2_weight,p_enc0_n2_bias,p_enc1_q_weight,p_enc1_q_bias,p_enc1_k_weight,p_enc1_k_bias,p_enc1_v_weight,p_enc1_v_bias,p_enc1_out_weight,p_enc1_out_bias,p_enc1_ff1_weight,p_enc1_ff1_bias,p_enc1_ff2_weight,p_enc1_ff2_bias,p_enc1_n1_weight,p_enc1_n1_bias,p_enc1_n2_weight,p_enc1_n2_bias,p_enc2_q_weight,p_enc2_q_bias,p_enc2_k_weight,p_enc2_k_bias,p_enc2_v_weight,p_enc2_v_bias,p_enc2_out_weight,p_enc2_out_bias,p_enc2_ff1_weight,p_enc2_ff1_bias,p_enc2_ff2_weight,p_enc2_ff2_bias,p_enc2_n1_weight,p_enc2_n1_bias,p_enc2_n2_weight,p_enc2_n2_bias,p_enc3_q_weight,p_enc3_q_bias,p_enc3_k_weight,p_enc3_k_bias,p_enc3_v_weight,p_enc3_v_bias,p_enc3_out_weight,p_enc3_out_bias,p_enc3_ff1_weight,p_enc3_ff1_bias,p_enc3_ff2_weight,p_enc3_ff2_bias,p_enc3_n1_weight,p_enc3_n1_bias,p_enc3_n2_weight,p_enc3_n2_bias){
+  let x0=embedding(table,ids)+pos+(ones_seq @ (context as [1,H]));
+  let x1=encoder(x0,mask,seed,stream+[0],p_enc0_q_weight,p_enc0_q_bias,p_enc0_k_weight,p_enc0_k_bias,p_enc0_v_weight,p_enc0_v_bias,p_enc0_out_weight,p_enc0_out_bias,p_enc0_ff1_weight,p_enc0_ff1_bias,p_enc0_ff2_weight,p_enc0_ff2_bias,p_enc0_n1_weight,p_enc0_n1_bias,p_enc0_n2_weight,p_enc0_n2_bias);
+  let x2=encoder(x1,mask,seed,stream+[4],p_enc1_q_weight,p_enc1_q_bias,p_enc1_k_weight,p_enc1_k_bias,p_enc1_v_weight,p_enc1_v_bias,p_enc1_out_weight,p_enc1_out_bias,p_enc1_ff1_weight,p_enc1_ff1_bias,p_enc1_ff2_weight,p_enc1_ff2_bias,p_enc1_n1_weight,p_enc1_n1_bias,p_enc1_n2_weight,p_enc1_n2_bias);
+  let x3=encoder(x2,mask,seed,stream+[8],p_enc2_q_weight,p_enc2_q_bias,p_enc2_k_weight,p_enc2_k_bias,p_enc2_v_weight,p_enc2_v_bias,p_enc2_out_weight,p_enc2_out_bias,p_enc2_ff1_weight,p_enc2_ff1_bias,p_enc2_ff2_weight,p_enc2_ff2_bias,p_enc2_n1_weight,p_enc2_n1_bias,p_enc2_n2_weight,p_enc2_n2_bias);
+  let x4=encoder(x3,mask,seed,stream+[12],p_enc3_q_weight,p_enc3_q_bias,p_enc3_k_weight,p_enc3_k_bias,p_enc3_v_weight,p_enc3_v_bias,p_enc3_out_weight,p_enc3_out_bias,p_enc3_ff1_weight,p_enc3_ff1_bias,p_enc3_ff2_weight,p_enc3_ff2_bias,p_enc3_n1_weight,p_enc3_n1_bias,p_enc3_n2_weight,p_enc3_n2_bias);
+  return scale(((mask as [1,SEQ]) @ x4) as [H],[1]/clip(sum(mask),1,1.0e30));
+}
+fn red_step(pooled,previous,p_red_xr_weight,p_red_xr_bias,p_red_xz_weight,p_red_xz_bias,p_red_xn_weight,p_red_xn_bias,p_red_hr_weight,p_red_hr_bias,p_red_hz_weight,p_red_hz_bias,p_red_hn_weight,p_red_hn_bias){return recurrent.gru_cell(((p_red_xr_weight @ (pooled as [H,1])) as [H])+p_red_xr_bias,((p_red_xz_weight @ (pooled as [H,1])) as [H])+p_red_xz_bias,((p_red_xn_weight @ (pooled as [H,1])) as [H])+p_red_xn_bias,((p_red_hr_weight @ (previous as [H,1])) as [H])+p_red_hr_bias,((p_red_hz_weight @ (previous as [H,1])) as [H])+p_red_hz_bias,((p_red_hn_weight @ (previous as [H,1])) as [H])+p_red_hn_bias,previous);}
+fn abstract_step(hidden,p_abstract_weight,p_abstract_bias,p_abstract_norm_weight,p_abstract_norm_bias){return layer_norm(gelu(((p_abstract_weight @ (hidden as [H,1])) as [H4])+p_abstract_bias),p_abstract_norm_weight,p_abstract_norm_bias,0,0.00001);}
+fn budget_head(value,guidance,p_budget0_weight,p_budget0_bias,p_budget_norm_weight,p_budget_norm_bias,p_budget3_weight,p_budget3_bias){
+ let budget_features=layer_norm(gelu(((p_budget0_weight @ (concat(value,guidance,0) as [H2,1])) as [H])+p_budget0_bias),p_budget_norm_weight,p_budget_norm_bias,0,0.00001);
+ return ((p_budget3_weight @ (budget_features as [H,1])) as [B])+p_budget3_bias;
+}
+fn forward(tokens:f32[G,SEQ],positions:f32[SEQ],kind:f32[1],request_tokens:f32[RQ],valid:f32[G,SEQ],selectors:f32[G,G],seed:f32[3],hard:f32[1],notes:f32[S,H],learned:f32[1],schedule:f32[B,DEPTH])->(f32[G,H],f32[H4],f32[H],f32[G,257],f32[G,257],f32[G],f32[256],f32[5],f32[B],f32[G],f32[S,H],f32[H],f32[SP]){
+
+ let p_byte_weight=byte_weight as [257,H];
+ let p_kind_weight=kind_weight as [256,H];
+ let p_position_weight=position_weight as [P,H];
+ let p_enc0_q_weight=enc0_q_weight as [H,H];
+ let p_enc0_q_bias=enc0_q_bias as [H];
+ let p_enc0_k_weight=enc0_k_weight as [H,H];
+ let p_enc0_k_bias=enc0_k_bias as [H];
+ let p_enc0_v_weight=enc0_v_weight as [H,H];
+ let p_enc0_v_bias=enc0_v_bias as [H];
+ let p_enc0_out_weight=enc0_out_weight as [H,H];
+ let p_enc0_out_bias=enc0_out_bias as [H];
+ let p_enc0_ff1_weight=enc0_ff1_weight as [H4,H];
+ let p_enc0_ff1_bias=enc0_ff1_bias as [H4];
+ let p_enc0_ff2_weight=enc0_ff2_weight as [H,H4];
+ let p_enc0_ff2_bias=enc0_ff2_bias as [H];
+ let p_enc0_n1_weight=enc0_n1_weight as [H];
+ let p_enc0_n1_bias=enc0_n1_bias as [H];
+ let p_enc0_n2_weight=enc0_n2_weight as [H];
+ let p_enc0_n2_bias=enc0_n2_bias as [H];
+ let p_enc1_q_weight=enc1_q_weight as [H,H];
+ let p_enc1_q_bias=enc1_q_bias as [H];
+ let p_enc1_k_weight=enc1_k_weight as [H,H];
+ let p_enc1_k_bias=enc1_k_bias as [H];
+ let p_enc1_v_weight=enc1_v_weight as [H,H];
+ let p_enc1_v_bias=enc1_v_bias as [H];
+ let p_enc1_out_weight=enc1_out_weight as [H,H];
+ let p_enc1_out_bias=enc1_out_bias as [H];
+ let p_enc1_ff1_weight=enc1_ff1_weight as [H4,H];
+ let p_enc1_ff1_bias=enc1_ff1_bias as [H4];
+ let p_enc1_ff2_weight=enc1_ff2_weight as [H,H4];
+ let p_enc1_ff2_bias=enc1_ff2_bias as [H];
+ let p_enc1_n1_weight=enc1_n1_weight as [H];
+ let p_enc1_n1_bias=enc1_n1_bias as [H];
+ let p_enc1_n2_weight=enc1_n2_weight as [H];
+ let p_enc1_n2_bias=enc1_n2_bias as [H];
+ let p_enc2_q_weight=enc2_q_weight as [H,H];
+ let p_enc2_q_bias=enc2_q_bias as [H];
+ let p_enc2_k_weight=enc2_k_weight as [H,H];
+ let p_enc2_k_bias=enc2_k_bias as [H];
+ let p_enc2_v_weight=enc2_v_weight as [H,H];
+ let p_enc2_v_bias=enc2_v_bias as [H];
+ let p_enc2_out_weight=enc2_out_weight as [H,H];
+ let p_enc2_out_bias=enc2_out_bias as [H];
+ let p_enc2_ff1_weight=enc2_ff1_weight as [H4,H];
+ let p_enc2_ff1_bias=enc2_ff1_bias as [H4];
+ let p_enc2_ff2_weight=enc2_ff2_weight as [H,H4];
+ let p_enc2_ff2_bias=enc2_ff2_bias as [H];
+ let p_enc2_n1_weight=enc2_n1_weight as [H];
+ let p_enc2_n1_bias=enc2_n1_bias as [H];
+ let p_enc2_n2_weight=enc2_n2_weight as [H];
+ let p_enc2_n2_bias=enc2_n2_bias as [H];
+ let p_enc3_q_weight=enc3_q_weight as [H,H];
+ let p_enc3_q_bias=enc3_q_bias as [H];
+ let p_enc3_k_weight=enc3_k_weight as [H,H];
+ let p_enc3_k_bias=enc3_k_bias as [H];
+ let p_enc3_v_weight=enc3_v_weight as [H,H];
+ let p_enc3_v_bias=enc3_v_bias as [H];
+ let p_enc3_out_weight=enc3_out_weight as [H,H];
+ let p_enc3_out_bias=enc3_out_bias as [H];
+ let p_enc3_ff1_weight=enc3_ff1_weight as [H4,H];
+ let p_enc3_ff1_bias=enc3_ff1_bias as [H4];
+ let p_enc3_ff2_weight=enc3_ff2_weight as [H,H4];
+ let p_enc3_ff2_bias=enc3_ff2_bias as [H];
+ let p_enc3_n1_weight=enc3_n1_weight as [H];
+ let p_enc3_n1_bias=enc3_n1_bias as [H];
+ let p_enc3_n2_weight=enc3_n2_weight as [H];
+ let p_enc3_n2_bias=enc3_n2_bias as [H];
+ let p_red_xr_weight=red_xr_weight as [H,H];
+ let p_red_xr_bias=red_xr_bias as [H];
+ let p_red_xz_weight=red_xz_weight as [H,H];
+ let p_red_xz_bias=red_xz_bias as [H];
+ let p_red_xn_weight=red_xn_weight as [H,H];
+ let p_red_xn_bias=red_xn_bias as [H];
+ let p_red_hr_weight=red_hr_weight as [H,H];
+ let p_red_hr_bias=red_hr_bias as [H];
+ let p_red_hz_weight=red_hz_weight as [H,H];
+ let p_red_hz_bias=red_hz_bias as [H];
+ let p_red_hn_weight=red_hn_weight as [H,H];
+ let p_red_hn_bias=red_hn_bias as [H];
+ let p_abstract_weight=abstract_weight as [H4,H];
+ let p_abstract_bias=abstract_bias as [H4];
+ let p_abstract_norm_weight=abstract_norm_weight as [H4];
+ let p_abstract_norm_bias=abstract_norm_bias as [H4];
+ let p_to_blue_weight=to_blue_weight as [H,H4];
+ let p_to_blue_bias=to_blue_bias as [H];
+ let p_blue_byte_weight=blue_byte_weight as [257,H];
+ let p_blue_byte_bias=blue_byte_bias as [257];
+ let p_red_byte_weight=red_byte_weight as [257,H];
+ let p_red_byte_bias=red_byte_bias as [257];
+ let p_stop_weight=stop_weight as [1,H];
+ let p_stop_bias=stop_bias as [1];
+ let p_kind_head_weight=kind_head_weight as [256,H];
+ let p_kind_head_bias=kind_head_bias as [256];
+ let p_summary_head_weight=summary_head_weight as [5,H];
+ let p_summary_head_bias=summary_head_bias as [5];
+ let p_budget0_weight=budget0_weight as [H,H2];
+ let p_budget0_bias=budget0_bias as [H];
+ let p_budget_norm_weight=budget_norm_weight as [H];
+ let p_budget_norm_bias=budget_norm_bias as [H];
+ let p_budget3_weight=budget3_weight as [B,H];
+ let p_budget3_bias=budget3_bias as [B];
+ let p_copy_weight=copy_weight as [H,H];
+ let p_nb_slot_keys=nb_slot_keys as [S,H];
+ let p_nb_key_weight=nb_key_weight as [H,H];
+ let p_nb_query_weight=nb_query_weight as [H,H];
+ let p_nb_value0_weight=nb_value0_weight as [H,H];
+ let p_nb_value0_bias=nb_value0_bias as [H];
+ let p_nb_write_gate0_weight=nb_write_gate0_weight as [H,H2];
+ let p_nb_write_gate0_bias=nb_write_gate0_bias as [H];
+ let p_nb_write_gate2_weight=nb_write_gate2_weight as [1,H];
+ let p_nb_write_gate2_bias=nb_write_gate2_bias as [1];
+ let p_nb_budget0_weight=nb_budget0_weight as [H,H2];
+ let p_nb_budget0_bias=nb_budget0_bias as [H];
+ let p_nb_budget3_weight=nb_budget3_weight as [SP,H];
+ let p_nb_budget3_bias=nb_budget3_bias as [SP];
+ let p_nb_value2_weight=nb_value2_weight as [H];
+ let p_nb_value2_bias=nb_value2_bias as [H];
+ let p_nb_budget2_weight=nb_budget2_weight as [H];
+ let p_nb_budget2_bias=nb_budget2_bias as [H];
+ let p_request_xr_weight=request_xr_weight as [H,H];
+ let p_request_xr_bias=request_xr_bias as [H];
+ let p_request_xz_weight=request_xz_weight as [H,H];
+ let p_request_xz_bias=request_xz_bias as [H];
+ let p_request_xn_weight=request_xn_weight as [H,H];
+ let p_request_xn_bias=request_xn_bias as [H];
+ let p_request_hr_weight=request_hr_weight as [H,H];
+ let p_request_hr_bias=request_hr_bias as [H];
+ let p_request_hz_weight=request_hz_weight as [H,H];
+ let p_request_hz_bias=request_hz_bias as [H];
+ let p_request_hn_weight=request_hn_weight as [H,H];
+ let p_request_hn_bias=request_hn_bias as [H];
+ let request=repeat RQ indexed j carrying previous=scale(p_request_xr_bias,0) {request_step(request_tokens[j],previous,p_byte_weight,p_request_xr_weight,p_request_xr_bias,p_request_xz_weight,p_request_xz_bias,p_request_xn_weight,p_request_xn_bias,p_request_hr_weight,p_request_hr_bias,p_request_hz_weight,p_request_hz_bias,p_request_hn_weight,p_request_hn_bias)};
+ let context=(embedding(p_kind_weight,kind) as [H])+request;
+ let pos=embedding(p_position_weight,positions);
+ let ones_seq=exp(scale(positions,0)) as [SEQ,1];
+ let ones_h=exp(scale(context,0)) as [1,H];
+ let zeros=scale((valid as [G,SEQ]) @ ones_seq @ ones_h,0);
+ let encoded=repeat G indexed i carrying accumulated=zeros {
+ accumulated+(dynamic_slice(selectors as [GG],scale(i,G),G) as [G,1]) @ (encode_chunk(dynamic_slice(tokens as [GT],scale(i,SEQ),SEQ),dynamic_slice(valid as [GT],scale(i,SEQ),SEQ),pos,ones_seq,context,p_byte_weight,seed,scale(i,16),p_enc0_q_weight,p_enc0_q_bias,p_enc0_k_weight,p_enc0_k_bias,p_enc0_v_weight,p_enc0_v_bias,p_enc0_out_weight,p_enc0_out_bias,p_enc0_ff1_weight,p_enc0_ff1_bias,p_enc0_ff2_weight,p_enc0_ff2_bias,p_enc0_n1_weight,p_enc0_n1_bias,p_enc0_n2_weight,p_enc0_n2_bias,p_enc1_q_weight,p_enc1_q_bias,p_enc1_k_weight,p_enc1_k_bias,p_enc1_v_weight,p_enc1_v_bias,p_enc1_out_weight,p_enc1_out_bias,p_enc1_ff1_weight,p_enc1_ff1_bias,p_enc1_ff2_weight,p_enc1_ff2_bias,p_enc1_n1_weight,p_enc1_n1_bias,p_enc1_n2_weight,p_enc1_n2_bias,p_enc2_q_weight,p_enc2_q_bias,p_enc2_k_weight,p_enc2_k_bias,p_enc2_v_weight,p_enc2_v_bias,p_enc2_out_weight,p_enc2_out_bias,p_enc2_ff1_weight,p_enc2_ff1_bias,p_enc2_ff2_weight,p_enc2_ff2_bias,p_enc2_n1_weight,p_enc2_n1_bias,p_enc2_n2_weight,p_enc2_n2_bias,p_enc3_q_weight,p_enc3_q_bias,p_enc3_k_weight,p_enc3_k_bias,p_enc3_v_weight,p_enc3_v_bias,p_enc3_out_weight,p_enc3_out_bias,p_enc3_ff1_weight,p_enc3_ff1_bias,p_enc3_ff2_weight,p_enc3_ff2_bias,p_enc3_n1_weight,p_enc3_n1_bias,p_enc3_n2_weight,p_enc3_n2_bias) as [1,H])
+ };
+ let chunk_valid=exp(scale((selectors as [GG])[0:G],0));
+ let (written,note_context,note_budget)=notebook(encoded,notes,scale(context,0),chunk_valid,hard,[0],[1]/sqrt([H]),p_nb_slot_keys,p_nb_key_weight,p_nb_query_weight,p_nb_value0_weight,p_nb_value0_bias,p_nb_write_gate0_weight,p_nb_write_gate0_bias,p_nb_write_gate2_weight,p_nb_write_gate2_bias,p_nb_budget0_weight,p_nb_budget0_bias,p_nb_budget3_weight,p_nb_budget3_bias,p_nb_value2_weight,p_nb_value2_bias,p_nb_budget2_weight,p_nb_budget2_bias);
+ let ones_g=chunk_valid as [G,1];
+ let contextual=encoded+ones_g @ (note_context as [1,H]);
+ let pooled=scale(((chunk_valid as [1,G]) @ contextual) as [H],[1]/[G]);
+ # Shared red weights across DEPTH thinking steps; no Python state/gradient bridge.
+ # Blue runs once; learned budgets choose a discrete schedule inside the same graph.
+ let blue_hidden=red_step(pooled,pooled,p_red_xr_weight,p_red_xr_bias,p_red_xz_weight,p_red_xz_bias,p_red_xn_weight,p_red_xn_bias,p_red_hr_weight,p_red_hr_bias,p_red_hz_weight,p_red_hz_bias,p_red_hn_weight,p_red_hn_bias);
+ let blue_abstract=abstract_step(blue_hidden,p_abstract_weight,p_abstract_bias,p_abstract_norm_weight,p_abstract_norm_bias);
+ let blue_guidance=((p_to_blue_weight @ (blue_abstract as [H4,1])) as [H])+p_to_blue_bias;
+ let blue_budget=budget_head(blue_hidden,blue_guidance,p_budget0_weight,p_budget0_bias,p_budget_norm_weight,p_budget_norm_bias,p_budget3_weight,p_budget3_bias);
+ let selected=topk_mask(blue_budget,[1]);
+ let learned_mask=((selected as [1,B]) @ schedule) as [DEPTH];
+ let steps=route(learned,learned_mask,exp(scale(learned_mask,0)));
+ let hidden=repeat DEPTH indexed i carrying previous=pooled {
+  route(steps[i],red_step(pooled,previous,p_red_xr_weight,p_red_xr_bias,p_red_xz_weight,p_red_xz_bias,p_red_xn_weight,p_red_xn_bias,p_red_hr_weight,p_red_hr_bias,p_red_hz_weight,p_red_hz_bias,p_red_hn_weight,p_red_hn_bias),previous)
+ };
+ let abstract=abstract_step(hidden,p_abstract_weight,p_abstract_bias,p_abstract_norm_weight,p_abstract_norm_bias);
+ let guidance=((p_to_blue_weight @ (abstract as [H4,1])) as [H])+p_to_blue_bias;
+ let guided=contextual+ones_g @ (guidance as [1,H]);
+ let blue=guided @ p_blue_byte_weight.T +ones_g @ (p_blue_byte_bias as [1,257]);
+ let red=guided @ p_red_byte_weight.T +ones_g @ (p_red_byte_bias as [1,257]);
+ let stop=(contextual @ p_stop_weight.T +ones_g @ (p_stop_bias as [1,1])) as [G];
+ let kind_logits=((p_kind_head_weight @ (guidance as [H,1])) as [256])+p_kind_head_bias;
+ let summary=((p_summary_head_weight @ (guidance as [H,1])) as [5])+p_summary_head_bias;
+ let budget=route(learned,blue_budget,budget_head(pooled,guidance,p_budget0_weight,p_budget0_bias,p_budget_norm_weight,p_budget_norm_bias,p_budget3_weight,p_budget3_bias));
+ let query=guided @ p_copy_weight.T;
+ let copy_scores=scale(((chunk_valid as [1,G]) @ scale(query @ query.T,[1]/sqrt([H]))) as [G],[1]/[G]);
+ return (contextual,abstract,guidance,blue,red,stop,kind_logits,summary,budget,copy_scores,written,note_context,note_budget);
+}

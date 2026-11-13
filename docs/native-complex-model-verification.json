@@ -6,26 +6,33 @@
     "native_attention": "74c34836a19393d3678de07899de9be54ef2ef0362e251196bc52790aa9d4bbb",
     "native_hierarchical_gru": "9c9b24495b6aab5f2d1a23dac7854278c1363e434c7bd6171e5374c5c1224910",
     "native_hnet_generator": "cc78754b25602e3b793c4b6d589b64e9e75b09b51bea7a38aeaaccd564d83120",
-    "native_rgb_policy": "5fb567ac606a742b91fb49bb863584a926c9e167c5c71df1209a50efc13c58f6"
+    "native_rgb_policy": "5fb567ac606a742b91fb49bb863584a926c9e167c5c71df1209a50efc13c58f6",
+    "native_any2any": "7d89b73a834cabacb6b6f8d2e6bd0d9c47def247d947ec8cb430be1c0b9e7482"
   },
   "execution": "Rust/wgtime native CPU, no Python model-compute callbacks",
   "tests": {
     "lightnest": {
-      "run": 142,
+      "run": 144,
       "skipped": 3
     },
     "sdk": {
-      "passed": 374,
+      "passed": 387,
       "skipped": 3
     },
-    "native_complex_behavior": "12 real-service tests; six full restored networks; SGD/BPTT and RGB Adam; three attention modes, notebook soft/hard choices, risk detach",
+    "native_complex_behavior": "14 real-service tests; seven restored networks; Any2Any four-layer Transformer, request GRU, seeded dropout, notebook, fixed/learned thinking, all-parameter SGD",
     "generation": "ELF and HNet autoregressive byte generation and stop match Torch",
-    "default_geometry": "width128/capacity2048 generators; RGB width64/depth16 forward and two Adam steps, geometry/depth8 roundtrip",
-    "shared_wgt_source": "All six definitions run through explicit Torch from_ir with identical parameters and logical outputs",
-    "original_migration": "21 cases, max_abs=0.0; retained report weights/native-rgb-validation-20261114/report.json",
-    "wheel": "18 packaged model.wgt files; native RGB source/host byte-identical to checkout",
+    "default_geometry": "width128/capacity2048 generators; RGB width64/depth16 forward and two Adam steps, geometry/depth8 roundtrip; Any2Any width128/sequence_limit4096 weight import, learned-budget forward and live depth/input rebinding",
+    "shared_wgt_source": "All seven definitions run via explicit Torch from_ir with identical parameters and logical outputs; Any2Any replays identical dropout masks",
+    "original_migration": "21 cases, max_abs=0.0; retained report weights/native-any2any-validation-20261114/report.json",
+    "wheel": "19 packaged model.wgt files; native Any2Any host/source byte-identical to checkout",
     "service": 19,
-    "wgtime": 20
+    "wgtime": 20,
+    "compiled_instruction_coverage": 5,
+    "complex_primitives": 6,
+    "torch_export": 16,
+    "tensor_source_contracts": 8,
+    "example_sources": 1,
+    "formatting_note": "CLI format cannot bind unbound dimensions in the external Any2Any template; explicit bound compilation and real execution verified"
   },
   "tolerance": {
     "atol": 4e-06,
@@ -37,14 +44,24 @@
     "rgb_default": {
       "atol": 1e-05,
       "rtol": 0.0001
+    },
+    "any2any": {
+      "atol": 1e-05,
+      "rtol": 0.0001
+    },
+    "any2any_default": {
+      "atol": 2e-05,
+      "rtol": 0.0002
     }
   },
   "limitations": [
     "single sequence; construction-time item/query geometry",
     "attention uses N-slot selection masks, not compact K detail storage",
     "HNet evaluates unselected main candidates",
-    "Any2Any/standalone GreenObserver/structure/X86World application hosts remain explicit Torch; RGB streaming begin/advance/thoughts/state return not ported",
-    "native unified optimizer checkpoint persistence not implemented"
+    "Any2Any mean-request/semantic-chunk/BPE paths, standalone GreenObserver/structure/X86World hosts remain explicit Torch; RGB streaming state API not ported",
+    "native unified optimizer checkpoint persistence not implemented",
+    "Any2Any native work/port/tape limits remain; full 256-position/multichunk training not inferred from short-input acceptance",
+    "Learned depth uses hard no-gradient selection; AD may evaluate masked red candidates up to bound"
   ],
-  "compiler_commit": "36bf63736719bbffc3330dc308ce36bd12e8076e"
+  "compiler_commit": "2e08ef04dd5c5d7f27d2e670d264f4fa02b971bb"
 }
