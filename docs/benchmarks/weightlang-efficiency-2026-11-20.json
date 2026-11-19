@@ -1,0 +1,36 @@
+{
+  "command": [
+    ".venv/bin/python",
+    "-m",
+    "unittest",
+    "-v",
+    "test_native_model.NativeModelTests.test_native_and_torch_forward_recurrent_gradients_and_training",
+    "test_native_model.NativeModelTests.test_complete_native_routed_attention_all_modes_and_parameter_update"
+  ],
+  "environment": {
+    "PYTHONPATH": "tests/architecture",
+    "WGT_COMPILER": "../WeightLang/WeightLang/target/debug/wgt",
+    "WGTIME_TEST_DAEMON": "../WeightLang/WeightLang/target/debug/wgtime",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "TMPDIR": "/tmp/weightlang"
+  },
+  "exit_code": 0,
+  "seconds": 6.146,
+  "log": "native-regressions.log",
+  "source_commit": "6062f57badac913512ca0ac96a328ef6fbdd8275",
+  "weightlang_code_commit": "072582a03a123b7d95c815d563689383033019d4",
+  "products": {
+    "wgt": "d05d49a5515430580d1276e44d314b4edc7abc4a24ad59d3f69c7a4de714d51c",
+    "wgtime": "4e690647b5644f2bb3de14c880edefe016d10a878ce034c28ad0dccea83ae6a5"
+  },
+  "format": "lightnest.weightlang-efficiency.v1",
+  "test_count": 2,
+  "failed": 0,
+  "skipped": 0,
+  "raw_record_sha256": "cbe5d10d34092ab8757be8c976a46130e9c220bbc9eadbbe31159825ed57196a",
+  "raw_log_sha256": "e7b60fba6375c790cefbc526d0ebf2c29375ac28e3aaaff0f5a25a7d3bef5484",
+  "path_note": "Paths are repository-relative reproductions of the expanded absolute paths in the retained raw record.",
+  "test_output": "test_native_and_torch_forward_recurrent_gradients_and_training (test_native_model.NativeModelTests.test_native_and_torch_forward_recurrent_gradients_and_training) ... ok\ntest_complete_native_routed_attention_all_modes_and_parameter_update (test_native_model.NativeModelTests.test_complete_native_routed_attention_all_modes_and_parameter_update) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 2.633s\n\nOK\n"
+}
